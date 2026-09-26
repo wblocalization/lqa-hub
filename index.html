@@ -112,7 +112,8 @@ button{font-family:inherit;}
 .top-ic .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;background:var(--crit);border-radius:50%;display:none;box-shadow:0 0 0 2px var(--surface);}
 .avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
 
-.content{padding:28px 32px 64px;flex:1;width:100%;max-width:1480px;margin:0 auto;animation:pageIn .25s var(--ease);}
+.content{padding:28px 32px 64px;flex:1;width:100%;max-width:1480px;margin:0 auto;view-transition-name:page;}
+.content.page-enter{animation:pageIn .3s var(--ease);}
 @keyframes pageIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
 .page-title{font-size:26px;font-weight:700;margin:0 0 4px;letter-spacing:-.02em;line-height:1.2;}
@@ -385,6 +386,99 @@ body.viewer-open{overflow:hidden;}
 .compare-nav button:hover{background:rgba(255,255,255,.2);}
 .compare-empty{border:1.5px dashed rgba(255,255,255,.2);border-radius:8px;padding:40px 20px;text-align:center;color:rgba(255,255,255,.6);font-size:13px;}
 @media(max-width:900px){ .viewer-stage.compare{grid-template-columns:1fr;} }
+/* dialogs + toasts with actions */
+.dialog-bg{position:fixed;inset:0;z-index:500;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease;}
+.dialog{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:440px;max-width:100%;padding:24px;animation:modalIn .2s var(--ease);}
+.dialog h3{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.01em;}
+.dialog-text{color:var(--text-soft);font-size:14px;line-height:1.55;}
+.dialog-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:var(--primary-bg);color:var(--primary);}
+.dialog-ic.danger{background:var(--crit-bg);color:var(--crit);}
+.btn.danger-solid{background:var(--crit);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--crit) 35%,transparent);}
+.btn.danger-solid:hover{filter:brightness(1.08);}
+.toast{display:flex;align-items:center;gap:14px;}
+.toast.out{animation:toastOut .22s ease forwards;}
+@keyframes toastOut{to{opacity:0;transform:translateY(6px);}}
+.toast-action{background:rgba(255,255,255,.14);color:#fff;border:none;border-radius:6px;height:28px;padding:0 10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;margin-left:auto;}
+.toast-action:hover{background:rgba(255,255,255,.26);}
+.plural-forms{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.plural-forms > div{display:flex;gap:8px;align-items:flex-start;background:var(--bg-2);border-radius:8px;padding:6px 10px;}
+.plural-forms > div > span{width:20px;height:20px;border-radius:50%;background:var(--surface);color:var(--text-soft);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.kb-focus td{background:var(--primary-bg)!important;}
+.kb-focus td:first-child{box-shadow:inset 3px 0 0 var(--primary);}
+kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:5px;border:1px solid var(--border-strong);border-bottom-width:2px;background:var(--surface);font:600 11px/1 "Inter",system-ui,sans-serif;color:var(--text-soft);}
+.kb-hint{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12px;color:var(--text-faint);padding:0 4px 8px;}
+.kb-hint span{display:inline-flex;gap:4px;align-items:center;}
+.kb-hint a{margin-left:auto;color:var(--text-faint);text-decoration:none;display:inline-flex;gap:6px;align-items:center;}
+.kb-hint a:hover{color:var(--primary);}
+.kb-help .kb-line{display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.kb-help .kb-line > span:first-child{display:inline-flex;gap:4px;}
+.kb-help .kb-line > span:last-child{color:var(--text-soft);text-align:right;}
+@media(max-width:900px){ .kb-hint{display:none;} }
+/* ---- motion ---- */
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.985);}to{opacity:1;transform:none;}}
+@keyframes ringIn{from{stroke-dashoffset:var(--c);}}
+.entering .stagger > *{animation:rise .5s var(--ease) both;animation-delay:calc(var(--i,0) * 45ms);}
+.entering .ring-val{animation:ringIn 1.1s var(--ease) both;}
+.entering .dash-hero{animation:rise .5s var(--ease) both;}
+::view-transition-old(page){animation:vtOut .18s ease both;}
+::view-transition-new(page){animation:vtIn .32s var(--ease) both;}
+@keyframes vtOut{to{opacity:0;transform:translateY(-6px);}}
+@keyframes vtIn{from{opacity:0;transform:translateY(10px);}}
+html.nav-vt::view-transition-old(root),html.nav-vt::view-transition-new(root){animation:none;}
+html.theme-vt::view-transition-old(root),html.theme-vt::view-transition-new(root){animation:none;mix-blend-mode:normal;}
+html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page){animation:none;}
+.btn:active,.lang-card:active,.chip:active{transform:scale(.98);}
+
+/* ---- dashboard ---- */
+:root{--ring-track:var(--bg-2);}
+.dash-hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:24px;justify-content:space-between;background:var(--brand-grad);color:#fff;border-radius:20px;padding:28px 32px;margin-bottom:20px;box-shadow:0 14px 40px rgba(124,31,201,.25);}
+.dash-hero::before{content:'';position:absolute;inset:-40% -10% auto auto;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 62%);pointer-events:none;}
+.dash-hero::after{content:'';position:absolute;left:30%;bottom:-220px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,110,205,.32),transparent 65%);pointer-events:none;}
+.dash-hero > *{position:relative;z-index:1;}
+.dash-hello{font-size:14px;opacity:.85;margin-bottom:6px;}
+.dash-hero h1{margin:0 0 6px;font-size:28px;letter-spacing:-.02em;line-height:1.2;}
+.dash-hero p{margin:0;opacity:.85;font-size:14px;}
+.dash-hero p b{color:#fff;}
+.dash-hero-ring{position:relative;flex-shrink:0;width:132px;height:132px;--ring-track:rgba(255,255,255,.2);}
+.dash-hero-ring > div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.dash-hero-ring b{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1;}
+.dash-hero-ring span{font-size:12px;opacity:.8;margin-top:4px;}
+.notice{display:flex;align-items:center;gap:12px;background:var(--med-bg);color:var(--text);border:1px solid color-mix(in srgb,var(--med) 30%,transparent);border-radius:var(--r-md);padding:10px 12px 10px 16px;margin-bottom:20px;font-size:13px;}
+.notice > svg{color:var(--med);}
+.notice span{flex:1;}
+.kpi-ic{width:34px;height:34px;border-radius:10px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.kpi.crit .kpi-ic{background:var(--crit-bg);color:var(--crit);} .kpi.ok .kpi-ic{background:var(--ok-bg);color:var(--ok);}
+.kpi.ok{box-shadow:inset 3px 0 0 var(--ok),var(--shadow-sm);}
+.delta{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:4px;}
+.delta.up{background:var(--crit-bg);color:var(--crit);} .delta.down{background:var(--ok-bg);color:var(--ok);}
+.section-title{font-size:18px;font-weight:650;margin:0;letter-spacing:-.01em;}
+.lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.lang-card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),box-shadow .2s ease,border-color .2s ease;}
+.lang-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.lang-card:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+.lang-card-head{display:flex;align-items:center;gap:12px;}
+.lang-flag{width:40px;height:40px;border-radius:12px;background:var(--bg-2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.lang-name{font-weight:600;font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lang-code{font-size:12px;color:var(--text-faint);margin-top:1px;}
+.lang-ring{position:relative;width:48px;height:48px;flex-shrink:0;}
+.lang-ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--text);}
+.lang-bar{display:flex;gap:2px;height:6px;border-radius:99px;overflow:hidden;background:var(--bg-2);}
+.lang-bar i{display:block;height:100%;}
+.lang-stats{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;font-size:12px;color:var(--text-faint);}
+.lang-stats b{display:block;font-size:16px;color:var(--text);font-weight:650;font-variant-numeric:tabular-nums;}
+.lang-spark{display:flex;align-items:flex-end;gap:2px;height:24px;}
+.lang-spark i{width:4px;border-radius:2px;background:var(--primary);}
+.dash-split{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);}
+.attn{display:flex;flex-direction:column;}
+.attn-item{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 8px;border-bottom:1px solid var(--border);border-radius:8px;transition:background .15s ease;}
+.attn-item:last-child{border-bottom:none;}
+.attn-item:hover{background:var(--surface-2);}
+.attn-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--low);}
+.attn-dot.sev-critical{background:var(--crit);box-shadow:0 0 0 4px var(--crit-bg);} .attn-dot.sev-high{background:var(--high);box-shadow:0 0 0 4px var(--high-bg);} .attn-dot.sev-medium{background:var(--med);}
+.attn-title{font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.attn-meta{font-size:12px;color:var(--text-faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:1100px){ .dash-split{grid-template-columns:minmax(0,1fr);} }
+@media(max-width:700px){ .dash-hero{flex-direction:column;align-items:flex-start;padding:22px;} .dash-hero h1{font-size:22px;} .dash-hero-ring{align-self:center;} .notice{flex-wrap:wrap;} }
 /* ---- responsive ---- */
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:var(--shadow-lg);width:264px;}
@@ -404,7 +498,7 @@ body.viewer-open{overflow:hidden;}
   .modal{padding:20px;}
 }
 @media(max-width:560px){ .grid-4{grid-template-columns:repeat(2,minmax(0,1fr));} .kpi .num{font-size:22px;} .page-head{align-items:flex-start;} }
-@media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important;} }
+@media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important;} ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important;} }
 </style>
 </head>
 <body>
@@ -422,8 +516,8 @@ body.viewer-open{overflow:hidden;}
     <nav class="side-nav" id="sideNav"></nav>
     <div class="side-foot">
       <div class="theme-toggle" id="themeToggle">
-        <button type="button" data-mode="light" onclick="setTheme('light')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Светлая</button>
-        <button type="button" data-mode="dark" onclick="setTheme('dark')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Тёмная</button>
+        <button type="button" data-mode="light" onclick="setTheme('light', event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Светлая</button>
+        <button type="button" data-mode="dark" onclick="setTheme('dark', event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Тёмная</button>
       </div>
     </div>
   </aside>
@@ -699,7 +793,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true,
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
@@ -722,15 +816,22 @@ function saveSettings(patch){
    TOASTS / NOTIFICATIONS
    ========================================================= */
 let notifLog = [];
-function toast(msg){
+function toast(msg, opts){
+  opts = opts || {};
   notifLog.unshift({msg, ts:Date.now()});
   notifLog = notifLog.slice(0,20);
   document.getElementById('notifDot').style.display = 'block';
   const el = document.createElement('div');
   el.className = 'toast';
-  el.textContent = msg;
+  const text = document.createElement('span'); text.textContent = msg; el.appendChild(text);
+  const remove = ()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 220); };
+  if(opts.action){
+    const b = document.createElement('button'); b.className = 'toast-action'; b.textContent = opts.action.label;
+    b.onclick = ()=>{ remove(); opts.action.fn(); };
+    el.appendChild(b);
+  }
   document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>el.remove(), 4200);
+  setTimeout(remove, opts.duration || 4200);
 }
 function toggleNotifCenter(){
   document.getElementById('notifDot').style.display = 'none';
@@ -738,6 +839,122 @@ function toggleNotifCenter(){
   openModal(`<h3>Уведомления</h3><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;">${
     notifLog.map(n=>`<div style="border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12.5px;">${esc(n.msg)}<div style="color:var(--text-faint);font-size:11px;margin-top:3px;">${new Date(n.ts).toLocaleTimeString('ru-RU')}</div></div>`).join('')
   }</div><div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Закрыть</button></div>`);
+}
+
+/* =========================================================
+   DIALOGS — in-app replacements for confirm()/prompt()
+   ========================================================= */
+// Separate root above modals, the detail panel and the screenshot viewer, so a confirmation
+// can be asked from inside any of them without closing what's underneath.
+function uiDialog(inner, onMount){
+  return new Promise(resolve=>{
+    let root = document.getElementById('dialogRoot');
+    if(!root){ root = document.createElement('div'); root.id = 'dialogRoot'; document.body.appendChild(root); }
+    const prevFocus = document.activeElement;
+    root.innerHTML = `<div class="dialog-bg"><div class="dialog" role="dialog" aria-modal="true">${inner}</div></div>`;
+    const close = val=>{ root.innerHTML = ''; document.removeEventListener('keydown', onKey, true); if(prevFocus && prevFocus.focus) try{ prevFocus.focus(); }catch(e){} resolve(val); };
+    const onKey = e=>{
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(null); }
+      else if(e.key==='Enter' && !(e.target && e.target.tagName==='TEXTAREA')){ e.preventDefault(); e.stopPropagation(); root.querySelector('[data-ok]').click(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    root.querySelector('.dialog-bg').addEventListener('mousedown', e=>{ if(e.target.classList.contains('dialog-bg')) close(null); });
+    root.querySelectorAll('[data-cancel]').forEach(b=>b.onclick = ()=>close(null));
+    onMount(root, close);
+  });
+}
+function uiConfirm(o){
+  o = typeof o==='string' ? {title:o} : o;
+  return uiDialog(`
+    ${o.danger!==false||o.icon?`<div class="dialog-ic ${o.danger!==false?'danger':''}">${icon(o.icon||'trash',20)}</div>`:''}
+    <h3>${esc(o.title)}</h3>${o.text?`<div class="dialog-text">${o.text}</div>`:''}
+    <div class="modal-actions"><button class="btn secondary" data-cancel>${esc(o.cancelText||'Отмена')}</button><button class="btn ${o.danger!==false?'danger-solid':''}" data-ok>${esc(o.okText||'Удалить')}</button></div>`,
+    (root, close)=>{ const ok = root.querySelector('[data-ok]'); ok.onclick = ()=>close(true); ok.focus(); }).then(v=>v===true);
+}
+function uiPrompt(o){
+  return uiDialog(`<h3>${esc(o.title)}</h3>${o.text?`<div class="dialog-text">${o.text}</div>`:''}
+    <label class="field" style="margin-top:14px;">${esc(o.label||'')}<input type="text" id="uiPromptInput" value="${esc(o.value||'')}" placeholder="${esc(o.placeholder||'')}"></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>${esc(o.okText||'Сохранить')}</button></div>`,
+    (root, close)=>{ const inp = root.querySelector('#uiPromptInput'); root.querySelector('[data-ok]').onclick = ()=>close(inp.value); inp.focus(); inp.select(); })
+    .then(v=> v==null ? null : String(v).trim());
+}
+
+/* ---------- undo for deletions ----------
+   Every delete in the app replaces table arrays with filtered copies (dbSave/dbRemove), so keeping
+   the previous array references is enough to put everything back. */
+function snapshotTables(tables){
+  const snap = {};
+  tables.forEach(t=>{ snap[t] = (DB[t]||[]).slice(); });
+  return snap;
+}
+function restoreSnapshot(snap){ Object.keys(snap).forEach(t=>dbSave(t, snap[t])); }
+function toastUndo(msg, snap, afterUndo){
+  toast(msg, {duration:8000, action:{label:'Отменить', fn:()=>{
+    restoreSnapshot(snap);
+    toast('Восстановлено');
+    if(afterUndo) afterUndo(); else router();
+  }}});
+}
+
+/* =========================================================
+   BACKUP — the whole store as one JSON file
+   ========================================================= */
+const BACKUP_KEY = 'lqa_last_backup';
+function lastBackupAt(){ try{ return +localStorage.getItem(BACKUP_KEY) || 0; }catch(e){ return 0; } }
+function dataIsEmpty(){ return !dbList('projects').length && !dbList('glossaries').length; }
+function backupStats(){
+  const tables = Object.keys(DB).filter(t=>Array.isArray(DB[t]));
+  let bytes = 0; tables.forEach(t=>{ try{ bytes += JSON.stringify(DB[t]).length; }catch(e){} });
+  return {tables, bytes};
+}
+function fmtBytes(n){ return n>1048576 ? (n/1048576).toFixed(1)+' МБ' : Math.max(1,Math.round(n/1024))+' КБ'; }
+function downloadBackup(){
+  const payload = {app:'lqa-hub', version:1, exportedAt:nowISO(), tables:{}};
+  Object.keys(DB).forEach(t=>{ if(Array.isArray(DB[t])) payload.tables[t] = DB[t]; });
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'lqa-hub-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  try{ localStorage.setItem(BACKUP_KEY, String(Date.now())); }catch(e){}
+  toast('Резервная копия скачана — храни файл в надёжном месте (Google Диск, папка команды)');
+  if((location.hash||'#/')==='#/' || location.hash.startsWith('#/settings')) router();
+}
+function pickBackupFile(){
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = ()=>{ if(inp.files[0]) restoreBackupFromFile(inp.files[0]); };
+  inp.click();
+}
+async function restoreBackupFromFile(file){
+  let data;
+  try{ data = JSON.parse(await file.text()); }catch(e){ toast('Это не файл резервной копии LQA Hub'); return; }
+  if(!data || data.app!=='lqa-hub' || !data.tables || typeof data.tables!=='object'){ toast('Это не файл резервной копии LQA Hub'); return; }
+  const t = data.tables;
+  const n = k=>(t[k]||[]).length;
+  const ok = await uiConfirm({title:'Восстановить из резервной копии?', okText:'Восстановить', icon:'upload',
+    text:`Копия от <b>${esc(fmtDate(data.exportedAt))}</b>: ${n('projects')} проектов, ${n('rows').toLocaleString('ru-RU')} строк, ${n('issues').toLocaleString('ru-RU')} проблем, ${n('visualShots')} скриншотов.<br><br>Всё, что сейчас есть в платформе, заменится содержимым копии. Если сомневаешься — сначала скачай копию текущих данных.`});
+  if(!ok) return;
+  const before = snapshotTables(Object.keys(DB));
+  Object.keys(DB).forEach(k=>{ if(!(k in t)) dbSave(k, []); });
+  Object.keys(t).forEach(k=>{ if(Array.isArray(t[k])) dbSave(k, t[k]); });
+  getSettings();
+  issuesPageState = {};
+  toastUndo('Данные восстановлены из копии', before, ()=>{ issuesPageState = {}; router(); });
+  location.hash = '#/';
+  router();
+}
+function backupCardHtml(){
+  const last = lastBackupAt(); const st = backupStats();
+  return `<div class="card" id="backupCard">
+    <div class="row between" style="align-items:flex-start;">
+      <div style="min-width:0;"><h3 style="margin-bottom:4px;">Данные и резервная копия</h3>
+        <div class="hint" style="margin:0;max-width:620px;">Все данные хранятся только в этом браузере. Если очистить данные сайта или открыть платформу на другом компьютере, их не будет — поэтому время от времени скачивай резервную копию. Из неё же можно перенести всё на другой компьютер.</div>
+        <div class="row" style="gap:18px;margin-top:12px;font-size:13px;color:var(--text-soft);">
+          <span>Объём данных: <b style="color:var(--text);">${fmtBytes(st.bytes)}</b></span>
+          <span>Последняя копия: <b style="color:${last && Date.now()-last<7*864e5?'var(--ok)':'var(--high)'};">${last?timeAgo(last):'ещё не делалась'}</b></span>
+        </div></div>
+      <div class="row"><button class="btn" onclick="downloadBackup()">${icon('download',15)}Скачать копию</button><button class="btn secondary" onclick="pickBackupFile()">${icon('upload',15)}Восстановить</button></div>
+    </div>
+  </div>`;
 }
 
 /* =========================================================
@@ -775,6 +992,17 @@ function looksLikeTranslatableText(str){
   const stripped = str.replace(new RegExp(VAR_RE.source, VAR_RE.flags), ' ');
   const words = stripped.match(/\p{L}+/gu) || [];
   return words.some(w => w.length>=4 || (w.length>=2 && /\p{Ll}/u.test(w)));
+}
+// How many plural forms gettext expects per language (nplurals). A file's own Plural-Forms
+// header wins over this table; languages missing here are only checked against the header.
+const PLURAL_COUNTS = {ru:3, uk:3, be:3, kk:2, uz:2, ky:2, tg:2, hy:2, ka:2, az:2, en:2, am:2, sw:2, tr:2, fr:2, zh:1, ko:1, ar:6};
+function baseLang(code){ return String(code||'').toLowerCase().split(/[-_]/)[0]; }
+// Currency each market shows prices in — a leftover ₽ in, say, the Kazakh UI is almost always a bug
+const LOCALE_CURRENCY = {kk:'₸ (тенге)', uz:'сум', ky:'сом', hy:'֏ (драм)', ka:'₾ (лари)', az:'₼ (манат)', tg:'сомони', be:'Br (белорусский рубль)', en:'валюта рынка', zh:'валюта рынка', tr:'₺'};
+const GUILLEMET_LANGS = ['ru','kk','ky','be','tg','uz','az','hy','uk'];
+function parseDntTerms(text){ return String(text||'').split(/[\n,;]+/).map(t=>t.trim()).filter(t=>t.length>1); }
+function hasWholeTerm(text, term){
+  return new RegExp('(?<![\\p{L}\\p{N}])'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])', 'u').test(text||'');
 }
 const REBRAND_TERMS = ['WB','ВБ','RWB','РВБ','Wildberries','Вайлдберриз'];
 const REBRAND_LANGUAGES = ['az']; // languages currently following the WB→N11 rebrand rule
@@ -921,13 +1149,22 @@ function tokenizePoBlock(lines){
     msgidIdx = idx; msgid = extractQuoted(lines[idx]); idx++;
     while(lines[idx] && isContinuationLine(lines[idx])){ msgid += extractQuoted(lines[idx]); idx++; }
   }
-  if(lines[idx] && lines[idx].startsWith('msgid_plural')){ idx++; while(lines[idx] && isContinuationLine(lines[idx])) idx++; }
-  let msgstrIdx=-1, msgstr='';
-  if(lines[idx] && /^msgstr(\[\d+\])?\s/.test(lines[idx])){
-    msgstrIdx = idx; msgstr = extractQuoted(lines[idx]); idx++;
-    while(lines[idx] && isContinuationLine(lines[idx])){ msgstr += extractQuoted(lines[idx]); idx++; }
+  let msgidPlural = null;
+  if(lines[idx] && lines[idx].startsWith('msgid_plural')){
+    msgidPlural = extractQuoted(lines[idx]); idx++;
+    while(lines[idx] && isContinuationLine(lines[idx])){ msgidPlural += extractQuoted(lines[idx]); idx++; }
   }
-  return {msgctxt, msgidIdx, msgid, msgstrIdx, msgstr};
+  let msgstrIdx=-1, msgstr='';
+  const forms = [];
+  // plural entries carry msgstr[0], msgstr[1]… — keep every form, not just the first
+  while(lines[idx] && /^msgstr(\[\d+\])?\s/.test(lines[idx])){
+    if(msgstrIdx<0) msgstrIdx = idx;
+    let val = extractQuoted(lines[idx]); idx++;
+    while(lines[idx] && isContinuationLine(lines[idx])){ val += extractQuoted(lines[idx]); idx++; }
+    forms.push(val);
+  }
+  msgstr = forms[0] || '';
+  return {msgctxt, msgidIdx, msgid, msgidPlural, msgstrIdx, msgstr, forms};
 }
 function parseTranslationFile(filename, text){
   const lower = filename.toLowerCase();
@@ -939,16 +1176,21 @@ function parsePoText(text){
   const normalized = text.replace(/\r\n/g,'\n');
   const blocks = normalized.split(/\n\s*\n/);
   const entries = [];
+  let headerPlurals = 0;
   blocks.forEach(blockText=>{
     if(!blockText.trim()) return;
     const lines = blockText.split('\n');
     const isObsolete = lines.some(l=>l.trim().startsWith('#~'));
     const p = tokenizePoBlock(lines);
     const isHeader = p.msgidIdx>=0 && p.msgid==='' && !p.msgctxt;
-    if(p.msgidIdx>=0 && p.msgstrIdx>=0 && !isObsolete && !isHeader){
-      entries.push({key:p.msgctxt||'', source:p.msgid, target:p.msgstr});
+    if(isHeader){ const m = /nplurals\s*=\s*(\d+)/.exec(p.msgstr); if(m) headerPlurals = +m[1]; return; }
+    if(p.msgidIdx>=0 && p.msgstrIdx>=0 && !isObsolete){
+      const en = {key:p.msgctxt||'', source:p.msgid, target:p.msgstr};
+      if(p.msgidPlural!=null){ en.sourcePlural = p.msgidPlural; en.targetForms = p.forms; }
+      entries.push(en);
     }
   });
+  if(headerPlurals) entries.forEach(en=>{ if(en.targetForms) en.nplurals = headerPlurals; });
   return entries;
 }
 
@@ -961,6 +1203,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const issues = dbList('issues').filter(i=>!rowIds.includes(i.rowId) || i.manual); // keep manual issues, drop old auto issues for these rows
   const allRows = dbList('rows');
   const rowsById = {}; allRows.forEach(r=>{ rowsById[r.id]=r; });
+  const dntTerms = parseDntTerms(s.dntTerms);
   const CHUNK = 1500;
   for(let start=0; start<rowIds.length; start+=CHUNK){
     const chunk = rowIds.slice(start, start+CHUNK);
@@ -1019,6 +1262,36 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
         const found = findRebrandingTerms(tgt);
         if(found.length) push('Ребрендинг','Высокая','В переводе остались старые упоминания бренда, должно быть N11: '+found.map(f=>f.matched).join(', '),
           {highlightField:'target', highlightText:found[0].matched, expectedText:'N11', matchType:'rebrand', confidence:'high'});
+      }
+      const lang = baseLang(r.languageCode);
+      if(s.checkPlurals && r.targetForms){
+        const need = r.nplurals || PLURAL_COUNTS[lang];
+        if(need && r.targetForms.length!==need) push('Множественное число','Высокая','Форм множественного числа '+r.targetForms.length+', а для этого языка нужно '+need+(r.nplurals?' (по заголовку файла)':''));
+        r.targetForms.forEach((f,i)=>{
+          if(i===0) return; // form 0 is the row's own target and goes through every check above
+          if(!String(f||'').trim()){ push('Множественное число','Критическая','Не заполнена форма №'+(i+1)+' множественного числа'); return; }
+          const {missing, extra} = diffMultiset(extractAll(r.sourcePlural||src, VAR_RE), extractAll(f, VAR_RE));
+          if(missing.length) push('Множественное число','Высокая','В форме №'+(i+1)+' потеряна переменная: '+missing.join(', '));
+          if(extra.length) push('Множественное число','Высокая','В форме №'+(i+1)+' лишняя переменная: '+extra.join(', '));
+          const tagDiff = diffMultiset(extractTagsNormalized(r.sourcePlural||src), extractTagsNormalized(f));
+          if(tagDiff.missing.length || tagDiff.extra.length) push('Множественное число','Высокая','В форме №'+(i+1)+' не совпадает разметка');
+        });
+      }
+      if(s.checkLocale){
+        let m;
+        if(lang!=='ru' && (m = tgt.match(/₽|(?<![\p{L}])руб\.?(?![\p{L}])/u)) && LOCALE_CURRENCY[lang])
+          push('Формат под страну','Средняя','В переводе осталась валюта «'+m[0]+'» — для этого языка обычно '+LOCALE_CURRENCY[lang], {highlightField:'target', highlightText:m[0]});
+        if(GUILLEMET_LANGS.includes(lang) && /«[^»]*»/.test(src) && (m = tgt.match(/"[^"]+"/)))
+          push('Формат под страну','Низкая','Прямые кавычки вместо «ёлочек», как в исходном тексте', {highlightField:'target', highlightText:m[0], expectedText:'«'+m[0].slice(1,-1)+'»'});
+        if(lang==='en' && (m = tgt.match(/«[^»]*»/)))
+          push('Формат под страну','Низкая','«Ёлочки» в английском тексте — принято “…” или "…"', {highlightField:'target', highlightText:m[0]});
+      }
+      if(s.checkDnt && dntTerms.length){
+        dntTerms.forEach(term=>{
+          if(REBRAND_LANGUAGES.includes(lang) && REBRAND_TERMS.some(b=>b.toLowerCase()===term.toLowerCase())) return; // rebrand rule owns these
+          if(hasWholeTerm(src, term) && !hasWholeTerm(tgt, term))
+            push('Не переводить','Средняя','«'+term+'» из списка «Не переводить» пропал из перевода или переведён', {highlightField:'source', highlightText:term, expectedText:term});
+        });
       }
     });
     if(onProgress) onProgress(Math.min(start+CHUNK, rowIds.length), rowIds.length, 'tech');
@@ -1233,6 +1506,9 @@ function checkSettingsFieldsHtml(prefix, collapsed){
     <label class="checkrow"><input type="checkbox" id="${prefix}Consistency" ${s.checkConsistency?'checked':''}> Согласованность между папками</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Glossary" ${s.checkGlossary?'checked':''}> Соответствие глоссарию</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Rebranding" ${s.checkRebranding?'checked':''}> WB→N11 (только AZ)</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Plurals" ${s.checkPlurals?'checked':''}> Формы множественного числа</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Locale" ${s.checkLocale?'checked':''}> Формат под страну (валюта, кавычки)</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Dnt" ${s.checkDnt?'checked':''}> Бренды «Не переводить»</label>
   </div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
@@ -1243,7 +1519,8 @@ function checkSettingsFieldsHtml(prefix, collapsed){
 const CHECK_TYPE_LABELS = {
   checkVars:'Переменные', checkTags:'Разметка', checkBreaks:'Перенос строки', checkSpaces:'Пробелы',
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
-  checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг'
+  checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
+  checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить'
 };
 // After an upload that ran with only SOME checks enabled (e.g. only "Ребрендинг"), jumping
 // to the unfiltered Строки view would bury the handful of real findings under thousands of
@@ -1271,6 +1548,9 @@ function readCheckSettingsOverride(prefix){
     checkConsistency: get('Consistency').checked,
     checkGlossary: get('Glossary').checked,
     checkRebranding: get('Rebranding').checked,
+    checkPlurals: get('Plurals').checked,
+    checkLocale: get('Locale').checked,
+    checkDnt: get('Dnt').checked,
   };
   if(get('SaveDefault') && get('SaveDefault').checked) saveSettings(override);
   return override;
@@ -1397,7 +1677,17 @@ const NAV = [
 ];
 // UI theme is a per-browser display preference, not app data, so it's kept outside the
 // IndexedDB-backed store (localStorage is fine here and doesn't touch the real data layer).
-function setTheme(mode){
+// with a click event: the new theme spreads as a circle from the button (View Transitions)
+function setTheme(mode, ev){
+  const cur = document.documentElement.getAttribute('data-theme');
+  if(ev && cur && cur!==mode && document.startViewTransition && !reduceMotion()){
+    const x = ev.clientX, y = ev.clientY, r = Math.hypot(Math.max(x, innerWidth-x), Math.max(y, innerHeight-y));
+    document.documentElement.classList.add('theme-vt');
+    const vt = document.startViewTransition(()=>setTheme(mode));
+    vt.ready.then(()=>document.documentElement.animate({clipPath:[`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`]}, {duration:520, easing:'cubic-bezier(.2,.8,.3,1)', pseudoElement:'::view-transition-new(root)'}));
+    vt.finished.finally(()=>document.documentElement.classList.remove('theme-vt'));
+    return;
+  }
   document.documentElement.setAttribute('data-theme', mode);
   try{ localStorage.setItem('lqa_theme', mode); }catch(e){}
   document.querySelectorAll('#themeToggle button').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
@@ -1503,50 +1793,133 @@ function weeklyTrendBars(issues){
     </div>`).join('')}
   </div>`;
 }
+function ringSvg(pct, size, stroke, color){
+  size = size||56; stroke = stroke||6;
+  const r = (size-stroke)/2, c = 2*Math.PI*r, off = c*(1-Math.max(0,Math.min(1,pct)));
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="${stroke}"/><circle class="ring-val" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}" style="--c:${c.toFixed(2)}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>`;
+}
+function qualityColor(q){ return q>=.95 ? 'var(--ok)' : q>=.85 ? '#65A30D' : q>=.7 ? 'var(--med)' : 'var(--crit)'; }
+const isOpenIssue = i => i.status==='Новая' || i.status==='На проверке';
+// per-language quality: share of that language's strings with no open problem
+function languageStats(){
+  const rows = dbList('rows'), issues = dbList('issues');
+  const by = {};
+  const get = code => by[code] = by[code] || {code, rows:0, rowsWithOpen:new Set(), open:0, crit:0, high:0, med:0, low:0, resolved:0, week:[0,0,0,0,0,0,0], visual:0};
+  rows.forEach(r=>{ if(r.languageCode) get(r.languageCode).rows++; });
+  const days = []; for(let d=6; d>=0; d--){ const x = new Date(); x.setDate(x.getDate()-d); days.push(x.toDateString()); }
+  issues.forEach(i=>{
+    if(!i.languageCode) return;
+    const st = get(i.languageCode);
+    const di = days.indexOf(new Date(i.createdAt).toDateString()); if(di>=0) st.week[di]++;
+    if(i.visual) st.visual++;
+    if(isOpenIssue(i)){
+      st.open++; if(i.rowId) st.rowsWithOpen.add(i.rowId);
+      if(i.severity==='Критическая') st.crit++; else if(i.severity==='Высокая') st.high++; else if(i.severity==='Средняя') st.med++; else st.low++;
+    } else st.resolved++;
+  });
+  return Object.values(by).map(st=>Object.assign(st, {quality: st.rows ? 1 - st.rowsWithOpen.size/st.rows : (st.open?0:1)}))
+    .sort((a,b)=> b.crit-a.crit || b.open-a.open || b.rows-a.rows);
+}
+function openIssuesForLanguage(code){
+  issuesPageState['issuesRoot'] = {page:1, selected:new Set(), openPanel:null, quickFilter:'all',
+    filters:{proj:new Set(), comp:new Set(), file:new Set(), lang:new Set([code]), sev:new Set(), status:new Set(['Новая','На проверке']), type:new Set()}};
+  location.hash = '#/issues';
+}
+function greeting(){ const h = new Date().getHours(); return h<5 ? 'Доброй ночи' : h<12 ? 'Доброе утро' : h<18 ? 'Добрый день' : 'Добрый вечер'; }
 function renderDashboard(el){
   setCrumbs(['Главная']);
   const projects = dbList('projects');
   const rows = dbList('rows');
   const issues = dbList('issues');
-  const langs = new Set(rows.map(r=>r.languageCode));
-  const comps = dbList('components');
-  const crit = issues.filter(i=>i.severity==='Критическая').length;
-  const review = issues.filter(i=>i.status==='На проверке').length;
-  const fp = issues.filter(i=>i.status==='Ложное срабатывание').length;
-  const runs = dbList('runs').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,8);
-
   if(!projects.length){
     el.innerHTML = `<div class="card" style="margin-top:8px;">${emptyState({img:IMG.EMPTY_BOXES, title:'Добро пожаловать в LQA Hub', text:'Создай проект, добавь папки и загрузи .po файлы — проверка локализации запустится автоматически.', action:'<button class="btn" onclick="openProjectModal()">'+icon('plus',16)+'Создать первый проект</button>'})}</div>`;
     return;
   }
-
+  const open = issues.filter(isOpenIssue);
+  const crit = open.filter(i=>i.severity==='Критическая').length;
+  const weekAgo = Date.now()-7*864e5, twoWeeksAgo = Date.now()-14*864e5;
+  const foundWeek = issues.filter(i=>+new Date(i.createdAt)>=weekAgo).length;
+  const foundPrevWeek = issues.filter(i=>{ const t=+new Date(i.createdAt); return t>=twoWeeksAgo && t<weekAgo; }).length;
+  const decidedWeek = issues.filter(i=>!isOpenIssue(i) && (i.history||[]).some(h=>h.ts && +new Date(h.ts)>=weekAgo && ['Подтвердить','Опровергнуть','Исправлено','Ложное срабатывание'].includes(h.action))).length;
+  const rowsWithOpen = new Set(open.map(i=>i.rowId).filter(Boolean));
+  const quality = rows.length ? 1 - rowsWithOpen.size/rows.length : 1;
+  const langs = languageStats();
+  const runs = dbList('runs').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
+  const sevRank = {'Критическая':0,'Высокая':1,'Средняя':2,'Низкая':3};
+  const attention = open.slice().sort((a,b)=>(sevRank[a.severity]??9)-(sevRank[b.severity]??9) || new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
   const bySeverity = {'Критическая':0,'Высокая':0,'Средняя':0,'Низкая':0};
-  const byStatus = {};
-  issues.forEach(i=>{ bySeverity[i.severity]=(bySeverity[i.severity]||0)+1; byStatus[i.status]=(byStatus[i.status]||0)+1; });
+  open.forEach(i=>{ bySeverity[i.severity]=(bySeverity[i.severity]||0)+1; });
   const sevColors = {'Критическая':'var(--crit)','Высокая':'var(--high)','Средняя':'var(--med)','Низкая':'var(--low)'};
-  const statusColors = {'Новая':'var(--primary)','На проверке':'#A78BFA','Принята':'var(--ok)','Принята после исправления':'#86EFAC','Отклонена':'var(--text-faint)','Ложное срабатывание':'#C4B5FD'};
+  const delta = foundWeek - foundPrevWeek;
+  const last = lastBackupAt();
+  const needBackup = !last || Date.now()-last > 7*864e5;
 
   el.innerHTML = `
-    <div class="page-head"><div><h1 class="page-title">Главная</h1><div class="page-sub">${projects.length} ${plural(projects.length,'проект','проекта','проектов')} · ${langs.size} ${plural(langs.size,'язык','языка','языков')} · ${comps.length} ${plural(comps.length,'папка','папки','папок')}</div></div>
-      <button class="btn" onclick="openProjectModal()">${icon('plus',16)}Новый проект</button></div>
-    <div class="grid grid-4" style="margin-bottom:16px;">
-      <div class="kpi"><div class="num">${rows.length.toLocaleString('ru-RU')}</div><div class="lbl">Проверенных строк</div></div>
-      <div class="kpi"><div class="row between" style="flex-wrap:nowrap;"><div class="num">${issues.length.toLocaleString('ru-RU')}</div>${miniSparkline(last7DayCounts(issues,'createdAt'),'var(--primary)')}</div><div class="lbl">Найдено проблем</div></div>
-      <div class="kpi crit"><div class="row between" style="flex-wrap:nowrap;"><div class="num">${crit}</div>${miniSparkline(last7DayCounts(issues.filter(i=>i.severity==='Критическая'),'createdAt'),'var(--crit)')}</div><div class="lbl">Критических</div></div>
-      <div class="kpi high"><div class="num">${review}</div><div class="lbl">На проверке${fp?` · <span title="Ложных срабатываний">${fp} ложн.</span>`:''}</div></div>
+    <section class="dash-hero">
+      <div class="dash-hero-text">
+        <div class="dash-hello">${greeting()} 👋</div>
+        <h1>${open.length ? `${open.length.toLocaleString('ru-RU')} ${plural(open.length,'проблема ждёт','проблемы ждут','проблем ждут')} решения` : 'Все проблемы разобраны'}</h1>
+        <p>${crit ? `<b>${crit}</b> ${plural(crit,'критическая','критические','критических')} — начни с них. ` : ''}${langs.length} ${plural(langs.length,'язык','языка','языков')} · ${projects.length} ${plural(projects.length,'проект','проекта','проектов')} · ${rows.length.toLocaleString('ru-RU')} ${plural(rows.length,'строка','строки','строк')}</p>
+        <div class="row" style="gap:8px;margin-top:18px;">
+          <a class="btn on-dark" href="#/issues">${icon('alertTriangle',15)}К проблемам</a>
+          <a class="btn on-dark" href="#/visual">${icon('image',15)}Визуальная проверка</a>
+          <button class="btn on-dark" onclick="openProjectModal()">${icon('plus',15)}Проект</button>
+        </div>
+      </div>
+      <div class="dash-hero-ring" title="Доля строк без открытых проблем">
+        ${ringSvg(quality, 132, 12, '#fff')}
+        <div><b data-count="${Math.round(quality*100)}" data-suffix="%">${Math.round(quality*100)}%</b><span>качество</span></div>
+      </div>
+    </section>
+    ${needBackup ? `<div class="notice">${icon('download',16)}<span>${last?'Резервной копии не было '+timeAgo(last).replace(' назад','')+'.':'Резервная копия ещё не делалась.'} Все данные хранятся только в этом браузере — скачай копию, это 2 секунды.</span><button class="btn sm" onclick="downloadBackup()">Скачать копию</button></div>` : ''}
+    <div class="grid grid-4 stagger" style="margin-bottom:24px;">
+      <div class="kpi"><div class="kpi-ic">${icon('bookOpen',18)}</div><div class="num" data-count="${rows.length}">${rows.length.toLocaleString('ru-RU')}</div><div class="lbl">Проверено строк</div></div>
+      <div class="kpi"><div class="kpi-ic">${icon('alertTriangle',18)}</div><div class="row between" style="flex-wrap:nowrap;align-items:flex-end;"><div class="num" data-count="${foundWeek}">${foundWeek}</div>${delta?`<span class="delta ${delta>0?'up':'down'}">${delta>0?'▲':'▼'} ${Math.abs(delta)}</span>`:''}</div><div class="lbl">Найдено за 7 дней${foundPrevWeek||delta?' <span style="opacity:.7;">· было '+foundPrevWeek+'</span>':''}</div></div>
+      <div class="kpi crit"><div class="kpi-ic">${icon('alertTriangle',18)}</div><div class="num" data-count="${crit}">${crit}</div><div class="lbl">Критических открыто</div></div>
+      <div class="kpi ok"><div class="kpi-ic">${icon('check',18)}</div><div class="num" data-count="${decidedWeek}">${decidedWeek}</div><div class="lbl">Решено за 7 дней</div></div>
     </div>
-    <div class="grid grid-3" style="margin-bottom:16px;align-items:stretch;">
-      <div class="card" style="margin:0;"><h3>По важности</h3>${donutChart(bySeverity, sevColors)}</div>
-      <div class="card" style="margin:0;"><h3>По статусу</h3>${donutChart(byStatus, statusColors)}</div>
-      <div class="card" style="margin:0;"><h3>Найдено за 7 дней</h3>${weeklyTrendBars(issues)}</div>
+
+    <div class="row between" style="margin-bottom:12px;"><h2 class="section-title">По языкам</h2><span class="hint" style="margin:0;">Качество — доля строк без открытых проблем. Нажми на язык, чтобы открыть его проблемы.</span></div>
+    ${langs.length ? `<div class="lang-grid stagger">${langs.map(l=>{
+      const total = l.crit+l.high+l.med+l.low;
+      const seg = (n,c)=> n ? `<i style="flex:${n};background:${c};" title="${n}"></i>` : '';
+      const maxW = Math.max(1, ...l.week);
+      return `<button type="button" class="lang-card" onclick="openIssuesForLanguage('${esc(l.code)}')">
+        <div class="lang-card-head">
+          <span class="lang-flag">${languageFlag(l.code)}</span>
+          <div style="min-width:0;flex:1;text-align:left;"><div class="lang-name">${esc(languageLabel(l.code))}</div><div class="lang-code">${esc(l.code)} · ${l.rows.toLocaleString('ru-RU')} ${plural(l.rows,'строка','строки','строк')}</div></div>
+          <div class="lang-ring">${ringSvg(l.quality, 48, 5, qualityColor(l.quality))}<b>${Math.round(l.quality*100)}</b></div>
+        </div>
+        <div class="lang-bar">${total ? seg(l.crit,'var(--crit)')+seg(l.high,'var(--high)')+seg(l.med,'var(--med)')+seg(l.low,'var(--low)') : '<i style="flex:1;background:var(--ok);opacity:.35;"></i>'}</div>
+        <div class="lang-stats">
+          <div><b>${l.open}</b>открыто</div>
+          <div><b style="${l.crit?'color:var(--crit)':''}">${l.crit}</b>критич.</div>
+          <div><b>${l.resolved}</b>решено</div>
+          <div class="lang-spark" title="Найдено за 7 дней">${l.week.map(v=>`<i style="height:${v?Math.max(3,v/maxW*22):2}px;${v?'':'opacity:.35;'}"></i>`).join('')}</div>
+        </div>
+      </button>`;
+    }).join('')}</div>` : `<div class="card">${emptyState({icon:'globe', compact:true, title:'Пока нет данных по языкам', text:'Загрузи .po файлы в проект — здесь появится качество по каждому языку.'})}</div>`}
+
+    <div class="grid dash-split" style="margin-top:24px;">
+      <div class="card" style="margin:0;">
+        <div class="row between" style="margin-bottom:10px;"><h3 style="margin:0;">Требует внимания</h3><a href="#/issues" class="link">Все проблемы →</a></div>
+        ${attention.length ? `<div class="attn">${attention.map(i=>{ const r = i.rowId ? dbGet('rows', i.rowId) : null; const p = dbGet('projects', i.projectId);
+          return `<button type="button" class="attn-item" onclick="openIssueDetail('${i.id}')">
+            <span class="attn-dot sev-${severityClass(i.severity)}"></span>
+            <div style="min-width:0;flex:1;text-align:left;"><div class="attn-title">${esc(i.text)}</div>
+              <div class="attn-meta">${languageFlag(i.languageCode)} ${esc(i.languageCode)} · ${esc(p?p.name:'—')}${r&&r.key?' · <span class="mono">'+esc(r.key)+'</span>':''}${i.visual?' · скриншот':''}</div></div>
+            <span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span></button>`; }).join('')}</div>`
+          : emptyState({img:IMG.SUCCESS, compact:true, title:'Всё разобрано', text:'Открытых проблем нет.'})}
+      </div>
+      <div class="card" style="margin:0;"><h3>Открытые по важности</h3>${donutChart(bySeverity, sevColors)}
+        <h3 style="margin-top:22px;">Найдено за 7 дней</h3>${weeklyTrendBars(issues)}</div>
     </div>
-    <div class="card">
+
+    <div class="card" style="margin-top:16px;">
       <div class="row between" style="margin-bottom:14px;"><h3 style="margin:0;">Последние проверки</h3><a href="#/runs" class="link">История проверок →</a></div>
-      ${runs.length ? `<div class="table-wrap"><table><thead><tr><th>Проект</th><th>Язык</th><th>Папка</th><th>Строк</th><th>Проблем</th><th>Дата</th><th>Кто</th><th>Статус</th></tr></thead><tbody>
-        ${runs.map(r=>{
-          const p = dbGet('projects', r.projectId), c = dbGet('components', r.componentId);
-          return `<tr class="clickable" onclick="location.hash='#/project/${r.projectId}/quality'"><td class="nowrap" style="font-weight:500;">${esc(p?p.name:'—')}</td><td>${esc(r.languageCode)}</td><td>${folderBadge(c)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td class="nowrap">${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td><td><span class="pill st-accepted">Завершена</span></td></tr>`;
-        }).join('')}
+      ${runs.length ? `<div class="table-wrap"><table><thead><tr><th>Проект</th><th>Язык</th><th>Папка</th><th>Строк</th><th>Проблем</th><th>Когда</th><th>Кто</th></tr></thead><tbody>
+        ${runs.map(r=>{ const p = dbGet('projects', r.projectId), c = dbGet('components', r.componentId);
+          return `<tr class="clickable" onclick="location.hash='#/project/${r.projectId}/quality'"><td class="nowrap" style="font-weight:500;">${esc(p?p.name:'—')}</td><td class="nowrap">${languageFlag(r.languageCode)} ${esc(r.languageCode)}</td><td>${folderBadge(c)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td class="nowrap">${timeAgo(+new Date(r.createdAt))}</td><td>${initialsAvatar(r.runBy)}</td></tr>`; }).join('')}
       </tbody></table></div>` : emptyState({icon:'upload', compact:true, title:'Проверок пока не было', text:'Загрузи первый .po файл в любой проект — результат появится здесь.'})}
     </div>
   `;
@@ -1626,8 +1999,10 @@ function saveProject(id){
   toast(id ? 'Проект обновлён' : 'Проект создан — сразу добавлено '+rec.languages.length+' языков (можно поменять во вкладке «Языки»)');
   location.hash = '#/project/'+rec.id;
 }
-function deleteProject(id){
-  if(!confirm('Удалить проект и все связанные данные (языки, папки, строки, проблемы)?')) return;
+async function deleteProject(id){
+  const p = dbGet('projects', id);
+  if(!await uiConfirm({title:'Удалить проект «'+(p?p.name:'')+'»?', text:'Удалятся папки, строки, проблемы, история проверок и скриншоты проекта. Сразу после удаления можно нажать «Отменить».', okText:'Удалить проект'})) return;
+  const snap = snapshotTables(['projects','components','rows','issues','files','runs','glossaries','visualSessions','visualShots','visualShotImages']);
   dbSave('components', dbList('components').filter(c=>c.projectId!==id));
   dbSave('rows', dbList('rows').filter(r=>r.projectId!==id));
   dbSave('issues', dbList('issues').filter(i=>i.projectId!==id));
@@ -1640,7 +2015,7 @@ function deleteProject(id){
   dbSave('visualShots', dbList('visualShots').filter(x=>!sessIds.has(x.sessionId)));
   dbSave('visualSessions', dbList('visualSessions').filter(x=>!sessIds.has(x.id)));
   dbRemove('projects', id);
-  toast('Проект удалён');
+  toastUndo('Проект удалён', snap, ()=>{ location.hash = '#/project/'+id; router(); });
   location.hash = '#/projects';
 }
 
@@ -1792,7 +2167,7 @@ function renderProjectLanguages(p){
     ${langs.length ? `<div class="row" style="margin-top:16px;gap:8px;">${langs.map(l=>`<span class="chip" style="cursor:default;margin:0;padding-right:6px;">${languageFlag(l.code)} ${esc(l.name)} <span class="hint" style="margin:0;">${esc(l.code)}</span><button type="button" title="Убрать язык" onclick="removeProjectLanguage('${p.id}','${esc(l.code)}')" style="border:none;background:none;color:var(--text-faint);cursor:pointer;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;padding:0;">×</button></span>`).join('')}</div>` : emptyState({img:IMG.LANGUAGES, compact:true, title:'Языков ещё нет', text:'Добавь языки, на которые переводится проект.'})}
   </div>
   <div class="card danger-zone">
-    <div class="row between"><div><h3 style="margin:0 0 4px;">Удалить проект</h3><div class="hint" style="margin:0;">Удалятся все папки, строки, проблемы и история проверок. Отменить нельзя.</div></div>
+    <div class="row between"><div><h3 style="margin:0 0 4px;">Удалить проект</h3><div class="hint" style="margin:0;">Удалятся все папки, строки, проблемы, история проверок и скриншоты. Сразу после удаления можно нажать «Отменить», а надёжнее — заранее скачать резервную копию в Настройках.</div></div>
     <button class="btn danger" onclick="deleteProject('${p.id}')">${icon('trash',15)}Удалить проект</button></div>
   </div>`;
 }
@@ -1884,9 +2259,11 @@ function saveProjectLanguages(projectId){
 }
 function removeProjectLanguage(projectId, code){
   const p = dbGet('projects', projectId);
-  p.languages = (p.languages||[]).filter(l=>l.code!==code);
+  const before = (p.languages||[]).slice();
+  p.languages = before.filter(l=>l.code!==code);
   dbUpsert('projects', p);
   router();
+  toast('Язык «'+languageLabel(code)+'» убран из проекта', {duration:8000, action:{label:'Отменить', fn:()=>{ const q = dbGet('projects', projectId); if(q){ q.languages = before; dbUpsert('projects', q); router(); } }}});
 }
 function renderProjectComponents(p){
   const comps = dbQuery('components', c=>c.projectId===p.id);
@@ -1911,19 +2288,21 @@ function saveComponent(projectId){
   dbUpsert('components', {id:uid(), projectId, name, createdAt:nowISO()});
   closeModal(); toast('Папка создана'); router();
 }
-function renameComponent(id){
+async function renameComponent(id){
   const c = dbGet('components', id);
-  const name = prompt('Новое название папки', c.name);
-  if(name && name.trim()){ c.name = name.trim(); dbUpsert('components', c); router(); }
+  const name = await uiPrompt({title:'Переименовать папку', label:'Название', value:c.name, placeholder:'например: Web, iOS, checkout'});
+  if(name){ c.name = name; dbUpsert('components', c); router(); }
 }
-function deleteComponent(id){
-  if(!confirm('Удалить папку и все её строки/проблемы?')) return;
-  const projectId = dbGet('components', id)?.projectId;
+async function deleteComponent(id){
+  const c0 = dbGet('components', id);
+  if(!await uiConfirm({title:'Удалить папку «'+(c0?c0.name:'')+'»?', text:'Удалятся её строки, файлы и найденные проблемы.', okText:'Удалить папку'})) return;
+  const snap = snapshotTables(['components','rows','issues','files']);
+  const projectId = c0?.projectId;
   dbSave('rows', dbList('rows').filter(r=>r.componentId!==id));
   dbSave('issues', dbList('issues').filter(i=>i.componentId!==id));
   dbSave('files', dbList('files').filter(f=>f.componentId!==id));
   dbRemove('components', id);
-  toast('Папка удалена');
+  toastUndo('Папка удалена', snap);
   location.hash = projectId ? '#/project/'+projectId+'/folders' : '#/projects';
   router();
 }
@@ -2119,6 +2498,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
     const newIdsForThisFile = [];
     entries.forEach(en=>{
       const row = {id:uid(), projectId, componentId, languageCode, fileId:fileRec.id, key:en.key, source:en.source, target:en.target};
+      if(en.targetForms){ row.sourcePlural = en.sourcePlural; row.targetForms = en.targetForms; if(en.nplurals) row.nplurals = en.nplurals; }
       rowsArr.push(row);
       allNewRowIds.push(row.id);
       newIdsForThisFile.push(row.id);
@@ -2295,6 +2675,7 @@ async function handlePoFiles(projectId, items){
     const newIdsForThisFile = [];
     entries.forEach(en=>{
       const row = {id:uid(), projectId, componentId, languageCode, fileId:fileRec.id, key:en.key, source:en.source, target:en.target};
+      if(en.targetForms){ row.sourcePlural = en.sourcePlural; row.targetForms = en.targetForms; if(en.nplurals) row.nplurals = en.nplurals; }
       rowsArr.push(row);
       allNewRowIds.push(row.id);
       newIdsForThisFile.push(row.id);
@@ -2330,6 +2711,13 @@ async function rerunFileCheck(fileId){
   router();
 }
 
+// all plural forms of a row, labelled — used wherever a row's translation is shown in full
+function pluralFormsHtml(r){
+  if(!r || !r.targetForms) return '';
+  const need = r.nplurals || PLURAL_COUNTS[baseLang(r.languageCode)];
+  return `<div><div class="hint">Формы множественного числа · ${r.targetForms.length}${need?' из '+need:''}${r.sourcePlural?` · исходная мн. форма: <span class="mono">${esc(r.sourcePlural)}</span>`:''}</div>
+    <div class="plural-forms">${r.targetForms.map((f,i)=>`<div><span>${i+1}</span><div class="mono">${String(f||'').trim()?highlightTokens(f):'<i style="color:var(--crit);">пусто</i>'}</div></div>`).join('')}</div></div>`;
+}
 function openRowDetail(rowId){
   const r = dbGet('rows', rowId);
   const c = dbGet('components', r.componentId);
@@ -2339,6 +2727,7 @@ function openRowDetail(rowId){
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;">
       <div><div class="hint">Исходный текст</div><div class="mono" style="padding:8px 10px;background:var(--bg);border-radius:7px;">${highlightTokens(r.source)}</div></div>
       <div><div class="hint">Перевод</div><div class="mono" style="padding:8px 10px;background:var(--bg);border-radius:7px;">${highlightTokens(r.target)}</div></div>
+      ${pluralFormsHtml(r)}
     </div>
     <div style="margin-top:14px;"><div class="hint" style="margin-bottom:6px;">Найденные проблемы (${issues.length})</div>
       ${issues.length ? issues.map(i=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
@@ -2503,7 +2892,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   tw.innerHTML = pageIssues.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Важность</th><th>Ключ</th><th>Исходный текст</th><th>Перевод</th><th>Тип</th><th>Проект</th><th>Язык</th><th>Папка</th><th>Статус</th><th>Дедлайн</th><th></th></tr></thead><tbody>
     ${pageIssues.map(i=>{
       const r = dbGet('rows', i.rowId); const proj = dbGet('projects', i.projectId); const comp = dbGet('components', i.componentId);
-      return `<tr class="clickable ${st.selected.has(i.id)?'row-selected':''}" onclick="if(!event.target.closest('input,button,a'))openIssueDetail('${i.id}')">
+      return `<tr class="clickable ${st.selected.has(i.id)?'row-selected':''} ${kbFocusId===i.id?'kb-focus':''}" data-id="${i.id}" data-kind="issue" onclick="if(!event.target.closest('input,button,a')){kbFocusId='${i.id}';kbApplyFocus(false);openIssueDetail('${i.id}');}">
         <td><input type="checkbox" class="${key}_chk" value="${i.id}" ${st.selected.has(i.id)?'checked':''} onchange="toggleOneIssue('${key}', '${i.id}', this.checked, this)"></td>
         <td><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span></td>
         <td class="mono cell-key" title="${esc(r?r.key||'':'')}">${esc(r?r.key||'—':'—')}</td>
@@ -2520,7 +2909,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   <div class="pager"><span>${issues.length} проблем, стр. ${st.page} из ${totalPages}</span>
     <button onclick="issuesPageState['${key}'].page=Math.max(1,${st.page}-1);renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page<=1?'disabled':''}>←</button>
     <button onclick="issuesPageState['${key}'].page=Math.min(${totalPages},${st.page}+1);renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page>=totalPages?'disabled':''}>→</button>
-  </div>` : emptyState({img:IMG.SUCCESS, compact:true, title:'Всё чисто', text:'Для текущего фильтра проблем не найдено.'});
+  </div>${kbHintHtml()}` : emptyState({img:IMG.SUCCESS, compact:true, title:'Всё чисто', text:'Для текущего фильтра проблем не найдено.'});
 
   const masterCb = document.getElementById(key+'_all');
   if(masterCb) masterCb.checked = pageIssues.length>0 && pageIssues.every(i=>st.selected.has(i.id));
@@ -2630,7 +3019,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
         ? rowIssues.slice(0,3).map(i=>`<span class="pill sev-${severityClass(i.severity)}" style="cursor:pointer;margin:1px 3px 1px 0;" onclick="event.stopPropagation();openIssueDetail('${i.id}')" title="${esc(i.type)}">${esc(i.type)}</span>`).join('') + (rowIssues.length>3?`<span class="hint">+${rowIssues.length-3}</span>`:'')
         : '<span class="pill st-accepted">'+icon('check',12)+'ОК</span>';
       const nearestDeadline = rowIssues.map(i=>i.deadline).find(Boolean);
-      return `<tr class="clickable ${st.selected.has(r.id)?'row-selected':''}" onclick="if(!event.target.closest('input,button,a,.pill'))openRowDetail('${r.id}')">
+      return `<tr class="clickable ${st.selected.has(r.id)?'row-selected':''} ${kbFocusId===r.id?'kb-focus':''}" data-id="${r.id}" data-kind="row" onclick="if(!event.target.closest('input,button,a,.pill')){kbFocusId='${r.id}';kbApplyFocus(false);openRowDetail('${r.id}');}">
         <td><input type="checkbox" class="${key}_chk" value="${r.id}" ${st.selected.has(r.id)?'checked':''} onchange="toggleOneIssue('${key}', '${r.id}', this.checked, this)"></td>
         <td class="mono cell-key" title="${esc(r.key||'')}">${esc(r.key||'—')}</td>
         <td>${esc(r.languageCode)}</td>
@@ -2782,7 +3171,11 @@ function generatePoFromRows(rows){
   rows.forEach(r=>{
     if(r.key) out += 'msgctxt "'+escapePoString(r.key)+'"\n';
     out += 'msgid "'+escapePoString(r.source)+'"\n';
-    out += 'msgstr "'+escapePoString(r.target)+'"\n\n';
+    if(r.targetForms){
+      out += 'msgid_plural "'+escapePoString(r.sourcePlural||r.source)+'"\n';
+      r.targetForms.forEach((f,i)=>{ out += 'msgstr['+i+'] "'+escapePoString(i===0 ? r.target : f)+'"\n'; });
+      out += '\n';
+    } else out += 'msgstr "'+escapePoString(r.target)+'"\n\n';
   });
   return out;
 }
@@ -2858,12 +3251,14 @@ function confirmBulkStatus(ids){
 }
 
 /* ---- bulk: delete ---- */
-function bulkDeleteIssues(key){
+async function bulkDeleteIssues(key){
   const ids = getSelectedIssueIds(key);
   if(!ids.length){ toast('Выбери хотя бы одну проблему'); return; }
-  if(!confirm('Удалить '+ids.length+' проблем? Это действие необратимо.')) return;
-  dbSave('issues', dbList('issues').filter(i=>!ids.includes(i.id)));
-  toast('Удалено проблем: '+ids.length);
+  if(!await uiConfirm({title:'Удалить '+ids.length+' '+plural(ids.length,'проблему','проблемы','проблем')+'?', text:'Сразу после удаления можно нажать «Отменить».'})) return;
+  const snap = snapshotTables(['issues']);
+  const idSet = new Set(ids);
+  dbSave('issues', dbList('issues').filter(i=>!idSet.has(i.id)));
+  toastUndo('Удалено проблем: '+ids.length, snap);
   Object.values(issuesPageState).forEach(st=>st.selected && st.selected.clear());
   router();
 }
@@ -2942,6 +3337,8 @@ function detectionSourceLabel(issue){
 }
 function openIssueDetail(issueId){
   const i = dbGet('issues', issueId);
+  if(!i) return;
+  currentDetailIssueId = issueId;
   const r = dbGet('rows', i.rowId);
   const proj = dbGet('projects', i.projectId), comp = dbGet('components', i.componentId);
   const file = r && r.fileId ? dbGet('files', r.fileId) : null;
@@ -2955,7 +3352,7 @@ function openIssueDetail(issueId){
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
       ${i.shotId ? shotCropHtml(i) : ''}
       ${r ? `<div><div class="hint">Источник</div><div class="mono" style="padding:8px 10px;background:var(--bg-2);border-radius:8px;">${renderFieldWithHighlight(r.source, i, 'source')}</div></div>
-      <div><div class="hint">Перевод</div><div class="mono" style="padding:8px 10px;background:var(--bg-2);border-radius:8px;">${renderFieldWithHighlight(r.target, i, 'target')}</div></div>` : ''}
+      <div><div class="hint">Перевод</div><div class="mono" style="padding:8px 10px;background:var(--bg-2);border-radius:8px;">${renderFieldWithHighlight(r.target, i, 'target')}</div></div>${pluralFormsHtml(r)}` : ''}
       ${i.highlightText && i.expectedText ? `<div class="found-expected"><b>${esc(i.highlightText)}</b><span class="arrow">→</span><span class="to">${esc(i.expectedText)}</span></div>` : ''}
       <div><div class="hint">Что не так</div><div style="font-size:13px;margin-top:2px;">${esc(i.text)}</div></div>
       ${i.aiExplanation ? `<div class="hint">Объяснение ИИ: ${esc(i.aiExplanation)}${i.aiConfidence!=null?' · Уверенность ИИ: '+i.aiConfidence+'%':''}</div>` : ''}
@@ -3033,7 +3430,7 @@ function applyFix(issueId){
   const newTarget = document.getElementById('fixTarget').value;
   const comment = document.getElementById('fixComment').value.trim();
   const reviewer = document.getElementById('fixReviewer').value.trim();
-  r.target = newTarget; dbUpsert('rows', r);
+  r.target = newTarget; if(r.targetForms) r.targetForms[0] = newTarget; dbUpsert('rows', r);
   i.status = 'Принята после исправления';
   if(reviewer) i.assignedTo = reviewer;
   i.history.push({ts:nowISO(), action:'Исправлено', comment, oldTarget, newTarget, reviewer: reviewer||null});
@@ -3241,12 +3638,14 @@ function saveGlossaryTerm(glossaryId){
   dbUpsert('glossaryTerms', {id:uid(), glossaryId, term, approved, forbidden, comment, status:'Активен'});
   closeModal(); toast('Термин добавлен'); router();
 }
-function deleteGlossaryTerm(id){ dbRemove('glossaryTerms', id); router(); }
-function deleteGlossary(id){
-  if(!confirm('Удалить глоссарий вместе со всеми терминами?')) return;
+function deleteGlossaryTerm(id){ const snap = snapshotTables(['glossaryTerms']); dbRemove('glossaryTerms', id); router(); toastUndo('Термин удалён', snap); }
+async function deleteGlossary(id){
+  const g = dbGet('glossaries', id);
+  if(!await uiConfirm({title:'Удалить глоссарий «'+(g?g.name:'')+'»?', text:'Удалятся и все его термины.', okText:'Удалить глоссарий'})) return;
+  const snap = snapshotTables(['glossaries','glossaryTerms']);
   dbSave('glossaryTerms', dbList('glossaryTerms').filter(t=>t.glossaryId!==id));
   dbRemove('glossaries', id);
-  toast('Глоссарий удалён');
+  toastUndo('Глоссарий удалён', snap, ()=>{ location.hash = '#/glossary/'+id; router(); });
   location.hash = '#/glossaries';
 }
 function splitCsvLine(line, delim){
@@ -3510,16 +3909,17 @@ function saveVisualSession(id){
   closeModal();
   if(id) router(); else location.hash = '#/visual/'+rec.id;
 }
-function deleteVisualSession(id){
-  if(!confirm('Удалить сессию со всеми скриншотами и найденными на них проблемами?')) return;
+async function deleteVisualSession(id){
   const s = dbGet('visualSessions', id);
+  if(!await uiConfirm({title:'Удалить сессию «'+(s?s.name:'')+'»?', text:'Удалятся все её скриншоты и отмеченные на них проблемы.', okText:'Удалить сессию'})) return;
+  const snap = snapshotTables(['visualSessions','visualShots','visualShotImages','issues']);
   const shotIds = new Set(dbQuery('visualShots', x=>x.sessionId===id).map(x=>x.id));
   dbSave('visualShotImages', dbList('visualShotImages').filter(x=>!shotIds.has(x.id)));
   dbSave('visualShots', dbList('visualShots').filter(x=>x.sessionId!==id));
   dbSave('issues', dbList('issues').filter(i=>!(i.visual && i.sessionId===id)));
   dbRemove('visualSessions', id);
-  dbSave('visualSessions', dbList('visualSessions').map(v=>v.refSessionId===id ? Object.assign(v,{refSessionId:null}) : v));
-  toast('Сессия удалена');
+  dbSave('visualSessions', dbList('visualSessions').map(v=>v.refSessionId===id ? Object.assign({}, v, {refSessionId:null}) : v));
+  toastUndo('Сессия удалена', snap, ()=>{ location.hash = '#/visual/'+id; router(); });
   location.hash = s ? '#/project/'+s.projectId+'/visual' : '#/visual';
 }
 
@@ -3832,12 +4232,15 @@ function saveVisualDraft(){
   toast('Проблема добавлена');
 }
 function deleteVisualIssue(id){
-  if(!confirm('Удалить эту проблему?')) return;
+  const snap = snapshotTables(['issues']);
   dbRemove('issues', id);
-  if(viewerState) renderShotViewer(); else router();
+  const rerender = ()=>{ if(viewerState) renderShotViewer(); else router(); };
+  rerender();
+  toastUndo('Проблема удалена', snap, rerender);
 }
-function deleteShot(shotId){
-  if(!confirm('Удалить скриншот и отмеченные на нём проблемы?')) return;
+async function deleteShot(shotId){
+  if(!await uiConfirm({title:'Удалить скриншот?', text:'Вместе с ним удалятся отмеченные на нём проблемы.', okText:'Удалить скриншот'})) return;
+  const snap = snapshotTables(['visualShots','visualShotImages','issues']);
   const sh = dbGet('visualShots', shotId);
   const siblings = dbQuery('visualShots', x=>x.sessionId===sh.sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
   const idx = siblings.findIndex(x=>x.id===shotId);
@@ -3845,6 +4248,7 @@ function deleteShot(shotId){
   dbSave('issues', dbList('issues').filter(i=>i.shotId!==shotId));
   const next = siblings[idx+1] || siblings[idx-1];
   if(next) openShotViewer(next.id); else closeShotViewer();
+  toastUndo('Скриншот удалён', snap, ()=>openShotViewer(shotId));
 }
 document.addEventListener('keydown', e=>{
   if(!viewerState || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')) return;
@@ -4002,6 +4406,95 @@ async function runVisualAI(sessionId, shotIds){
 }
 
 /* =========================================================
+   KEYBOARD REVIEW — move through the issues/strings table and decide without the mouse
+   ↑/↓ or J/K select · Enter open · X tick · A accept · R reject · F false positive · ? help
+   ========================================================= */
+let kbFocusId = null;
+let currentDetailIssueId = null;
+function kbRows(){ return [...document.querySelectorAll('#content tr[data-id]')]; }
+function kbApplyFocus(scroll){
+  const rows = kbRows();
+  rows.forEach(tr=>tr.classList.toggle('kb-focus', tr.dataset.id===kbFocusId));
+  const el = rows.find(tr=>tr.dataset.id===kbFocusId);
+  if(el && scroll) el.scrollIntoView({block:'nearest', behavior:'smooth'});
+  return el;
+}
+function kbMove(delta){
+  const rows = kbRows(); if(!rows.length) return null;
+  let idx = rows.findIndex(tr=>tr.dataset.id===kbFocusId);
+  idx = idx<0 ? (delta>0?0:rows.length-1) : Math.max(0, Math.min(rows.length-1, idx+delta));
+  kbFocusId = rows[idx].dataset.id;
+  return kbApplyFocus(true);
+}
+function kbOpen(tr){
+  if(!tr) return;
+  if(tr.dataset.kind==='row') openRowDetail(tr.dataset.id); else openIssueDetail(tr.dataset.id);
+}
+function kbNextIssueAfter(id){
+  const rows = kbRows().filter(tr=>tr.dataset.kind!=='row');
+  const i = rows.findIndex(tr=>tr.dataset.id===id);
+  return i>=0 && rows[i+1] ? rows[i+1].dataset.id : null;
+}
+function kbDecide(action){
+  const id = currentDetailIssueId && document.getElementById('detailPanel').classList.contains('open') ? currentDetailIssueId
+    : (kbRows().find(tr=>tr.dataset.id===kbFocusId && tr.dataset.kind!=='row')||{}).dataset?.id;
+  if(!id) return;
+  const i = dbGet('issues', id); if(!i) return;
+  const openNow = i.status==='Новая' || i.status==='На проверке';
+  if(!openNow){ toast('По этой проблеме уже есть решение: '+i.status); return; }
+  if(action!=='Ложное срабатывание' && i.status!=='На проверке'){ toast('Подтвердить или опровергнуть можно после «Отправить на проверку». Ложное срабатывание — клавиша F'); return; }
+  const next = kbNextIssueAfter(id);
+  const panelWasOpen = document.getElementById('detailPanel').classList.contains('open');
+  decideIssue(id, action);
+  kbFocusId = next || id;
+  setTimeout(()=>{ kbApplyFocus(true); if(panelWasOpen && next) openIssueDetail(next); }, 30);
+}
+function kbToggleTick(){
+  const tr = kbRows().find(tr=>tr.dataset.id===kbFocusId); if(!tr) return;
+  const cb = tr.querySelector('input[type=checkbox]'); if(!cb) return;
+  cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', {bubbles:true}));
+}
+function showShortcutsHelp(){
+  const k = (keys, what)=>`<div class="kb-line"><span>${keys.map(x=>`<kbd>${x}</kbd>`).join(' ')}</span><span>${what}</span></div>`;
+  uiDialog(`<h3>Горячие клавиши</h3>
+    <div class="kb-help">
+      <div class="section-label" style="margin-top:6px;">Таблица проблем и строк</div>
+      ${k(['↑','↓'],'выбрать строку (или J / K)')}${k(['Enter'],'открыть карточку')}${k(['X'],'отметить галочкой')}
+      <div class="section-label">Решение по проблеме</div>
+      ${k(['A'],'подтвердить (для проблем «На проверке»)')}${k(['R'],'опровергнуть')}${k(['F'],'ложное срабатывание')}
+      <div class="hint" style="margin:2px 0 0;">После решения сразу открывается следующая проблема.</div>
+      <div class="section-label">Везде</div>
+      ${k(['⌘','K'],'поиск (Ctrl+K в Windows)')}${k(['Esc'],'закрыть окно или карточку')}${k(['?'],'эта подсказка')}
+      <div class="section-label">Просмотр скриншота</div>
+      ${k(['←','→'],'соседний скриншот')}${k(['C'],'сравнить с оригиналом')}
+    </div>
+    <div class="modal-actions"><button class="btn" data-ok>Понятно</button></div>`, (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close(true); });
+}
+document.addEventListener('keydown', e=>{
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target || {};
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'') || t.isContentEditable) return;
+  if(document.getElementById('dialogRoot')?.children.length || document.getElementById('shotViewer') || document.getElementById('modalRoot').children.length) return;
+  const panelOpen = document.getElementById('detailPanel').classList.contains('open');
+  const k = e.key, lower = (k||'').toLowerCase();
+  if(k==='?'){ e.preventDefault(); showShortcutsHelp(); return; }
+  if(k==='Escape' && panelOpen){ closeDetailPanel(); return; }
+  if(!kbRows().length && !panelOpen) return;
+  // letters also work in Russian layout (a=ф, r=к, f=а, x=ч, j=о, k=л)
+  const is = (en, ru)=> lower===en || lower===ru;
+  if(k==='ArrowDown' || is('j','о')){ e.preventDefault(); const tr = kbMove(1); if(panelOpen && tr && tr.dataset.kind!=='row') openIssueDetail(tr.dataset.id); return; }
+  if(k==='ArrowUp' || is('k','л')){ e.preventDefault(); const tr = kbMove(-1); if(panelOpen && tr && tr.dataset.kind!=='row') openIssueDetail(tr.dataset.id); return; }
+  if(k==='Enter' && !panelOpen){ const tr = kbApplyFocus(false); if(tr){ e.preventDefault(); kbOpen(tr); } return; }
+  if(is('x','ч')){ e.preventDefault(); kbToggleTick(); return; }
+  if(is('a','ф')){ e.preventDefault(); kbDecide('Подтвердить'); return; }
+  if(is('r','к')){ e.preventDefault(); kbDecide('Опровергнуть'); return; }
+  if(is('f','а')){ e.preventDefault(); kbDecide('Ложное срабатывание'); return; }
+});
+function kbHintHtml(){
+  return `<div class="kb-hint"><span><kbd>↑</kbd><kbd>↓</kbd> выбрать</span><span><kbd>Enter</kbd> открыть</span><span><kbd>F</kbd> ложное срабатывание</span><span><kbd>A</kbd>/<kbd>R</kbd> подтвердить / опровергнуть</span><a href="javascript:void(0)" onclick="showShortcutsHelp()">все клавиши <kbd>?</kbd></a></div>`;
+}
+
+/* =========================================================
    EXPORT
    ========================================================= */
 function exportIssuesToCsv(issues){
@@ -4031,11 +4524,49 @@ function exportIssuesToXlsx(issues){
     XLSX.writeFile(wb, 'lqa_issues.xlsx');
   });
 }
+/* ---------- pseudo-localization ----------
+   Swaps letters for look-alike accented ones, pads the string and brackets it, while leaving
+   placeholders, tags and \n escapes untouched — so the build keeps working. */
+const PSEUDO_EXPANSION = 1.35;
+const PSEUDO_MAP = {a:'å',b:'ƀ',c:'ç',d:'ď',e:'é',f:'ƒ',g:'ğ',h:'ĥ',i:'ï',j:'ĵ',k:'ķ',l:'ĺ',m:'ɱ',n:'ñ',o:'ő',p:'þ',q:'ǫ',r:'ŕ',s:'š',t:'ţ',u:'ű',v:'ṽ',w:'ŵ',x:'ẋ',y:'ý',z:'ž',
+  A:'Å',B:'Ɓ',C:'Ç',D:'Ď',E:'É',F:'Ƒ',G:'Ğ',H:'Ĥ',I:'Ï',J:'Ĵ',K:'Ķ',L:'Ĺ',M:'Ṁ',N:'Ñ',O:'Ő',P:'Þ',Q:'Ǫ',R:'Ŕ',S:'Š',T:'Ţ',U:'Ű',V:'Ṽ',W:'Ŵ',X:'Ẋ',Y:'Ý',Z:'Ž',
+  а:'å',б:'ƀ',в:'ŵ',г:'ğ',д:'ď',е:'é',ё:'ë',ж:'ž',з:'ƶ',и:'ï',й:'ĭ',к:'ķ',л:'ĺ',м:'ɱ',н:'ñ',о:'ő',п:'þ',р:'ŕ',с:'ç',т:'ţ',у:'ű',ф:'ƒ',х:'ẋ',ц:'ċ',ч:'č',ш:'š',щ:'ŝ',ы:'ÿ',э:'ê',ю:'û',я:'ǎ',
+  А:'Å',Б:'Ɓ',В:'Ŵ',Г:'Ğ',Д:'Ď',Е:'É',Ё:'Ë',Ж:'Ž',З:'Ƶ',И:'Ï',Й:'Ĭ',К:'Ķ',Л:'Ĺ',М:'Ṁ',Н:'Ñ',О:'Ő',П:'Þ',Р:'Ŕ',С:'Ç',Т:'Ţ',У:'Ű',Ф:'Ƒ',Х:'Ẋ',Ц:'Ċ',Ч:'Č',Ш:'Š',Щ:'Ŝ',Ы:'Ÿ',Э:'Ê',Ю:'Û',Я:'Ǎ'};
+function pseudoLocalize(str){
+  if(!str) return str;
+  const protectedRe = new RegExp('('+[VAR_RE.source, TAG_RE.source, BREAK_RE.source, '\\{[^{}]*\\}', '&[a-zA-Z#0-9]+;'].join('|')+')', 'g');
+  let letters = 0;
+  const body = String(str).split(protectedRe).filter(x=>x!==undefined).map(part=>{
+    if(protectedRe.test(part)){ protectedRe.lastIndex = 0; return part; }
+    protectedRe.lastIndex = 0;
+    return part.replace(/./g, ch=>{ if(PSEUDO_MAP[ch]){ letters++; return PSEUDO_MAP[ch]; } return ch; });
+  }).join('');
+  const pad = Math.max(2, Math.round(letters*(PSEUDO_EXPANSION-1)));
+  return '['+body+' '+'~'.repeat(pad)+']';
+}
+function pseudoFolderOptions(projectId){
+  return '<option value="">Все папки</option>' + dbQuery('components', c=>c.projectId===projectId).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+function downloadPseudoPo(){
+  const projectId = document.getElementById('psProject').value, folderId = document.getElementById('psFolder').value;
+  const seen = new Set(), rows = [];
+  dbQuery('rows', r=>r.projectId===projectId && (!folderId || r.componentId===folderId)).forEach(r=>{
+    const k = (r.key||'')+'\u0000'+r.source;
+    if(seen.has(k)) return; seen.add(k);
+    const out = {key:r.key, source:r.source, target:pseudoLocalize(r.source)};
+    if(r.targetForms){ out.sourcePlural = r.sourcePlural; out.targetForms = r.targetForms.map((_,i)=>pseudoLocalize(i===0 ? r.source : (r.sourcePlural||r.source))); }
+    rows.push(out);
+  });
+  if(!rows.length){ toast('В этой папке пока нет строк — сначала загрузи .po'); return; }
+  const p = dbGet('projects', projectId), c = folderId ? dbGet('components', folderId) : null;
+  downloadPoFile(generatePoFromRows(rows), 'pseudo_'+((p?p.name:'project')+(c?'_'+c.name:'')).replace(/[^\p{L}\p{N}]+/gu,'_')+'.po');
+  toast('Псевдолокализация: '+rows.length+' строк');
+}
 function renderExportPage(el){
   setCrumbs(['Экспорт']);
   const projects = dbList('projects');
   const visualChecks = dbList('visualChecks').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Экспорт</h1><div class="page-sub">Выгрузка найденных проблем в CSV или XLSX</div></div></div>
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Экспорт</h1><div class="page-sub">Выгрузка проблем в CSV/XLSX и файлы для тестовых сборок</div></div></div>
     <div class="card">
       <div class="grid grid-3">
         <label class="field">Проект<select id="expProject"><option value="">Все проекты</option>${projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label>
@@ -4043,6 +4574,15 @@ function renderExportPage(el){
         <label class="field">Статус<select id="expStatus"><option value="">Любой</option><option>Новая</option><option>На проверке</option><option>Принята</option><option>Принята после исправления</option><option>Отклонена</option><option>Ложное срабатывание</option></select></label>
       </div>
       <div class="row" style="margin-top:14px;"><button class="btn" onclick="doExport('csv')">Скачать CSV</button><button class="btn secondary" onclick="doExport('xlsx')">Скачать XLSX</button></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:4px;">Псевдолокализация</h3>
+      <div class="hint" style="margin:0 0 14px;max-width:760px;">Файл .po, где вместо перевода — исходный текст, «растянутый» примерно на ${Math.round((PSEUDO_EXPANSION-1)*100)}% и с похожими на латиницу буквами: <span class="mono">[Ďőƀåŵïţь ŵ ķőŕżïƞű ~~~]</span>. Загрузи его в тестовую сборку до перевода: сразу видно, где длинный язык не поместится, где текст зашит в код мимо файлов перевода (он останется обычным) и где обрезается конец (не видно «]»). Переменные и теги не трогаются.</div>
+      ${projects.length ? `<div class="grid grid-3">
+        <label class="field">Проект<select id="psProject" onchange="document.getElementById('psFolder').innerHTML=pseudoFolderOptions(this.value)">${projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label>
+        <label class="field">Папка<select id="psFolder">${pseudoFolderOptions(projects[0].id)}</select></label>
+      </div>
+      <div class="row" style="margin-top:14px;"><button class="btn" onclick="downloadPseudoPo()">${icon('download',15)}Скачать псевдо-.po</button><span class="hint" style="margin:0;">Пример: <span class="mono">${esc(pseudoLocalize('Добавить в корзину'))}</span></span></div>` : '<div class="hint">Сначала создай проект и загрузи файлы.</div>'}
     </div>
     <div class="card">
       <div class="row between"><h3 style="margin:0;">Очередь визуальной проверки (${visualChecks.length})</h3><button class="btn secondary sm" onclick="exportVisualChecksCsv()">Скачать CSV</button></div>
@@ -4081,6 +4621,7 @@ function renderSettingsPage(el){
   setCrumbs(['Настройки']);
   const s = getSettings();
   el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Настройки</h1><div class="page-sub">Правила технической проверки и общие параметры</div></div></div>
+    ${backupCardHtml()}
     <div class="card"><h3>Правила LQA</h3>
       <div class="checklist">
         <label class="checkrow"><input type="checkbox" id="sUntranslated" ${s.checkUntranslated?'checked':''}> Пустой перевод / не переведено</label>
@@ -4094,7 +4635,12 @@ function renderSettingsPage(el){
         <label class="checkrow"><input type="checkbox" id="sConsistency" ${s.checkConsistency?'checked':''}> Согласованность между папками</label>
         <label class="checkrow"><input type="checkbox" id="sGlossary" ${s.checkGlossary?'checked':''}> Соответствие глоссарию</label>
         <label class="checkrow"><input type="checkbox" id="sRebranding" ${s.checkRebranding?'checked':''}> WB→N11 (только AZ)</label>
+        <label class="checkrow"><input type="checkbox" id="sPlurals" ${s.checkPlurals?'checked':''}> Формы множественного числа (1 товар / 2 товара / 5 товаров)</label>
+        <label class="checkrow"><input type="checkbox" id="sLocale" ${s.checkLocale?'checked':''}> Формат под страну: валюта ₽ в чужом языке, кавычки</label>
+        <label class="checkrow"><input type="checkbox" id="sDnt" ${s.checkDnt?'checked':''}> Бренды и названия «Не переводить»</label>
       </div>
+      <label class="field" style="margin-top:16px;">Не переводить <span style="font-weight:400;color:var(--text-faint);">— бренды и названия сервисов, по одному в строке. Если слово есть в исходном тексте, оно должно остаться в переводе как есть</span>
+        <textarea id="sDntTerms" style="min-height:96px;font-family:inherit;font-size:14px;" placeholder="Wildberries&#10;WB Partners">${esc(s.dntTerms||'')}</textarea></label>
       <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveSettingsForm()">Сохранить</button></div>
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
@@ -4124,6 +4670,10 @@ function saveSettingsForm(){
     checkConsistency: document.getElementById('sConsistency').checked,
     checkGlossary: document.getElementById('sGlossary').checked,
     checkRebranding: document.getElementById('sRebranding').checked,
+    checkPlurals: document.getElementById('sPlurals').checked,
+    checkLocale: document.getElementById('sLocale').checked,
+    checkDnt: document.getElementById('sDnt').checked,
+    dntTerms: document.getElementById('sDntTerms').value,
   });
   toast('Настройки сохранены');
 }
@@ -4183,7 +4733,44 @@ router = function(){
   if(parts[0]==='project' && parts[1] && parts[2]==='quality'){ renderProjectChecksTable(parts[1]); }
   if(parts[0]==='project' && parts[1] && parts[2]==='visual'){ const m = document.getElementById('projVisualRoot'); if(m) renderVisualList(m, parts[1]); }
 };
-window.addEventListener('hashchange', router);
+/* ---------- page transitions ----------
+   Navigation (not every re-render after an action) cross-fades the content area with the View
+   Transitions API where the browser has it, then cards rise in one by one and numbers count up. */
+const reduceMotion = ()=> window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lastRouteKey = null;
+function routeKey(){ return (location.hash||'#/').split('/').slice(0,4).join('/'); }
+function navigate(){
+  const key = routeKey(), samePage = key===lastRouteKey;
+  lastRouteKey = key;
+  const run = ()=>{ router(); if(!samePage) window.scrollTo(0,0); };
+  if(samePage || reduceMotion()){ run(); if(!samePage) afterNav(); return; }
+  if(document.startViewTransition){
+    document.documentElement.classList.add('nav-vt');
+    const vt = document.startViewTransition(run);
+    vt.finished.finally(()=>document.documentElement.classList.remove('nav-vt'));
+    vt.updateCallbackDone.then(afterNav);
+  } else { run(); const c = document.getElementById('content'); c.classList.remove('page-enter'); void c.offsetWidth; c.classList.add('page-enter'); afterNav(); }
+}
+function afterNav(){
+  if(reduceMotion()) return;
+  const content = document.getElementById('content');
+  content.querySelectorAll('.stagger').forEach(g=>[...g.children].slice(0,16).forEach((ch,i)=>ch.style.setProperty('--i', i)));
+  content.classList.add('entering');
+  clearTimeout(afterNav._t); afterNav._t = setTimeout(()=>content.classList.remove('entering'), 1400);
+  content.querySelectorAll('[data-count]').forEach(countUp);
+}
+function countUp(el){
+  const target = +el.dataset.count, suffix = el.dataset.suffix || '';
+  if(!isFinite(target) || target<=0) return;
+  const start = performance.now(), dur = Math.min(1100, 500 + target*2);
+  const tick = now=>{
+    const t = Math.min(1, (now-start)/dur), v = Math.round(target*(1-Math.pow(1-t,3)));
+    el.textContent = v.toLocaleString('ru-RU') + suffix;
+    if(t<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+window.addEventListener('hashchange', navigate);
 window.addEventListener('hashchange', ()=>toggleNav(false));
 document.addEventListener('keydown', e=>{
   if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
@@ -4198,7 +4785,9 @@ initTheme();
   const loaded = await idbLoadAll();
   DB = migrateFromLocalStorageIfNeeded(loaded);
   getSettings();
+  lastRouteKey = routeKey();
   router();
+  afterNav();
 })();
 </script>
 </body>
