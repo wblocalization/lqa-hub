@@ -353,7 +353,7 @@ input[type=file].hidden-input{display:none;}
 .vbox.sev-medium{border-color:#EAB308;background:rgba(234,179,8,.1);} .vbox.sev-low{border-color:#A78BFA;background:rgba(167,139,250,.12);}
 .vbox > span{position:absolute;top:-11px;left:-11px;width:22px;height:22px;border-radius:50%;background:#1F1729;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff;}
 .vbox.draft{border-style:dashed;border-color:#fff;background:rgba(214,22,158,.18);box-shadow:0 0 0 1px rgba(0,0,0,.4);}
-.vbox.focus{box-shadow:0 0 0 9999px rgba(10,5,20,.45);z-index:2;}
+.vbox.focus{box-shadow:0 0 0 3px rgba(255,255,255,.95),0 0 0 7px rgba(214,22,158,.55),0 0 24px rgba(214,22,158,.6);z-index:2;}
 body.viewer-open{overflow:hidden;}
 .viewer{position:fixed;inset:0;z-index:350;background:#120B1C;color:#fff;display:flex;flex-direction:column;animation:fadeIn .15s ease;}
 .viewer-top{height:56px;flex:0 0 56px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.08);}
@@ -373,6 +373,18 @@ body.viewer-open{overflow:hidden;}
 .v-row input{margin-top:2px;flex-shrink:0;}
 @media(max-width:900px){ .viewer-body{flex-direction:column;} .viewer-side{width:auto;flex:0 0 auto;max-height:45vh;border-left:none;border-top:1px solid var(--border);} .viewer-stage{padding:12px;} }
 
+/* compare mode */
+.btn.on-dark.is-on{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.5);}
+.viewer-stage.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;justify-content:stretch;}
+.compare-pane{min-width:0;display:flex;flex-direction:column;gap:8px;}
+.compare-pane .viewer-canvas{display:block;}
+.viewer-canvas.ref{cursor:default;opacity:.95;}
+.compare-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.05em;height:26px;}
+.compare-nav{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:500;}
+.compare-nav button{background:rgba(255,255,255,.1);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;}
+.compare-nav button:hover{background:rgba(255,255,255,.2);}
+.compare-empty{border:1.5px dashed rgba(255,255,255,.2);border-radius:8px;padding:40px 20px;text-align:center;color:rgba(255,255,255,.6);font-size:13px;}
+@media(max-width:900px){ .viewer-stage.compare{grid-template-columns:1fr;} }
 /* ---- responsive ---- */
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:var(--shadow-lg);width:264px;}
@@ -1366,7 +1378,8 @@ const ICONS = {
   check: '<polyline points="20 6 9 17 4 12"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
   sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
-  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  columns: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/>'
 };
 function icon(name, size){
   size = size || 18;
@@ -3463,13 +3476,19 @@ function openVisualSessionModal(projectId, existingId){
   openModal(`<h3>${ex?'Изменить сессию':'Новая сессия проверки'}</h3>
     <div class="hint" style="margin:0 0 14px;">Одна сессия — один язык и одна страница или сценарий.</div>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <label class="field">Проект<select id="vsProject" onchange="document.getElementById('vsLang').innerHTML=visualLangOptions(this.value)">${projects.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+      <label class="field">Проект<select id="vsProject" onchange="document.getElementById('vsLang').innerHTML=visualLangOptions(this.value);document.getElementById('vsRef').innerHTML=visualRefOptions(this.value)">${projects.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label class="field">Язык интерфейса<select id="vsLang">${visualLangOptions(pid, ex&&ex.languageCode)}</select></label>
       <label class="field">Что проверяем<input type="text" id="vsName" value="${ex?esc(ex.name):''}" placeholder="например: Главная, Корзина, Карточка товара"></label>
       <label class="field">Адрес страницы (необязательно)<input type="text" id="vsUrl" value="${ex?esc(ex.pageUrl||''):''}" placeholder="https://www.wildberries.ru/…"></label>
+      <label class="field">Сравнивать с оригиналом (необязательно)<select id="vsRef">${visualRefOptions(pid, ex)}</select>
+        <span class="hint" style="margin:0;">Сессия той же страницы на исходном языке — скриншоты можно будет смотреть бок о бок.</span></label>
     </div>
     <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Отмена</button><button class="btn" onclick="saveVisualSession(${ex?`'${ex.id}'`:'null'})">${ex?'Сохранить':'Создать'}</button></div>`);
   setTimeout(()=>{ const n=document.getElementById('vsName'); if(n) n.focus(); }, 50);
+}
+function visualRefOptions(projectId, ex){
+  const list = dbQuery('visualSessions', v=>v.projectId===projectId && (!ex || v.id!==ex.id));
+  return '<option value="">— не сравнивать —</option>' + list.map(v=>`<option value="${v.id}" ${ex&&ex.refSessionId===v.id?'selected':''}>${esc(v.name)} · ${esc(languageLabel(v.languageCode))}</option>`).join('');
 }
 function visualLangOptions(projectId, selected){
   const p = dbGet('projects', projectId);
@@ -3484,6 +3503,7 @@ function saveVisualSession(id){
   rec.languageCode = document.getElementById('vsLang').value;
   rec.name = name;
   rec.pageUrl = document.getElementById('vsUrl').value.trim();
+  rec.refSessionId = document.getElementById('vsRef').value || null;
   dbUpsert('visualSessions', rec);
   // issues keep their own copy of project/language for filtering, so a moved session carries them along
   if(id){ dbSave('issues', dbList('issues').map(i=>i.visual && i.sessionId===id ? Object.assign(i,{projectId:rec.projectId, languageCode:rec.languageCode}) : i)); }
@@ -3498,6 +3518,7 @@ function deleteVisualSession(id){
   dbSave('visualShots', dbList('visualShots').filter(x=>x.sessionId!==id));
   dbSave('issues', dbList('issues').filter(i=>!(i.visual && i.sessionId===id)));
   dbRemove('visualSessions', id);
+  dbSave('visualSessions', dbList('visualSessions').map(v=>v.refSessionId===id ? Object.assign(v,{refSessionId:null}) : v));
   toast('Сессия удалена');
   location.hash = s ? '#/project/'+s.projectId+'/visual' : '#/visual';
 }
@@ -3513,11 +3534,13 @@ function renderVisualSession(el, sessionId){
   const ai = getSettings();
   const aiReady = ai.aiEnabled && ai.aiEndpointUrl;
   const open = issues.filter(i=>i.status==='Новая'||i.status==='На проверке').length;
+  const ref = s.refSessionId ? dbGet('visualSessions', s.refSessionId) : null;
   el.innerHTML = `
     <div class="page-head">
       <div style="min-width:0;"><h1 class="page-title">${esc(s.name)}</h1>
-        <div class="page-sub">${esc(p?p.name:'—')} · ${languageFlag(s.languageCode)} ${esc(languageLabel(s.languageCode))}${s.pageUrl?` · <a class="link" href="${esc(s.pageUrl)}" target="_blank" rel="noopener">${esc(s.pageUrl.replace(/^https?:\/\//,'').slice(0,50))} ↗</a>`:''}</div></div>
+        <div class="page-sub">${esc(p?p.name:'—')} · ${languageFlag(s.languageCode)} ${esc(languageLabel(s.languageCode))}${s.pageUrl?` · <a class="link" href="${esc(s.pageUrl)}" target="_blank" rel="noopener">${esc(s.pageUrl.replace(/^https?:\/\//,'').slice(0,50))} ↗</a>`:''}${ref?` · сравнение с <a class="link" href="#/visual/${ref.id}">${esc(ref.name)} (${esc(ref.languageCode)})</a>`:''}</div></div>
       <div class="row">
+        <button class="btn secondary sm" ${shots.length?'':'disabled'} onclick="downloadVisualReport('${s.id}')" title="Один HTML-файл со скриншотами и проблемами — можно отправить команде">${icon('download',14)}Отчёт</button>
         <button class="btn secondary sm" onclick="openVisualSessionModal(null,'${s.id}')">${icon('edit',14)}Изменить</button>
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
@@ -3647,6 +3670,27 @@ async function extractVideoFrames(file, step, onProgress){
 
 /* ---------- full-screen viewer + box annotation ---------- */
 let viewerState = null;
+let viewerCompare = true; // remembered while flipping through shots
+// the original-language shot shown next to this one: an explicit pick, else the one at the same position
+function refShotFor(sh){
+  const sess = dbGet('visualSessions', sh.sessionId);
+  if(!sess || !sess.refSessionId) return null;
+  const refShots = dbQuery('visualShots', x=>x.sessionId===sess.refSessionId).sort((a,b)=>(a.order||0)-(b.order||0));
+  if(!refShots.length) return {list:refShots, shot:null};
+  if(sh.refShotId){ const picked = refShots.find(x=>x.id===sh.refShotId); if(picked) return {list:refShots, shot:picked}; }
+  const mine = dbQuery('visualShots', x=>x.sessionId===sh.sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
+  const idx = Math.min(mine.findIndex(x=>x.id===sh.id), refShots.length-1);
+  return {list:refShots, shot:refShots[Math.max(0,idx)]};
+}
+function shiftRefShot(delta){
+  const sh = dbGet('visualShots', viewerState.shotId); const r = refShotFor(sh);
+  if(!r || !r.shot) return;
+  const i = r.list.findIndex(x=>x.id===r.shot.id) + delta;
+  if(!r.list[i]) return;
+  sh.refShotId = r.list[i].id; dbUpsert('visualShots', sh);
+  renderShotViewer();
+}
+function toggleViewerCompare(){ viewerCompare = !viewerCompare; renderShotViewer(); }
 function openShotViewer(shotId, focusIssueId){
   const sh = dbGet('visualShots', shotId);
   if(!sh) return;
@@ -3671,6 +3715,9 @@ function renderShotViewer(){
   const idx = siblings.findIndex(x=>x.id===sh.id);
   const issues = dbQuery('issues', i=>i.visual && i.shotId===sh.id);
   const d = viewerState.draft;
+  const refInfo = refShotFor(sh);
+  const refSess = sess && sess.refSessionId ? dbGet('visualSessions', sess.refSessionId) : null;
+  const comparing = !!(refInfo && viewerCompare);
   const boxes = issues.filter(i=>i.box).map(i=>`<div class="vbox sev-${severityClass(i.severity)} ${viewerState.focus===i.id?'focus':''}" data-id="${i.id}" style="left:${i.box.x*100}%;top:${i.box.y*100}%;width:${i.box.w*100}%;height:${i.box.h*100}%;" onclick="event.stopPropagation();focusViewerIssue('${i.id}')"><span>${issues.indexOf(i)+1}</span></div>`).join('');
   const draftBox = d ? `<div class="vbox draft" style="left:${d.box.x*100}%;top:${d.box.y*100}%;width:${d.box.w*100}%;height:${d.box.h*100}%;"></div>` : '';
   const side = d ? visualDraftFormHtml(sess) : `
@@ -3686,12 +3733,22 @@ function renderShotViewer(){
     <div class="viewer-top">
       <button class="top-ic" title="Закрыть (Esc)" onclick="closeShotViewer()" style="color:#fff;">${icon('x',20)}</button>
       <div style="min-width:0;flex:1;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sh.name)}</div><div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sess?sess.name:'')} · ${esc(sess?languageLabel(sess.languageCode):'')} · ${idx+1} из ${siblings.length}</div></div>
+      ${refInfo ? `<button class="btn on-dark sm ${comparing?'is-on':''}" onclick="toggleViewerCompare()" title="Показать оригинал рядом (C)">${icon('columns',14)}Сравнить</button>` : ''}
       <button class="btn on-dark sm" ${idx>0?'':'disabled'} onclick="openShotViewer('${idx>0?siblings[idx-1].id:''}')" title="Предыдущий (←)">←</button>
       <button class="btn on-dark sm" ${idx<siblings.length-1?'':'disabled'} onclick="openShotViewer('${idx<siblings.length-1?siblings[idx+1].id:''}')" title="Следующий (→)">→</button>
       <button class="btn on-dark sm" title="Удалить скриншот" onclick="deleteShot('${sh.id}')">${icon('trash',14)}</button>
     </div>
     <div class="viewer-body">
-      <div class="viewer-stage" id="viewerStage"><div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${boxes}${draftBox}</div></div>
+      <div class="viewer-stage ${comparing?'compare':''}" id="viewerStage">
+        ${comparing ? `<div class="compare-pane">
+            <div class="compare-label"><span>Оригинал · ${esc(refSess?languageLabel(refSess.languageCode):'')}</span>
+              ${refInfo.shot?`<span class="compare-nav"><button onclick="shiftRefShot(-1)" title="Другой кадр оригинала">‹</button>${refInfo.list.findIndex(x=>x.id===refInfo.shot.id)+1} / ${refInfo.list.length}<button onclick="shiftRefShot(1)" title="Другой кадр оригинала">›</button></span>`:''}</div>
+            ${refInfo.shot ? `<div class="viewer-canvas ref"><img src="${shotImage(refInfo.shot.id)}" alt="" draggable="false"></div>` : `<div class="compare-empty">В сессии-оригинале «${esc(refSess?refSess.name:'')}» пока нет скриншотов</div>`}
+          </div>
+          <div class="compare-pane"><div class="compare-label"><span>Перевод · ${esc(sess?languageLabel(sess.languageCode):'')}</span></div>` : ''}
+        <div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${boxes}${draftBox}</div>
+        ${comparing ? '</div>' : ''}
+      </div>
       <aside class="viewer-side">${side}</aside>
     </div>`;
   wireViewerDrawing();
@@ -3792,6 +3849,7 @@ function deleteShot(shotId){
 document.addEventListener('keydown', e=>{
   if(!viewerState || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')) return;
   if(e.key==='Escape'){ if(viewerState.draft){ viewerState.draft=null; renderShotViewer(); } else closeShotViewer(); }
+  if((e.key==='c' || e.key==='с' || e.key==='C' || e.key==='С') && !e.metaKey && !e.ctrlKey) toggleViewerCompare();
   if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
     const sh = dbGet('visualShots', viewerState.shotId);
     const sib = dbQuery('visualShots', x=>x.sessionId===sh.sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
@@ -3812,6 +3870,84 @@ function shotCropHtml(issue){
     <div style="position:absolute;inset:0;background-image:url('${shotImage(sh.id)}');background-size:${100/cw}% auto;background-position:${cw<1?cx/(1-cw)*100:0}% ${ch<1?cy/(1-ch)*100:0}%;background-repeat:no-repeat;"></div>
     <div class="vbox sev-${severityClass(issue.severity)}" style="left:${(b.x-cx)/cw*100}%;top:${(b.y-cy)/ch*100}%;width:${b.w/cw*100}%;height:${b.h/ch*100}%;"></div>
   </div>`;
+}
+
+/* ---------- shareable report ----------
+   Screenshots live only in this browser, so the way to show a session to the team is a single
+   self-contained HTML file: summary, then every screenshot with its numbered boxes and problems. */
+function downloadVisualReport(sessionId){
+  const s = dbGet('visualSessions', sessionId); if(!s) return;
+  const p = dbGet('projects', s.projectId);
+  const ref = s.refSessionId ? dbGet('visualSessions', s.refSessionId) : null;
+  const shots = dbQuery('visualShots', x=>x.sessionId===sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
+  const issues = dbQuery('issues', i=>i.visual && i.sessionId===sessionId);
+  const sevOrder = ['Критическая','Высокая','Средняя','Низкая'];
+  const sevColor = {'Критическая':'#D92D20','Высокая':'#C2410C','Средняя':'#A15C07','Низкая':'#6B5E7B'};
+  const sevBg = {'Критическая':'#FDECEA','Высокая':'#FEEFE3','Средняя':'#FDF4D8','Низкая':'#F1EDF5'};
+  const boxColor = {'Критическая':'#EF4444','Высокая':'#F97316','Средняя':'#EAB308','Низкая':'#A78BFA'};
+  const e = esc;
+  const bySev = sevOrder.map(v=>[v, issues.filter(i=>i.severity===v).length]).filter(x=>x[1]);
+  const byType = {}; issues.forEach(i=>byType[i.type]=(byType[i.type]||0)+1);
+  const open = issues.filter(i=>i.status==='Новая'||i.status==='На проверке').length;
+  const pill = sev=>`<span class="pill" style="background:${sevBg[sev]||'#eee'};color:${sevColor[sev]||'#333'}">${e(sev)}</span>`;
+  const withIssues = shots.filter(sh=>issues.some(i=>i.shotId===sh.id));
+  const clean = shots.filter(sh=>!issues.some(i=>i.shotId===sh.id));
+  const shotBlock = sh=>{
+    const si = issues.filter(i=>i.shotId===sh.id);
+    const refShot = ref ? refShotFor(sh) : null;
+    const img = `<div class="canvas"><img src="${shotImage(sh.id)}" alt="">${si.map((i,n)=>i.box?`<div class="box" style="left:${i.box.x*100}%;top:${i.box.y*100}%;width:${i.box.w*100}%;height:${i.box.h*100}%;border-color:${boxColor[i.severity]||'#9A139E'};background:${(boxColor[i.severity]||'#9A139E')}1a"><b>${n+1}</b></div>`:'').join('')}</div>`;
+    return `<section class="shot">
+      <h2>${e(sh.name)}</h2>
+      ${refShot && refShot.shot ? `<div class="pair"><figure><figcaption>Оригинал · ${e(languageLabel(ref.languageCode))}</figcaption><div class="canvas"><img src="${shotImage(refShot.shot.id)}" alt=""></div></figure><figure><figcaption>Перевод · ${e(languageLabel(s.languageCode))}</figcaption>${img}</figure></div>` : img}
+      <ol class="issues">${si.map(i=>{ const r = i.rowId ? dbGet('rows', i.rowId) : null; return `<li>
+        <div class="line">${pill(i.severity)}<span class="type">${e(i.type)}</span><span class="status">${e(i.status)}</span></div>
+        <div class="text">${e(i.text)}</div>
+        ${i.highlightText?(i.expectedText?`<div class="fe"><s>${e(i.highlightText)}</s> → <ins>${e(i.expectedText)}</ins></div>`:`<div class="fe">На экране: «${e(i.highlightText)}»</div>`):''}
+        ${r?`<div class="key">Строка: <code>${e(r.key||r.id)}</code></div>`:''}
+      </li>`; }).join('')}</ol>
+    </section>`;
+  };
+  const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LQA · ${e(s.name)} · ${e(s.languageCode)}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#F7F5FB;color:#1F1729;font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 24px 64px}
+header{background:linear-gradient(135deg,#C4169F,#7C1FC9 55%,#4A1B96);color:#fff;border-radius:16px;padding:24px 28px;margin-bottom:20px}
+header h1{margin:0 0 4px;font-size:26px;letter-spacing:-.02em}header .meta{opacity:.85}header a{color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #ECE7F3;border-radius:12px;padding:14px 16px}.kpi b{display:block;font-size:24px}.kpi span{color:#5B4F68;font-size:13px}
+.card{background:#fff;border:1px solid #ECE7F3;border-radius:12px;padding:16px 20px;margin-bottom:20px}
+.card h3{margin:0 0 10px;font-size:15px}.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip{border:1px solid #DDD4EA;border-radius:99px;padding:2px 10px;font-size:12px;color:#5B4F68}
+.shot{background:#fff;border:1px solid #ECE7F3;border-radius:14px;padding:18px 20px;margin-bottom:24px;break-inside:avoid}
+.shot h2{font-size:16px;margin:0 0 12px}
+.canvas{position:relative;display:block;border:1px solid #ECE7F3;border-radius:8px;overflow:hidden}.canvas img{display:block;width:100%;height:auto}
+.box{position:absolute;border:2px solid;border-radius:4px}.box b{position:absolute;top:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:#1F1729;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}figure{margin:0}figcaption{font-size:12px;color:#8E829C;margin-bottom:4px}
+.issues{margin:14px 0 0;padding-left:22px}.issues li{margin-bottom:12px}.line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.type{font-size:12px;border:1px solid #DDD4EA;border-radius:99px;padding:1px 9px;color:#5B4F68}.status{font-size:12px;color:#8E829C}
+.text{margin-top:4px}.fe{font-family:"IBM Plex Mono",monospace;font-size:13px;margin-top:4px}.fe s{color:#D92D20}.fe ins{color:#15803D;text-decoration:none;font-weight:600}
+.key{font-size:12px;color:#8E829C;margin-top:2px}code{font-family:"IBM Plex Mono",monospace}
+.clean{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}.clean figure img{width:100%;border-radius:8px;border:1px solid #ECE7F3;display:block}
+footer{color:#8E829C;font-size:12px;text-align:center;margin-top:32px}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.pair{grid-template-columns:1fr}}
+@media print{body{background:#fff}.wrap{padding:0}.shot{page-break-inside:avoid}}
+</style></head><body><div class="wrap">
+<header><h1>${e(s.name)}</h1><div class="meta">${e(p?p.name:'')} · ${e(languageLabel(s.languageCode))} (${e(s.languageCode)})${s.pageUrl?` · <a href="${e(s.pageUrl)}">${e(s.pageUrl)}</a>`:''}${ref?` · сравнение с «${e(ref.name)}» (${e(ref.languageCode)})`:''}</div></header>
+<div class="kpis"><div class="kpi"><b>${shots.length}</b><span>скриншотов</span></div><div class="kpi"><b>${issues.length}</b><span>проблем</span></div><div class="kpi"><b style="color:#D92D20">${issues.filter(i=>i.severity==='Критическая').length}</b><span>критических</span></div><div class="kpi"><b>${open}</b><span>не решено</span></div></div>
+${issues.length?`<div class="card"><h3>Сводка</h3><div class="chips">${bySev.map(([v,n])=>`<span class="pill" style="background:${sevBg[v]};color:${sevColor[v]}">${e(v)}: ${n}</span>`).join('')}${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<span class="chip">${e(t)}: ${n}</span>`).join('')}</div></div>`:''}
+${withIssues.map(shotBlock).join('')}
+${clean.length?`<div class="card"><h3>Без замечаний (${clean.length})</h3><div class="clean">${clean.map(sh=>`<figure><img src="${sh.thumb}" alt=""><figcaption>${e(sh.name)}</figcaption></figure>`).join('')}</div></div>`:''}
+<footer>LQA Hub · отчёт сформирован ${e(fmtDate(nowISO()))}</footer>
+</div></body></html>`;
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `LQA_${(s.name||'session').replace(/[^\p{L}\p{N}]+/gu,'_')}_${s.languageCode}_${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast('Отчёт скачан — его можно открыть в браузере или отправить команде');
 }
 
 /* ---------- AI check of screenshots ----------
