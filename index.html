@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LQA — платформа проверки локализации</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3A1672">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <!-- xlsx (SheetJS) is loaded lazily on first use — see ensureXlsx() — so a blocked/stale CDN doesn't affect page load, and a newer build gets a real chance to run instead of an old cached one. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -263,7 +268,7 @@ input[type=file].hidden-input{display:none;}
 .pager button:disabled{opacity:.4;cursor:not-allowed;}
 
 /* modal */
-.modal-bg{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;animation:fadeIn .15s ease;padding:16px;}
+.modal-bg{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:360;animation:fadeIn .15s ease;padding:16px;}
 .modal{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 26px;width:540px;max-width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg);animation:modalIn .2s var(--ease);}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
@@ -479,6 +484,51 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 .attn-meta{font-size:12px;color:var(--text-faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 @media(max-width:1100px){ .dash-split{grid-template-columns:minmax(0,1fr);} }
 @media(max-width:700px){ .dash-hero{flex-direction:column;align-items:flex-start;padding:22px;} .dash-hero h1{font-size:22px;} .dash-hero-ring{align-self:center;} .notice{flex-wrap:wrap;} }
+.side-badge-count.me{background:linear-gradient(135deg,#F05BC4,#B06CF5);}
+.chg{display:inline-flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;}
+.chg-fix{color:var(--ok);} .chg-new{color:var(--crit);} .chg-keep{color:var(--text-soft);font-weight:500;}
+.trend-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12px;color:var(--text-soft);}
+.trend-legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.discussion{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+.bubble{display:flex;gap:10px;align-items:flex-start;}
+.bubble-ava{width:28px;height:28px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bubble > div{background:var(--bg-2);border-radius:4px 12px 12px 12px;padding:8px 12px;min-width:0;max-width:100%;}
+.bubble.mine > div{background:var(--primary-bg);}
+.bubble-meta{font-size:12px;color:var(--text-faint);margin-bottom:2px;}
+.bubble-meta b{color:var(--text-soft);font-weight:600;}
+.bubble-text{font-size:14px;white-space:pre-wrap;word-break:break-word;}
+.comment-box{display:flex;gap:8px;align-items:flex-end;}
+.comment-box textarea{flex:1;min-height:44px;font-family:inherit;font-size:14px;resize:vertical;}
+.history-log{margin-top:14px;font-size:13px;}
+.history-log summary{cursor:pointer;color:var(--text-soft);font-weight:500;}
+.ctx-shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.ctx-shot{all:unset;cursor:pointer;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);transition:box-shadow .15s ease,transform .15s ease;}
+.ctx-shot:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.ctx-shot img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;}
+.ctx-shot span{display:block;font-size:11px;color:var(--text-soft);padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tm{margin-top:10px;}
+.tm-item{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;gap:10px;width:100%;cursor:pointer;padding:7px 10px;border-radius:8px;background:var(--bg-2);margin-bottom:4px;font-size:13px;}
+.tm-item:hover{background:var(--primary-bg);}
+.tm-meta{font-size:12px;color:var(--text-faint);white-space:nowrap;}
+.ai-summary{border-color:color-mix(in srgb,var(--primary) 30%,var(--border));background:linear-gradient(180deg,var(--primary-bg),var(--surface) 70%);}
+.ai-prio{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;}
+.sync-badge .sync-dot{position:absolute;bottom:7px;right:6px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);display:inline-block;box-shadow:0 0 0 2px var(--surface);flex-shrink:0;}
+.sync-badge[data-state="ok"] .sync-dot,.sync-dot[data-state="ok"]{background:var(--ok);}
+.sync-badge[data-state="busy"] .sync-dot,.sync-dot[data-state="busy"]{background:var(--primary);animation:pulse 1s ease-in-out infinite;}
+.sync-badge[data-state="error"] .sync-dot,.sync-dot[data-state="error"]{background:var(--crit);}
+.sync-badge[data-state="busy"] svg{animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{50%{opacity:.35;}}
+/* tour */
+#tourRoot{position:fixed;inset:0;z-index:600;}
+.tour-dim{position:fixed;inset:0;background:rgba(15,8,28,.55);}
+.tour-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,8,28,.55),0 0 0 3px rgba(240,91,196,.9);transition:all .3s var(--ease);pointer-events:none;}
+.tour-card{position:fixed;width:340px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:18px 20px;animation:modalIn .25s var(--ease);}
+.tour-card h3{margin:2px 0 6px;font-size:17px;}
+.tour-card p{margin:0;color:var(--text-soft);font-size:14px;line-height:1.55;}
+.tour-count{font-size:12px;font-weight:600;color:var(--primary);}
+.install-btn{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;margin-bottom:10px;border-radius:var(--r-sm);color:var(--side-text);cursor:pointer;font-size:14px;width:100%;}
+.install-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
 /* ---- responsive ---- */
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:var(--shadow-lg);width:264px;}
@@ -515,6 +565,7 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
     </div>
     <nav class="side-nav" id="sideNav"></nav>
     <div class="side-foot">
+      <button type="button" class="side-link install-btn" id="installBtn" style="display:none;" onclick="installApp()"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></span><span class="lbl">Установить приложение</span></button>
       <div class="theme-toggle" id="themeToggle">
         <button type="button" data-mode="light" onclick="setTheme('light', event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Светлая</button>
         <button type="button" data-mode="dark" onclick="setTheme('dark', event)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Тёмная</button>
@@ -531,8 +582,9 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
         <input type="text" id="globalSearch" placeholder="Поиск строк и проблем" onkeydown="if(event.key==='Enter')doGlobalSearch()">
         <span class="kbd-hint">⌘K</span>
       </div>
+      <button type="button" class="top-ic sync-badge" id="syncBadge" style="display:none;" onclick="syncNow(true)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="sync-dot"></span></button>
       <button type="button" class="top-ic" title="Уведомления" onclick="toggleNotifCenter()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="dot" id="notifDot"></span></button>
-      <div class="avatar" title="Wildberries">WB</div>
+      <button type="button" class="avatar" id="meAvatar" onclick="openWhoAmI()" style="border:none;cursor:pointer;">?</button>
     </header>
     <main class="content" id="content"></main>
   </div>
@@ -758,10 +810,10 @@ function remapSmartcatMatrix(matrix, langCode){
 }
 let DB = {};
 function dbList(table){ return DB[table] || []; }
-function dbSave(table, arr){ DB[table] = arr; idbPersist(table, arr); }
+function dbSave(table, arr){ DB[table] = arr; idbPersist(table, arr); onLocalChange(table); }
 function dbGet(table, id){ return (DB[table]||[]).find(x=>x.id===id) || null; }
-function dbUpsert(table, rec){ const arr = DB[table] = DB[table] || []; const i = arr.findIndex(x=>x.id===rec.id); if(i>=0) arr[i]=rec; else arr.push(rec); idbPersist(table, arr); return rec; }
-function dbRemove(table, id){ DB[table] = (DB[table]||[]).filter(x=>x.id!==id); idbPersist(table, DB[table]); }
+function dbUpsert(table, rec){ const arr = DB[table] = DB[table] || []; const i = arr.findIndex(x=>x.id===rec.id); if(i>=0) arr[i]=rec; else arr.push(rec); idbPersist(table, arr); onLocalChange(table); return rec; }
+function dbRemove(table, id){ DB[table] = (DB[table]||[]).filter(x=>x.id!==id); idbPersist(table, DB[table]); onLocalChange(table); }
 function dbQuery(table, pred){ return (DB[table]||[]).filter(pred); }
 function uid(){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 function nowISO(){ return new Date().toISOString(); }
@@ -793,7 +845,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
@@ -830,7 +882,11 @@ function toast(msg, opts){
     b.onclick = ()=>{ remove(); opts.action.fn(); };
     el.appendChild(b);
   }
-  document.getElementById('toasts').appendChild(el);
+  const box = document.getElementById('toasts');
+  box.appendChild(el);
+  // keep the stack short: the oldest plain toasts make room, ones with an action stay longest
+  const plain = [...box.children].filter(t=>!t.querySelector('.toast-action') && !t.classList.contains('out'));
+  if(box.children.length > 4 && plain.length) plain[0].remove();
   setTimeout(remove, opts.duration || 4200);
 }
 function toggleNotifCenter(){
@@ -903,14 +959,14 @@ const BACKUP_KEY = 'lqa_last_backup';
 function lastBackupAt(){ try{ return +localStorage.getItem(BACKUP_KEY) || 0; }catch(e){ return 0; } }
 function dataIsEmpty(){ return !dbList('projects').length && !dbList('glossaries').length; }
 function backupStats(){
-  const tables = Object.keys(DB).filter(t=>Array.isArray(DB[t]));
+  const tables = Object.keys(DB).filter(t=>Array.isArray(DB[t]) && !t.startsWith('_'));
   let bytes = 0; tables.forEach(t=>{ try{ bytes += JSON.stringify(DB[t]).length; }catch(e){} });
   return {tables, bytes};
 }
 function fmtBytes(n){ return n>1048576 ? (n/1048576).toFixed(1)+' МБ' : Math.max(1,Math.round(n/1024))+' КБ'; }
 function downloadBackup(){
   const payload = {app:'lqa-hub', version:1, exportedAt:nowISO(), tables:{}};
-  Object.keys(DB).forEach(t=>{ if(Array.isArray(DB[t])) payload.tables[t] = DB[t]; });
+  Object.keys(DB).forEach(t=>{ if(Array.isArray(DB[t]) && !t.startsWith('_')) payload.tables[t] = DB[t]; });
   const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'lqa-hub-backup-'+new Date().toISOString().slice(0,10)+'.json';
@@ -931,11 +987,13 @@ async function restoreBackupFromFile(file){
   const t = data.tables;
   const n = k=>(t[k]||[]).length;
   const ok = await uiConfirm({title:'Восстановить из резервной копии?', okText:'Восстановить', icon:'upload',
-    text:`Копия от <b>${esc(fmtDate(data.exportedAt))}</b>: ${n('projects')} проектов, ${n('rows').toLocaleString('ru-RU')} строк, ${n('issues').toLocaleString('ru-RU')} проблем, ${n('visualShots')} скриншотов.<br><br>Всё, что сейчас есть в платформе, заменится содержимым копии. Если сомневаешься — сначала скачай копию текущих данных.`});
+    text:`Копия от <b>${esc(fmtDate(data.exportedAt))}</b>: ${n('projects')} проектов, ${n('rows').toLocaleString('ru-RU')} строк, ${n('issues').toLocaleString('ru-RU')} проблем, ${n('visualShots')} скриншотов.<br><br>${syncEnabled() ? 'Командное хранилище включено: записи из копии добавятся к данным команды и заменят совпадающие, остальное у команды не пропадёт.' : 'Всё, что сейчас есть в платформе, заменится содержимым копии. Если сомневаешься — сначала скачай копию текущих данных.'}`});
   if(!ok) return;
   const before = snapshotTables(Object.keys(DB));
-  Object.keys(DB).forEach(k=>{ if(!(k in t)) dbSave(k, []); });
-  Object.keys(t).forEach(k=>{ if(Array.isArray(t[k])) dbSave(k, t[k]); });
+  Object.keys(DB).forEach(k=>{ if(!(k in t) && !k.startsWith('_')) dbSave(k, []); });
+  Object.keys(t).forEach(k=>{ if(Array.isArray(t[k]) && !k.startsWith('_')) dbSave(k, t[k]); });
+  // with team storage on, a restore is merged into the team data rather than deleting what's not in the file
+  if(syncEnabled()){ DB._sync = [{id:'state', lastRev:0, base:{}}]; saveSyncState(); }
   getSettings();
   issuesPageState = {};
   toastUndo('Данные восстановлены из копии', before, ()=>{ issuesPageState = {}; router(); });
@@ -947,7 +1005,7 @@ function backupCardHtml(){
   return `<div class="card" id="backupCard">
     <div class="row between" style="align-items:flex-start;">
       <div style="min-width:0;"><h3 style="margin-bottom:4px;">Данные и резервная копия</h3>
-        <div class="hint" style="margin:0;max-width:620px;">Все данные хранятся только в этом браузере. Если очистить данные сайта или открыть платформу на другом компьютере, их не будет — поэтому время от времени скачивай резервную копию. Из неё же можно перенести всё на другой компьютер.</div>
+        <div class="hint" style="margin:0;max-width:620px;">${syncEnabled() ? 'Данные синхронизируются с командным хранилищем. Резервная копия — страховка на случай, если что-то удалят по ошибке.' : 'Все данные хранятся только в этом браузере. Если очистить данные сайта или открыть платформу на другом компьютере, их не будет — поэтому время от времени скачивай резервную копию. Из неё же можно перенести всё на другой компьютер.'}</div>
         <div class="row" style="gap:18px;margin-top:12px;font-size:13px;color:var(--text-soft);">
           <span>Объём данных: <b style="color:var(--text);">${fmtBytes(st.bytes)}</b></span>
           <span>Последняя копия: <b style="color:${last && Date.now()-last<7*864e5?'var(--ok)':'var(--high)'};">${last?timeAgo(last):'ещё не делалась'}</b></span>
@@ -956,6 +1014,192 @@ function backupCardHtml(){
     </div>
   </div>`;
 }
+
+/* =========================================================
+   TEAM STORAGE — record-level sync through the Apps Script backend (Google Drive)
+   Local changes are found by comparing a hash of every record with the hash it had at the last
+   sync ("base"); they're pushed, then everything newer than our last known server revision is
+   pulled and merged record by record. Deletions travel as ids. Tables starting with "_" are
+   local-only; AI connection settings stay per browser.
+   ========================================================= */
+const SYNC_KEY = 'lqa_sync';
+const SYNC_LOCAL_SETTINGS = ['aiEnabled','aiEndpointUrl','aiModel','aiToken','aiBatchSize'];
+const SYNC_IMMUTABLE = {visualShotImages:true};
+const SYNC_BATCH_BYTES = 3500000;
+let syncBusy = false, syncAgain = false, syncTimer = null, syncApplying = false;
+let syncStatus = {state:'off', at:0, msg:'', sent:0, got:0};
+function syncEnabled(){ try{ return localStorage.getItem(SYNC_KEY)==='on'; }catch(e){ return false; } }
+function syncState(){
+  let st = (DB._sync||[])[0];
+  if(!st){ st = {id:'state', lastRev:0, base:{}}; DB._sync = [st]; }
+  return st;
+}
+function saveSyncState(){ idbPersist('_sync', DB._sync); }
+function fnvHash(str){ let h = 0x811c9dc5; for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h>>>0).toString(36)+str.length.toString(36); }
+function syncStrip(t, rec){ if(t!=='settings') return rec; const c = Object.assign({}, rec); SYNC_LOCAL_SETTINGS.forEach(k=>delete c[k]); return c; }
+function syncHash(t, rec){ return SYNC_IMMUTABLE[t] ? 'i' : fnvHash(JSON.stringify(syncStrip(t, rec))); }
+function syncTables(){ return Object.keys(DB).filter(t=>Array.isArray(DB[t]) && !t.startsWith('_')); }
+function collectLocalChanges(){
+  const st = syncState(), out = {}; let count = 0;
+  syncTables().forEach(t=>{
+    const base = st.base[t] || {}, seen = new Set(), ups = [];
+    DB[t].forEach(rec=>{
+      if(!rec || rec.id==null) return;
+      const id = String(rec.id); seen.add(id);
+      const h = syncHash(t, rec);
+      if(base[id]!==h) ups.push({rec:syncStrip(t, rec), h, id});
+    });
+    const dels = Object.keys(base).filter(id=>!seen.has(id));
+    if(ups.length || dels.length){ out[t] = {ups, dels}; count += ups.length + dels.length; }
+  });
+  return {changes:out, count};
+}
+// split into requests of a few MB — Apps Script accepts big bodies, but smaller ones fail less
+function buildSyncBatches(changes){
+  const batches = []; let cur = null, size = 0;
+  const fresh = ()=>{ cur = {push:{}, hashes:{}, dels:{}, n:0}; size = 0; batches.push(cur); };
+  fresh();
+  Object.entries(changes).forEach(([t, ch])=>{
+    ch.dels.forEach(id=>{ (cur.push[t] = cur.push[t] || {upserts:[], deletes:[]}).deletes.push(id); (cur.dels[t] = cur.dels[t] || []).push(id); cur.n++; });
+    ch.ups.forEach(u=>{
+      const len = JSON.stringify(u.rec).length;
+      if(size && size + len > SYNC_BATCH_BYTES) fresh();
+      (cur.push[t] = cur.push[t] || {upserts:[], deletes:[]}).upserts.push(u.rec);
+      (cur.hashes[t] = cur.hashes[t] || {})[u.id] = u.h;
+      size += len; cur.n++;
+    });
+  });
+  return batches;
+}
+async function syncRequest(body){
+  const s = getSettings();
+  const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({mode:'sync', token:s.aiToken||''}, body))});
+  if(!res.ok) throw new Error('backend ответил HTTP '+res.status);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+function applyRemoteChanges(changes){
+  const st = syncState(); let got = 0; const touchedTables = [];
+  syncApplying = true;
+  try{
+    Object.entries(changes||{}).forEach(([t, ch])=>{
+      if(t.startsWith('_')) return;
+      const arr = (DB[t]||[]).slice(), idx = new Map(arr.map((r,i)=>[String(r.id), i]));
+      const base = st.base[t] = st.base[t] || {}; let touched = false;
+      (ch.upserts||[]).forEach(rec=>{
+        const id = String(rec.id);
+        let incoming = rec;
+        if(t==='settings'){ const local = idx.has(id) ? arr[idx.get(id)] : {}; incoming = Object.assign({}, rec); SYNC_LOCAL_SETTINGS.forEach(k=>{ if(local && k in local) incoming[k] = local[k]; }); }
+        const h = syncHash(t, incoming);
+        if(idx.has(id)){
+          const cur = arr[idx.get(id)], curH = syncHash(t, cur);
+          if(curH===h){ base[id] = h; return; }
+          if(base[id] && curH!==base[id]) return; // edited here during this sync — ours goes up next time
+          arr[idx.get(id)] = incoming;
+        } else { idx.set(id, arr.length); arr.push(incoming); }
+        base[id] = h; touched = true; got++;
+      });
+      (ch.deletes||[]).forEach(id=>{ id = String(id); if(idx.has(id)){ arr[idx.get(id)] = null; touched = true; got++; } delete base[id]; });
+      if(touched){ DB[t] = arr.filter(Boolean); idbPersist(t, DB[t]); touchedTables.push(t); }
+    });
+  } finally { syncApplying = false; }
+  return {got, touchedTables};
+}
+function setSyncStatus(state, extra){ syncStatus = Object.assign({}, syncStatus, {state}, extra||{}); renderSyncBadge(); const card = document.getElementById('syncStatusLine'); if(card) card.innerHTML = syncStatusText(); }
+function syncStatusText(){
+  const s = syncStatus;
+  if(!syncEnabled()) return 'Выключено — данные только в этом браузере';
+  if(s.state==='busy') return 'Синхронизирую…';
+  if(s.state==='error') return '<span style="color:var(--crit)">Ошибка: '+esc(s.msg)+'</span>';
+  if(!s.at) return 'Ещё не синхронизировалось';
+  return 'Синхронизировано '+timeAgo(s.at)+(s.sent||s.got?' · отправлено '+s.sent+', получено '+s.got:'');
+}
+function renderSyncBadge(){
+  const b = document.getElementById('syncBadge'); if(!b) return;
+  b.style.display = syncEnabled() ? 'flex' : 'none';
+  b.dataset.state = syncStatus.state;
+  b.title = 'Командное хранилище: '+syncStatusText().replace(/<[^>]+>/g,'')+'. Нажми, чтобы синхронизировать';
+}
+function uiIsBusy(){
+  const a = document.activeElement;
+  return (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.getElementById('modalRoot').children.length || document.getElementById('dialogRoot')?.children.length
+    || document.getElementById('shotViewer') || document.getElementById('detailPanel').classList.contains('open');
+}
+async function syncNow(manual){
+  const s = getSettings();
+  if(!syncEnabled()){ if(manual) toast('Командное хранилище выключено — включи его в Настройках'); return; }
+  if(!s.aiEndpointUrl){ setSyncStatus('error', {msg:'не указан адрес backend в Настройках'}); return; }
+  if(syncBusy){ syncAgain = true; return; }
+  syncBusy = true; setSyncStatus('busy');
+  try{
+    const st = syncState();
+    let sent = 0, result = {got:0, touchedTables:[]};
+    // first sync of this browser: take the team's data first, so local defaults (e.g. fresh
+    // settings) don't overwrite what the team already has; our own records go up right after
+    if(!st.lastRev){
+      const first = await syncRequest({since:0, pull:true, push:{}});
+      result = applyRemoteChanges(first.changes); st.lastRev = first.rev; saveSyncState();
+    }
+    const {changes} = collectLocalChanges();
+    const batches = buildSyncBatches(changes);
+    for(let b=0; b<batches.length; b++){
+      const last = b===batches.length-1;
+      const resp = await syncRequest({since:st.lastRev, pull:last, push:batches[b].push});
+      Object.entries(batches[b].hashes).forEach(([t, m])=>{ st.base[t] = Object.assign(st.base[t]||{}, m); });
+      Object.entries(batches[b].dels).forEach(([t, ids])=>{ ids.forEach(id=>{ if(st.base[t]) delete st.base[t][id]; }); });
+      sent += batches[b].n;
+      if(last){ const r2 = applyRemoteChanges(resp.changes); result = {got:result.got+r2.got, touchedTables:[...new Set(result.touchedTables.concat(r2.touchedTables))]}; st.lastRev = resp.rev; }
+      saveSyncState();
+    }
+    setSyncStatus('ok', {at:Date.now(), sent, got:result.got, msg:''});
+    if(result.touchedTables.length){
+      renderSidebar();
+      if(!uiIsBusy()) router();
+      else toast('Команда внесла изменения', {duration:8000, action:{label:'Обновить', fn:()=>router()}});
+    }
+    if(manual) toast(result.got||sent ? 'Синхронизировано: отправлено '+sent+', получено '+result.got : 'Всё уже синхронизировано');
+  }catch(err){
+    setSyncStatus('error', {msg: /Failed to fetch/.test(err.message) ? 'backend недоступен' : err.message});
+    if(manual) toast('Не получилось синхронизировать: '+syncStatus.msg);
+  }finally{
+    syncBusy = false;
+    if(syncAgain){ syncAgain = false; scheduleSync(1500); }
+  }
+}
+function scheduleSync(delay){
+  if(!syncEnabled() || syncApplying) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>syncNow(false), delay==null ? 3000 : delay);
+}
+function onLocalChange(table){ if(table && String(table).startsWith('_')) return; scheduleSync(); }
+async function setSyncEnabled(on){
+  const s = getSettings();
+  if(on && !s.aiEndpointUrl){ toast('Сначала укажи адрес backend и ключ доступа в блоке «Проверка ИИ» ниже'); router(); return; }
+  if(on){
+    const ok = await uiConfirm({title:'Включить командное хранилище?', icon:'globe', danger:false, okText:'Включить',
+      text:'Данные этого браузера отправятся в общее хранилище на Google Диске, а данные коллег придут сюда. Дальше всё синхронизируется само, раз в минуту и после изменений.<br><br>Перед первым включением лучше скачать резервную копию.'});
+    if(!ok){ router(); return; }
+  }
+  try{ localStorage.setItem(SYNC_KEY, on ? 'on' : 'off'); }catch(e){}
+  setSyncStatus(on ? 'idle' : 'off');
+  router();
+  if(on) syncNow(true);
+}
+function syncCardHtml(){
+  const on = syncEnabled(), s = getSettings();
+  return `<div class="card">
+    <div class="row between" style="align-items:flex-start;">
+      <div style="min-width:0;flex:1;"><h3 style="margin-bottom:4px;">Командное хранилище</h3>
+        <div class="hint" style="margin:0;max-width:640px;">Вся команда работает в одних данных: проекты, строки, проблемы, решения, комментарии, скриншоты и правила проверки. Данные хранятся на Google Диске через тот же backend, что и ИИ (ключ ИИ для этого не нужен). Инструкция — в <span class="mono">apps-script/README.md</span>.</div>
+        <div class="row" style="gap:10px;margin-top:12px;font-size:13px;color:var(--text-soft);"><span class="sync-dot" data-state="${on?syncStatus.state:'off'}"></span><span id="syncStatusLine">${syncStatusText()}</span></div>
+      </div>
+      <div class="row">${on ? `<button class="btn secondary" onclick="syncNow(true)">${icon('globe',15)}Синхронизировать</button><button class="btn ghost" onclick="setSyncEnabled(false)">Выключить</button>` : `<button class="btn" ${s.aiEndpointUrl?'':'disabled title="Сначала укажи адрес backend ниже"'} onclick="setSyncEnabled(true)">${icon('globe',15)}Включить</button>`}</div>
+    </div>
+  </div>`;
+}
+setInterval(()=>{ if(syncEnabled() && document.visibilityState==='visible') syncNow(false); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') scheduleSync(500); });
 
 /* =========================================================
    MODAL
@@ -1003,6 +1247,20 @@ const GUILLEMET_LANGS = ['ru','kk','ky','be','tg','uz','az','hy','uk'];
 function parseDntTerms(text){ return String(text||'').split(/[\n,;]+/).map(t=>t.trim()).filter(t=>t.length>1); }
 function hasWholeTerm(text, term){
   return new RegExp('(?<![\\p{L}\\p{N}])'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])', 'u').test(text||'');
+}
+// Languages whose UI is not written in Cyrillic: Cyrillic letters in their translation are almost
+// always an untranslated or copy-pasted Russian piece. (Uzbek also exists in Cyrillic, so for uz
+// only a Latin text with Cyrillic words mixed in is flagged.)
+const NON_CYRILLIC_LANGS = ['en','tr','fr','az','uz','sw','hy','ka','zh','ko','ar','he','am'];
+const CYR_WORD_RE = /[\u0400-\u04FF]+(?:[-'’][\u0400-\u04FF]+)*/gu;
+function visibleText(str){ return String(str||'').replace(new RegExp(VAR_RE.source,'g'),' ').replace(new RegExp(TAG_RE.source,'g'),' ').replace(/\{[^{}]*\}/g,' '); }
+// "checkout.button.* = 20" per line → [{re, max, pattern}]
+function parseLengthRules(text){
+  return String(text||'').split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('#')).map(l=>{
+    const m = /^(.+?)\s*[=:]\s*(\d+)\s*$/.exec(l); if(!m) return null;
+    const pattern = m[1].trim();
+    return {pattern, max:+m[2], re:new RegExp('^'+pattern.split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$', 'i')};
+  }).filter(Boolean);
 }
 const REBRAND_TERMS = ['WB','ВБ','RWB','РВБ','Wildberries','Вайлдберриз'];
 const REBRAND_LANGUAGES = ['az']; // languages currently following the WB→N11 rebrand rule
@@ -1204,6 +1462,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const allRows = dbList('rows');
   const rowsById = {}; allRows.forEach(r=>{ rowsById[r.id]=r; });
   const dntTerms = parseDntTerms(s.dntTerms);
+  const lengthRules = parseLengthRules(s.lengthRules);
   const CHUNK = 1500;
   for(let start=0; start<rowIds.length; start+=CHUNK){
     const chunk = rowIds.slice(start, start+CHUNK);
@@ -1285,6 +1544,23 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
           push('Формат под страну','Низкая','Прямые кавычки вместо «ёлочек», как в исходном тексте', {highlightField:'target', highlightText:m[0], expectedText:'«'+m[0].slice(1,-1)+'»'});
         if(lang==='en' && (m = tgt.match(/«[^»]*»/)))
           push('Формат под страну','Низкая','«Ёлочки» в английском тексте — принято “…” или "…"', {highlightField:'target', highlightText:m[0]});
+      }
+      if(s.checkScript && NON_CYRILLIC_LANGS.includes(lang) && tgtTrim){
+        const vis = visibleText(tgt);
+        const cyr = vis.match(CYR_WORD_RE);
+        if(cyr){
+          const letters = (vis.match(/\p{L}/gu)||[]).length, cyrLetters = cyr.join('').length;
+          if(lang!=='uz' || cyrLetters/letters < .5)
+            push('Не тот алфавит','Высокая','Кириллица в тексте на языке, который пишется не кириллицей: «'+cyr.slice(0,3).join(', ')+'» — похоже на непереведённый кусок', {highlightField:'target', highlightText:cyr[0]});
+        }
+      }
+      if(s.checkLimits && lengthRules.length && r.key){
+        const rule = lengthRules.find(x=>x.re.test(r.key));
+        if(rule){
+          const forms = [tgt].concat(r.targetForms ? r.targetForms.slice(1) : []);
+          const longest = Math.max(...forms.map(f=>visibleText(f).replace(/\s+/g,' ').trim().length));
+          if(longest > rule.max) push('Лимит длины','Высокая','Длиннее лимита: '+longest+' символов при максимуме '+rule.max+' (правило «'+rule.pattern+'»)');
+        }
       }
       if(s.checkDnt && dntTerms.length){
         dntTerms.forEach(term=>{
@@ -1509,6 +1785,8 @@ function checkSettingsFieldsHtml(prefix, collapsed){
     <label class="checkrow"><input type="checkbox" id="${prefix}Plurals" ${s.checkPlurals?'checked':''}> Формы множественного числа</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Locale" ${s.checkLocale?'checked':''}> Формат под страну (валюта, кавычки)</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Dnt" ${s.checkDnt?'checked':''}> Бренды «Не переводить»</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Script" ${s.checkScript?'checked':''}> Алфавит языка</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Limits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам</label>
   </div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
@@ -1520,7 +1798,8 @@ const CHECK_TYPE_LABELS = {
   checkVars:'Переменные', checkTags:'Разметка', checkBreaks:'Перенос строки', checkSpaces:'Пробелы',
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
   checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
-  checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить'
+  checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить',
+  checkScript:'Не тот алфавит', checkLimits:'Лимит длины'
 };
 // After an upload that ran with only SOME checks enabled (e.g. only "Ребрендинг"), jumping
 // to the unfiltered Строки view would bury the handful of real findings under thousands of
@@ -1551,6 +1830,8 @@ function readCheckSettingsOverride(prefix){
     checkPlurals: get('Plurals').checked,
     checkLocale: get('Locale').checked,
     checkDnt: get('Dnt').checked,
+    checkScript: get('Script').checked,
+    checkLimits: get('Limits').checked,
   };
   if(get('SaveDefault') && get('SaveDefault').checked) saveSettings(override);
   return override;
@@ -1669,6 +1950,7 @@ const NAV = [
   {icon:'home', label:'Главная', route:'#/', group:'Основное'},
   {icon:'folder', label:'Проекты', route:'#/projects', group:'Основное'},
   {icon:'alertTriangle', label:'Проблемы', route:'#/issues', group:'Основное'},
+  {icon:'check', label:'Мои задачи', route:'#/my', group:'Основное'},
   {icon:'image', label:'Визуальная проверка', route:'#/visual', group:'Основное'},
   {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Основное'},
   {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
@@ -1707,7 +1989,8 @@ function renderSidebar(){
     html += `<div class="side-group-label">${esc(g)}</div>`;
     groups[g].forEach(n=>{
       const active = h===n.route || (n.route!=='#/' && h.startsWith(n.route));
-      const badge = (n.route==='#/issues' && openIssueCount) ? `<span class="side-badge-count">${openIssueCount}</span>` : '';
+      const myCount = n.route==='#/my' ? myTaskCount() : 0;
+      const badge = (n.route==='#/issues' && openIssueCount) ? `<span class="side-badge-count">${openIssueCount}</span>` : myCount ? `<span class="side-badge-count me">${myCount}</span>` : '';
       html += `<a class="side-link ${active?'active':''}" href="${n.route}"><span class="ic">${icon(n.icon)}</span><span class="lbl">${n.label}</span>${badge}</a>`;
     });
   });
@@ -1739,6 +2022,7 @@ function router(){
     if(parts[0]==='project' && parts[1] && parts[2]==='folder' && parts[3]) return renderFolderDetail(content, parts[1], parts[3], parts[4]||'overview');
     if(parts[0]==='project' && parts[1]) return renderProjectDetail(content, parts[1], parts[2]||'overview', parts[3]);
     if(parts[0]==='issues') return renderIssuesPage(content);
+    if(parts[0]==='my') return renderMyTasks(content);
     if(parts[0]==='visual' && parts[1]) return renderVisualSession(content, parts[1]);
     if(parts[0]==='visual') return renderVisualList(content);
     if(parts[0]==='review-queue') return renderReviewQueue(content);
@@ -1817,7 +2101,9 @@ function languageStats(){
       if(i.severity==='Критическая') st.crit++; else if(i.severity==='Высокая') st.high++; else if(i.severity==='Средняя') st.med++; else st.low++;
     } else st.resolved++;
   });
-  return Object.values(by).map(st=>Object.assign(st, {quality: st.rows ? 1 - st.rowsWithOpen.size/st.rows : (st.open?0:1)}))
+  const runsByLang = {};
+  dbList('runs').filter(r=>typeof r.quality==='number').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).forEach(r=>{ (runsByLang[r.languageCode] = runsByLang[r.languageCode]||[]).push(r.quality); });
+  return Object.values(by).map(st=>{ const q = runsByLang[st.code]||[]; return Object.assign(st, {quality: st.rows ? 1 - st.rowsWithOpen.size/st.rows : (st.open?0:1), trend: q.length>1 ? q[q.length-1]-q[q.length-2] : null}); })
     .sort((a,b)=> b.crit-a.crit || b.open-a.open || b.rows-a.rows);
 }
 function openIssuesForLanguage(code){
@@ -1852,7 +2138,7 @@ function renderDashboard(el){
   const sevColors = {'Критическая':'var(--crit)','Высокая':'var(--high)','Средняя':'var(--med)','Низкая':'var(--low)'};
   const delta = foundWeek - foundPrevWeek;
   const last = lastBackupAt();
-  const needBackup = !last || Date.now()-last > 7*864e5;
+  const needBackup = !syncEnabled() && (!last || Date.now()-last > 7*864e5);
 
   el.innerHTML = `
     <section class="dash-hero">
@@ -1887,7 +2173,7 @@ function renderDashboard(el){
       return `<button type="button" class="lang-card" onclick="openIssuesForLanguage('${esc(l.code)}')">
         <div class="lang-card-head">
           <span class="lang-flag">${languageFlag(l.code)}</span>
-          <div style="min-width:0;flex:1;text-align:left;"><div class="lang-name">${esc(languageLabel(l.code))}</div><div class="lang-code">${esc(l.code)} · ${l.rows.toLocaleString('ru-RU')} ${plural(l.rows,'строка','строки','строк')}</div></div>
+          <div style="min-width:0;flex:1;text-align:left;"><div class="lang-name">${esc(languageLabel(l.code))}</div><div class="lang-code">${esc(l.code)} · ${l.rows.toLocaleString('ru-RU')} ${plural(l.rows,'строка','строки','строк')}${l.trend!=null && Math.round(l.trend*100) ? ` · <span style="color:${l.trend>0?'var(--ok)':'var(--crit)'};font-weight:600;" title="С прошлой загрузки">${l.trend>0?'▲':'▼'} ${Math.abs(Math.round(l.trend*100))}%</span>` : ''}</div></div>
           <div class="lang-ring">${ringSvg(l.quality, 48, 5, qualityColor(l.quality))}<b>${Math.round(l.quality*100)}</b></div>
         </div>
         <div class="lang-bar">${total ? seg(l.crit,'var(--crit)')+seg(l.high,'var(--high)')+seg(l.med,'var(--med)')+seg(l.low,'var(--low)') : '<i style="flex:1;background:var(--ok);opacity:.35;"></i>'}</div>
@@ -2352,7 +2638,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr><td class="mono">${esc(f.filename)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td><button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button></td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td>${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -2485,6 +2771,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
   const status = document.getElementById('folderUploadStatus');
   let allNewRowIds = [];
   const byLanguage = {}; // for a per-language run summary when a zip mixes several languages
+  const undoSnap = snapshotTables(['rows','issues','files','runs']);
+  const versionPairs = [];
   for(const item of items){
     status.textContent = 'Разбираю ' + item.name + '…';
     const text = typeof item.source === 'string' ? item.source : await item.source.text();
@@ -2493,6 +2781,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
     const fileRec = {id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy};
+    const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
+    if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
     const rowsArr = dbList('rows');
     const newIdsForThisFile = [];
@@ -2511,10 +2801,15 @@ async function handleFolderPoFiles(projectId, componentId, items){
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
     status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
+  const diffs = reconcileVersions(versionPairs);
   Object.entries(byLanguage).forEach(([languageCode, rowIds])=>{
-    const issues = dbQuery('issues', i=>rowIds.includes(i.rowId));
-    dbUpsert('runs', {id:uid(), projectId, componentId, languageCode, fileId:null, rowCount:rowIds.length, issueCount:issues.length, createdAt:nowISO(), runBy:uploadedBy});
+    const idSet = new Set(rowIds);
+    const issues = dbQuery('issues', i=>idSet.has(i.rowId));
+    const d = diffs[componentId+'|'+languageCode];
+    dbUpsert('runs', {id:uid(), projectId, componentId, languageCode, fileId:null, rowCount:rowIds.length, issueCount:issues.length, quality:rowsQuality(rowIds), versionDiff:d||null, createdAt:nowISO(), runBy:uploadedBy});
+    if(d) toast('Новая версия ('+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
+  if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
   const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
@@ -2554,7 +2849,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td class="mono">${esc(f.filename)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td><button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button></td></tr>`;
+          <td>${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -2661,6 +2956,8 @@ async function handlePoFiles(projectId, items){
   };
   let allNewRowIds = [];
   const byGroup = {}; // "componentId|languageCode" -> rowIds, for per-group run records
+  const undoSnap = snapshotTables(['rows','issues','files','runs','components']);
+  const versionPairs = [];
   for(const item of items){
     status.textContent = 'Разбираю ' + item.name + '…';
     const text = typeof item.source === 'string' ? item.source : await item.source.text();
@@ -2670,6 +2967,8 @@ async function handlePoFiles(projectId, items){
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
     const fileRec = {id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy};
+    const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
+    if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
     const rowsArr = dbList('rows');
     const newIdsForThisFile = [];
@@ -2689,10 +2988,15 @@ async function handlePoFiles(projectId, items){
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
     status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
+  const diffs = reconcileVersions(versionPairs);
   Object.values(byGroup).forEach(({componentId, languageCode, rowIds})=>{
-    const issues = dbQuery('issues', i=>rowIds.includes(i.rowId));
-    dbUpsert('runs', {id:uid(), projectId, componentId, languageCode, fileId:null, rowCount:rowIds.length, issueCount:issues.length, createdAt:nowISO(), runBy:uploadedBy});
+    const idSet = new Set(rowIds);
+    const issues = dbQuery('issues', i=>idSet.has(i.rowId));
+    const d = diffs[componentId+'|'+languageCode];
+    dbUpsert('runs', {id:uid(), projectId, componentId, languageCode, fileId:null, rowCount:rowIds.length, issueCount:issues.length, quality:rowsQuality(rowIds), versionDiff:d||null, createdAt:nowISO(), runBy:uploadedBy});
+    if(d) toast('Новая версия ('+(dbGet('components',componentId)?.name||'')+', '+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
+  if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
   const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
@@ -2706,7 +3010,7 @@ async function rerunFileCheck(fileId){
   toast('Перезапускаю проверку…');
   await runFullCheckForProject(file.projectId, rowIds);
   const issues = dbQuery('issues', i=>rowIds.includes(i.rowId));
-  dbUpsert('runs', {id:uid(), projectId:file.projectId, componentId:file.componentId, languageCode:file.languageCode, fileId, rowCount:rowIds.length, issueCount:issues.length, createdAt:nowISO()});
+  dbUpsert('runs', {id:uid(), projectId:file.projectId, componentId:file.componentId, languageCode:file.languageCode, fileId, rowCount:rowIds.length, issueCount:issues.length, quality:rowsQuality(rowIds), createdAt:nowISO()});
   toast('Проверка перезапущена');
   router();
 }
@@ -2728,7 +3032,9 @@ function openRowDetail(rowId){
       <div><div class="hint">Исходный текст</div><div class="mono" style="padding:8px 10px;background:var(--bg);border-radius:7px;">${highlightTokens(r.source)}</div></div>
       <div><div class="hint">Перевод</div><div class="mono" style="padding:8px 10px;background:var(--bg);border-radius:7px;">${highlightTokens(r.target)}</div></div>
       ${pluralFormsHtml(r)}
+      ${tmRowHtml(r)}
     </div>
+    ${rowContextHtml(r)}
     <div style="margin-top:14px;"><div class="hint" style="margin-bottom:6px;">Найденные проблемы (${issues.length})</div>
       ${issues.length ? issues.map(i=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
         <span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span> <span class="pill type">${esc(i.type)}</span> <span class="pill ${statusClass(i.status)}">${esc(i.status)}</span>
@@ -2763,9 +3069,9 @@ function renderProjectChecksTable(projectId){
   const allRuns = dbQuery('runs', r=>r.projectId===projectId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const key = 'projChecks_'+projectId;
   const {slice, page, totalPages} = paginateArray(allRuns, key, 20);
-  wrap.innerHTML = `<div class="card"><h3>История проверок</h3>
-    ${allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Папка</th><th>Язык</th><th>Строк</th><th>Найдено проблем</th><th>Дата</th><th>Кто</th></tr></thead><tbody>
-      ${slice.map(r=>{ const c=dbGet('components', r.componentId); return `<tr><td>${folderBadge(c)}</td><td>${esc(r.languageCode)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td></tr>`; }).join('')}
+  wrap.innerHTML = `${qualityTrendChart(allRuns)}<div class="card"><h3>История проверок</h3>
+    ${allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Папка</th><th>Язык</th><th>Строк</th><th>Найдено проблем</th><th>Качество</th><th title="−исправлено  +новых  осталось">Изменения</th><th>Дата</th><th>Кто</th></tr></thead><tbody>
+      ${slice.map(r=>{ const c=dbGet('components', r.componentId); return `<tr><td>${folderBadge(c)}</td><td>${esc(r.languageCode)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${typeof r.quality==='number'?`<b style="color:${qualityColor(r.quality)}">${Math.round(r.quality*100)}%</b>`:'<span class="hint" style="margin:0;">—</span>'}</td><td>${runChangeHtml(r)}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td></tr>`; }).join('')}
     </tbody></table></div>${pagerHtml(key, page, totalPages, allRuns.length, `renderProjectChecksTable('${projectId}')`)}` : `<div class="empty">Проверок пока не было.</div>`}
   </div>`;
 }
@@ -2795,9 +3101,9 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
     : [...new Set(dbList('issues').map(i=>i.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
   const componentOptions = fixedFilter.componentId ? [] :
     (fixedFilter.projectId ? dbQuery('components', c=>c.projectId===fixedFilter.projectId) : dbList('components').filter(c=>dbList('issues').some(i=>i.componentId===c.id)));
-  const fileOptions = fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
+  const fileOptions = (fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
     : fixedFilter.projectId ? dbQuery('files', f=>f.projectId===fixedFilter.projectId)
-    : dbList('files');
+    : dbList('files')).filter(f=>!f.supersededBy);
   const SEV_OPTS = ['Критическая','Высокая','Средняя','Низкая'].map(v=>[v,v]);
   const STATUS_OPTS = ['Новая','На проверке','Принята','Принята после исправления','Отклонена','Ложное срабатывание'].map(v=>[v,v]);
   const TYPE_OPTS = [...new Set(dbList('issues').map(i=>i.type))].map(v=>[v,v]);
@@ -2828,7 +3134,8 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   // quick-filter chips: a few one-click presets on top of the full filter bar below
   const qwrap = document.getElementById(key+'_quickwrap');
   if(qwrap){
-    const allIssues = dbList('issues').filter(i => !fixedFilter.projectId || i.projectId===fixedFilter.projectId).filter(i => !fixedFilter.componentId || i.componentId===fixedFilter.componentId).filter(i => !fixedFilter.sessionId || i.sessionId===fixedFilter.sessionId);
+    const onlyIds = fixedFilter.ids ? new Set(fixedFilter.ids) : null;
+    const allIssues = dbList('issues').filter(i => !fixedFilter.projectId || i.projectId===fixedFilter.projectId).filter(i => !fixedFilter.componentId || i.componentId===fixedFilter.componentId).filter(i => !fixedFilter.sessionId || i.sessionId===fixedFilter.sessionId).filter(i => !onlyIds || onlyIds.has(i.id));
     const chips = [
       ['all','Все', allIssues.length],
       ['critical','Критические', allIssues.filter(i=>i.severity==='Критическая').length],
@@ -2866,6 +3173,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   if(fixedFilter.componentId) issues = issues.filter(i=>i.componentId===fixedFilter.componentId);
   else if(f.comp.size) issues = issues.filter(i=>f.comp.has(i.componentId));
   if(fixedFilter.sessionId) issues = issues.filter(i=>i.sessionId===fixedFilter.sessionId);
+  if(fixedFilter.ids){ const only = new Set(fixedFilter.ids); issues = issues.filter(i=>only.has(i.id)); }
   if(f.file.size){
     const rowIdsInFiles = new Set(dbQuery('rows', r=>f.file.has(r.fileId)).map(r=>r.id));
     issues = issues.filter(i=>rowIdsInFiles.has(i.rowId));
@@ -2881,7 +3189,8 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
       return i.text.toLowerCase().includes(q) || (r && ((r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q) || (r.key||'').toLowerCase().includes(q)));
     });
   }
-  issues.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  if(fixedFilter.byDeadline) issues.sort((a,b)=>deadlineTs(a.deadline)-deadlineTs(b.deadline) || new Date(b.createdAt)-new Date(a.createdAt));
+  else issues.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
 
   const pageSize = 25;
   const totalPages = Math.max(1, Math.ceil(issues.length/pageSize));
@@ -2934,9 +3243,9 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
     : [...new Set(dbList('rows').map(r=>r.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
   const componentOptions = fixedFilter.componentId ? [] :
     (fixedFilter.projectId ? dbQuery('components', c=>c.projectId===fixedFilter.projectId) : dbList('components'));
-  const fileOptions = fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
+  const fileOptions = (fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
     : fixedFilter.projectId ? dbQuery('files', f=>f.projectId===fixedFilter.projectId)
-    : dbList('files');
+    : dbList('files')).filter(f=>!f.supersededBy);
   const SEV_OPTS = ['Критическая','Высокая','Средняя','Низкая'].map(v=>[v,v]);
   const STATUS_OPTS = ['Новая','На проверке','Принята','Принята после исправления','Отклонена','Ложное срабатывание'].map(v=>[v,v]);
   const TYPE_OPTS = [...new Set(dbList('issues').map(i=>i.type))].map(v=>[v,v]);
@@ -3364,12 +3673,8 @@ function openIssueDetail(issueId){
       ${r ? `<button class="btn ghost sm" onclick="openRowDetail('${i.rowId}')">Открыть строку</button>` : ''}
       ${i.visual ? '' : `<button class="btn ghost sm" onclick="passToVisualCheck('${issueId}')">В визуальную проверку</button>`}
     </div>
-    <div style="margin-top:16px;">
-      <div class="hint" style="margin-bottom:6px;">История</div>
-      ${(i.history||[]).map(h=>`<div class="hint">${fmtDate(h.ts)} — ${esc(h.action)}${h.reviewer?' ('+esc(h.reviewer)+')':''}${h.comment?': '+esc(h.comment):''}${h.oldTarget!=null?' (было: «'+esc(h.oldTarget)+'», стало: «'+esc(h.newTarget)+'»)':''}</div>`).join('')}
-    </div>
-    <label class="field" style="margin-top:12px;">Заметка (не меняет статус)<textarea id="issueNoteInput" style="min-height:50px;" placeholder="например: уточнить у переводчика контекст"></textarea></label>
-    <div class="row" style="margin-top:6px;"><button class="btn secondary sm" onclick="addIssueNote('${issueId}')">Добавить заметку</button></div>
+    ${!i.visual ? rowContextHtml(r, issueId) : ''}
+    ${issueDiscussionHtml(i, issueId)}
     <label class="field" style="margin-top:12px;">Дедлайн<select id="issueDeadlineType" onchange="toggleDeadlineDateVisibility('issueDeadlineType','issueDeadlineDate')">
       <option value="" ${!i.deadline?'selected':''}>Без дедлайна</option>
       <option value="asap" ${i.deadline&&i.deadline.type==='asap'?'selected':''}>Как можно скорее</option>
@@ -3386,12 +3691,47 @@ function openIssueDetail(issueId){
 function addIssueNote(issueId){
   const el = document.getElementById('issueNoteInput');
   const val = el ? el.value.trim() : '';
-  if(!val){ toast('Введи текст заметки'); return; }
+  if(!val){ toast('Напиши комментарий'); return; }
   const i = dbGet('issues', issueId);
-  i.history.push({ts:nowISO(), action:'Заметка', comment:val});
+  i.history = (i.history||[]).concat([{ts:nowISO(), action:'Заметка', comment:val, author:getMe()||null}]);
   dbUpsert('issues', i);
-  toast('Заметка добавлена');
   openIssueDetail(issueId);
+  setTimeout(()=>{ const t = document.querySelector('.discussion .bubble:last-child'); if(t) t.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 50);
+}
+// Comments (history entries with action «Заметка») are shown as a conversation; everything else is a compact event log.
+function issueDiscussionHtml(i, issueId){
+  const hist = i.history||[];
+  const notes = hist.filter(h=>h.action==='Заметка');
+  const events = hist.filter(h=>h.action!=='Заметка');
+  const me = getMe();
+  return `<div class="discussion-block">
+    <div class="section-label" style="margin-top:20px;">Обсуждение${notes.length?' · '+notes.length:''}</div>
+    <div class="discussion">${notes.length ? notes.map(h=>{ const who = h.author || h.reviewer || ''; const mine = sameName(who, me);
+      return `<div class="bubble ${mine?'mine':''}"><span class="bubble-ava" style="background:${who?folderColor(who):'var(--text-faint)'}">${who?esc(initialsOf(who).toUpperCase()):'?'}</span><div><div class="bubble-meta"><b>${esc(who||'Без имени')}</b> · ${timeAgo(+new Date(h.ts))}</div><div class="bubble-text">${esc(h.comment)}</div></div></div>`; }).join('')
+      : '<div class="hint" style="margin:0 0 8px;">Пока без комментариев — задай вопрос переводчику или оставь пояснение для команды.</div>'}</div>
+    <div class="comment-box"><textarea id="issueNoteInput" placeholder="${me?'Написать комментарий… (Ctrl+Enter — отправить)':'Написать комментарий… Чтобы подписываться, выбери себя — кнопка с инициалами вверху'}" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter')addIssueNote('${issueId}')"></textarea>
+      <button class="btn sm" onclick="addIssueNote('${issueId}')">Отправить</button></div>
+    ${events.length ? `<details class="history-log"><summary>История · ${events.length}</summary>${events.map(h=>`<div class="hint" style="margin:4px 0 0;">${fmtDate(h.ts)} — ${esc(h.action)}${h.reviewer?' ('+esc(h.reviewer)+')':''}${h.comment?': '+esc(h.comment):''}${h.oldTarget!=null?' (было: «'+esc(h.oldTarget)+'», стало: «'+esc(h.newTarget)+'»)':''}</div>`).join('')}</details>` : ''}
+  </div>`;
+}
+// Screenshots where this string (same key, any language) appears on screen — context for translators
+function rowScreens(r){
+  if(!r) return [];
+  const sameKeyRows = new Set(dbList('rows').filter(x=>x.projectId===r.projectId && (r.key ? x.key===r.key : x.source===r.source)).map(x=>x.id));
+  const seen = new Set(), out = [];
+  dbList('issues').forEach(i=>{
+    if(!i.visual || !i.shotId || !sameKeyRows.has(i.rowId) || seen.has(i.shotId)) return;
+    const sh = dbGet('visualShots', i.shotId); if(!sh) return;
+    const sess = dbGet('visualSessions', sh.sessionId);
+    seen.add(i.shotId); out.push({sh, sess, issueId:i.id});
+  });
+  return out;
+}
+function rowContextHtml(r, currentIssueId){
+  const shots = rowScreens(r);
+  if(!shots.length) return '';
+  return `<div class="section-label" style="margin-top:18px;">Где на экране · ${shots.length}</div>
+    <div class="ctx-shots">${shots.slice(0,6).map(x=>`<button type="button" class="ctx-shot" onclick="closeModal();openShotViewer('${x.sh.id}','${x.issueId}')" title="${esc((x.sess?x.sess.name+' · ':'')+x.sh.name)}"><img src="${x.sh.thumb}" alt=""><span>${x.sess?languageFlag(x.sess.languageCode)+' '+esc(x.sess.name):''}</span></button>`).join('')}</div>`;
 }
 function renderDecisionButtons(issueId){
   return `<button class="btn secondary" onclick="decideIssue('${issueId}','Подтвердить')">Подтвердить</button>
@@ -3419,6 +3759,7 @@ function openFixModal(issueId){
   openModal(`<h3>Исправить перевод</h3>
     <div class="hint">Было: «${esc(r.target)}»</div>
     <label class="field" style="margin-top:10px;">Новый перевод<textarea id="fixTarget" style="min-height:60px;">${esc(r.target)}</textarea></label>
+    ${tmSuggestionsHtml(r, 'fixTarget')}
     ${i.crossPlatformSuggestion ? `<button type="button" class="btn secondary sm" style="margin-top:6px;" data-suggestion="${esc(i.crossPlatformSuggestion)}" onclick="document.getElementById('fixTarget').value=this.dataset.suggestion">Вставить вариант из другой папки: «${esc(i.crossPlatformSuggestion)}»</button>` : ''}
     <label class="field" style="margin-top:10px;">Кто исправил (редактор)<select id="fixReviewer">${editorSelectOptions(reviewer, editorsForLanguage(i.languageCode))}</select></label>
     <label class="field" style="margin-top:10px;">Комментарий<textarea id="fixComment" style="min-height:50px;"></textarea></label>
@@ -3522,6 +3863,7 @@ function renderGlossariesList(el){
         return `<div class="card clickable" style="margin:0;" onclick="location.hash='#/glossary/${g.id}'"><div class="row" style="gap:12px;flex-wrap:nowrap;align-items:flex-start;"><span class="es-ic" style="width:36px;height:36px;border-radius:10px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('bookOpen',18)}</span><div style="min-width:0;"><h3 style="margin:0 0 2px;">${esc(g.name)}</h3><div class="hint" style="margin:0;">${proj?'Проект: '+esc(proj.name):'Общий, для всех проектов'} · ${termCount} ${plural(termCount,'термин','термина','терминов')}</div></div></div></div>`;
       }).join('')}</div>
     `).join('') : `<div class="card">${emptyState({img:IMG.LANGUAGES, title:'Глоссариев пока нет', text:'Создай глоссарий для конкретного языка — общий, на все проекты сразу, или привязанный к одному.', action:'<button class="btn" onclick="openGlossaryModal()">'+icon('plus',16)+'Новый глоссарий</button>'})}</div>`}`;
+  el.insertAdjacentHTML('beforeend', glossaryCandidatesHtml());
 }
 function openGlossaryModal(){
   const projects = dbList('projects');
@@ -3943,6 +4285,7 @@ function renderVisualSession(el, sessionId){
         <button class="btn secondary sm" ${shots.length?'':'disabled'} onclick="downloadVisualReport('${s.id}')" title="Один HTML-файл со скриншотами и проблемами — можно отправить команде">${icon('download',14)}Отчёт</button>
         <button class="btn secondary sm" onclick="openVisualSessionModal(null,'${s.id}')">${icon('edit',14)}Изменить</button>
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
+        <button class="btn secondary sm" ${issues.length?'':'disabled'} onclick="runSessionSummary('${s.id}')" title="${aiReady?'Короткий разбор страницы: главное и что исправлять первым':'Подключи ИИ в Настройках'}">${icon('sparkles',14)}ИИ-вывод</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
       </div>
     </div>
@@ -3952,6 +4295,7 @@ function renderVisualSession(el, sessionId){
       <div class="kpi ${open?'high':''}"><div class="num">${open}</div><div class="lbl">Не решено</div></div>
       <div class="kpi"><div class="num">${shots.filter(x=>x.aiCheckedAt).length}/${shots.length}</div><div class="lbl">Проверено ИИ</div></div>
     </div>` : ''}
+    ${sessionSummaryHtml(s)}
     <label class="drop ${shots.length?'drop-compact':''}" id="shotDrop">
       ${shots.length ? `<span class="es-ic" style="width:36px;height:36px;margin:0;">${icon('upload',18)}</span><div style="text-align:left;"><strong>Добавить скриншоты или видео</strong><span>Перетащи файлы сюда, выбери или вставь скриншот через Ctrl+V</span></div>`
         : `<img src="${IMG.IMPORT}" alt=""><strong>Перетащи скриншоты или видео</strong><span>PNG, JPG, WebP или видео (MP4, MOV, WebM). Из видео кадры нарежутся автоматически — одинаковые подряд пропускаются. Можно просто вставить скриншот через Ctrl+V.</span>`}
@@ -4276,6 +4620,36 @@ function shotCropHtml(issue){
   </div>`;
 }
 
+/* ---------- AI summary of a session ---------- */
+function sessionSummaryHtml(s){
+  const a = s.aiSummary; if(!a) return '';
+  a.stale = dbQuery('issues', i=>i.visual && i.sessionId===s.id).length !== a.issueCount;
+  const cls = a.verdict==='Можно выпускать' ? 'ok' : a.verdict==='Не готово' ? 'crit' : 'high';
+  return `<div class="card ai-summary"><div class="row between" style="align-items:flex-start;"><div class="row" style="gap:10px;"><span class="kpi-ic" style="margin:0;background:var(--brand-grad);color:#fff;">${icon('sparkles',16)}</span><h3 style="margin:0;">ИИ-вывод по странице</h3>${a.verdict?`<span class="pill ${cls==='ok'?'st-accepted':cls==='crit'?'sev-critical':'sev-high'}">${esc(a.verdict)}</span>`:''}</div>
+    <span class="hint" style="margin:0;">${timeAgo(+new Date(a.at))}${a.stale?' · добавились новые проблемы — можно обновить':''}</span></div>
+    <p style="margin:12px 0 8px;line-height:1.6;">${esc(a.summary)}</p>
+    ${(a.priorities||[]).length?`<ol class="ai-prio">${a.priorities.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}</div>`;
+}
+async function runSessionSummary(sessionId){
+  const cfg = getSettings();
+  if(!cfg.aiEnabled || !cfg.aiEndpointUrl){ runVisualAI(sessionId); return; } // shows the "connect AI" explanation
+  const s = dbGet('visualSessions', sessionId);
+  const shots = dbQuery('visualShots', x=>x.sessionId===sessionId);
+  const issues = dbQuery('issues', i=>i.visual && i.sessionId===sessionId);
+  if(!issues.length){ toast('В сессии пока нет проблем — сначала разметь скриншоты или запусти ИИ-проверку'); return; }
+  toast('ИИ готовит вывод по странице…');
+  try{
+    const res = await fetch(cfg.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({mode:'summary', model:cfg.aiModel||'', token:cfg.aiToken||'', language:s.languageCode, languageName:languageLabel(s.languageCode), page:s.name, shots:shots.length,
+        findings: issues.map(i=>({type:i.type, severity:i.severity, text:i.text, found:i.highlightText||'', expected:i.expectedText||'', status:i.status, screen:(dbGet('visualShots', i.shotId)||{}).name||''}))})});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    s.aiSummary = {summary:data.summary||'', priorities:data.priorities||[], verdict:data.verdict||'', at:nowISO(), issueCount:issues.length};
+    dbUpsert('visualSessions', s);
+    toast('ИИ-вывод готов'); router();
+  }catch(err){ toast('Не получилось получить вывод: '+err.message); }
+}
 /* ---------- shareable report ----------
    Screenshots live only in this browser, so the way to show a session to the team is a single
    self-contained HTML file: summary, then every screenshot with its numbered boxes and problems. */
@@ -4340,6 +4714,7 @@ footer{color:#8E829C;font-size:12px;text-align:center;margin-top:32px}
 </style></head><body><div class="wrap">
 <header><h1>${e(s.name)}</h1><div class="meta">${e(p?p.name:'')} · ${e(languageLabel(s.languageCode))} (${e(s.languageCode)})${s.pageUrl?` · <a href="${e(s.pageUrl)}">${e(s.pageUrl)}</a>`:''}${ref?` · сравнение с «${e(ref.name)}» (${e(ref.languageCode)})`:''}</div></header>
 <div class="kpis"><div class="kpi"><b>${shots.length}</b><span>скриншотов</span></div><div class="kpi"><b>${issues.length}</b><span>проблем</span></div><div class="kpi"><b style="color:#D92D20">${issues.filter(i=>i.severity==='Критическая').length}</b><span>критических</span></div><div class="kpi"><b>${open}</b><span>не решено</span></div></div>
+${s.aiSummary?`<div class="card"><h3>Вывод${s.aiSummary.verdict?' · '+e(s.aiSummary.verdict):''}</h3><p style="margin:0 0 8px;line-height:1.6;">${e(s.aiSummary.summary)}</p>${(s.aiSummary.priorities||[]).length?`<ol style="margin:0;padding-left:20px;">${s.aiSummary.priorities.map(x=>`<li style="margin-bottom:4px;">${e(x)}</li>`).join('')}</ol>`:''}</div>`:''}
 ${issues.length?`<div class="card"><h3>Сводка</h3><div class="chips">${bySev.map(([v,n])=>`<span class="pill" style="background:${sevBg[v]};color:${sevColor[v]}">${e(v)}: ${n}</span>`).join('')}${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<span class="chip">${e(t)}: ${n}</span>`).join('')}</div></div>`:''}
 ${withIssues.map(shotBlock).join('')}
 ${clean.length?`<div class="card"><h3>Без замечаний (${clean.length})</h3><div class="clean">${clean.map(sh=>`<figure><img src="${sh.thumb}" alt=""><figcaption>${e(sh.name)}</figcaption></figure>`).join('')}</div></div>`:''}
@@ -4468,12 +4843,13 @@ function showShortcutsHelp(){
       <div class="section-label">Просмотр скриншота</div>
       ${k(['←','→'],'соседний скриншот')}${k(['C'],'сравнить с оригиналом')}
     </div>
-    <div class="modal-actions"><button class="btn" data-ok>Понятно</button></div>`, (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close(true); });
+    <div class="modal-actions"><button class="btn secondary" data-tour>Показать тур по платформе</button><button class="btn" data-ok>Понятно</button></div>`, (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close(true); root.querySelector('[data-tour]').onclick = ()=>{ close(true); startTour(); }; });
 }
 document.addEventListener('keydown', e=>{
   if(e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target || {};
   if(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'') || t.isContentEditable) return;
+  if(tourStep>=0){ if(e.key==='Escape') endTour(); else if(e.key==='ArrowRight'||e.key==='Enter'){ tourStep++; renderTour(); } else if(e.key==='ArrowLeft' && tourStep>0){ tourStep--; renderTour(); } return; }
   if(document.getElementById('dialogRoot')?.children.length || document.getElementById('shotViewer') || document.getElementById('modalRoot').children.length) return;
   const panelOpen = document.getElementById('detailPanel').classList.contains('open');
   const k = e.key, lower = (k||'').toLowerCase();
@@ -4492,6 +4868,351 @@ document.addEventListener('keydown', e=>{
 });
 function kbHintHtml(){
   return `<div class="kb-hint"><span><kbd>↑</kbd><kbd>↓</kbd> выбрать</span><span><kbd>Enter</kbd> открыть</span><span><kbd>F</kbd> ложное срабатывание</span><span><kbd>A</kbd>/<kbd>R</kbd> подтвердить / опровергнуть</span><a href="javascript:void(0)" onclick="showShortcutsHelp()">все клавиши <kbd>?</kbd></a></div>`;
+}
+
+/* =========================================================
+   MY TASKS — "who am I" is a per-browser choice; the page gathers what's on me
+   ========================================================= */
+const ME_KEY = 'lqa_me';
+function getMe(){ try{ return localStorage.getItem(ME_KEY) || ''; }catch(e){ return ''; } }
+function sameName(a, b){ return (a||'').trim().toLowerCase() === (b||'').trim().toLowerCase() && !!(a||'').trim(); }
+function allPeople(){
+  const set = new Set([...MANAGERS, ...EDITORS, ...Object.values(EDITORS_BY_LANGUAGE).flat()]);
+  dbList('issues').forEach(i=>{ if(i.assignedTo) set.add(i.assignedTo); });
+  return [...set].sort((a,b)=>a.localeCompare(b,'ru'));
+}
+function initialsOf(name){ const p = (name||'').trim().split(/\s+/); return ((p[0]||'')[0]||'') + ((p[1]||'')[0]||''); }
+function renderMeAvatar(){
+  const el = document.getElementById('meAvatar'); if(!el) return;
+  const me = getMe();
+  el.textContent = me ? initialsOf(me).toUpperCase() : '?';
+  el.title = me ? me+' — сменить' : 'Кто ты? Выбери себя, чтобы видеть свои задачи';
+  el.style.background = me ? `linear-gradient(135deg,${folderColor(me)},${folderColor(me+'x')})` : '';
+}
+function openWhoAmI(){
+  const me = getMe();
+  uiDialog(`<div class="dialog-ic">${icon('home',20)}</div><h3>Кто ты?</h3>
+    <div class="dialog-text">Нужно только этому браузеру: по имени платформа покажет твои задачи в «Мои задачи» и подпишет твои комментарии.</div>
+    <label class="field" style="margin-top:14px;">Имя<input type="text" id="meInput" list="mePeople" value="${esc(me)}" placeholder="Начни вводить — или выбери из списка" autocomplete="off"></label>
+    <datalist id="mePeople">${allPeople().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+    (root, close)=>{ const inp = root.querySelector('#meInput'); root.querySelector('[data-ok]').onclick = ()=>close(inp.value.trim()); inp.focus(); inp.select(); })
+  .then(v=>{ if(v==null) return; try{ localStorage.setItem(ME_KEY, v); }catch(e){} renderMeAvatar(); router(); toast(v ? 'Привет, '+v.split(' ')[0]+'!' : 'Имя сброшено'); });
+}
+function deadlineTs(d){ if(!d) return Infinity; if(d.type==='asap') return +new Date(new Date().toDateString()); // overdue dates sort above «как можно скорее»
+  if(d.type==='date' && d.date) return +new Date(d.date); return Infinity; }
+function isOverdue(d){ return d && d.type==='date' && d.date && new Date(d.date) < new Date(new Date().toDateString()); }
+function myTaskIds(me){
+  if(!me) return {assigned:[], uploads:[]};
+  const assigned = dbList('issues').filter(i=>isOpenIssue(i) && sameName(i.assignedTo, me)).map(i=>i.id);
+  const myFiles = new Set(dbList('files').filter(f=>sameName(f.uploadedBy, me)).map(f=>f.id));
+  const myRows = new Set(dbList('rows').filter(r=>myFiles.has(r.fileId)).map(r=>r.id));
+  const assignedSet = new Set(assigned);
+  const uploads = myRows.size ? dbList('issues').filter(i=>isOpenIssue(i) && myRows.has(i.rowId) && !assignedSet.has(i.id)).map(i=>i.id) : [];
+  return {assigned, uploads};
+}
+function myTaskCount(){ const me = getMe(); if(!me) return 0; return myTaskIds(me).assigned.length; }
+let myTab = 'assigned';
+function renderMyTasks(el){
+  setCrumbs(['Мои задачи']);
+  const me = getMe();
+  if(!me){
+    el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">Проблемы, которые назначены тебе, и проблемы в файлах, которые ты загрузил(а)</div></div></div>
+      <div class="card">${emptyState({icon:'home', title:'Сначала скажи, кто ты', text:'Выбери своё имя — платформа соберёт здесь всё, что назначено тебе на проверку, с дедлайнами.', action:'<button class="btn" onclick="openWhoAmI()">Выбрать себя</button>'})}</div>`;
+    return;
+  }
+  const {assigned, uploads} = myTaskIds(me);
+  const all = assigned.map(id=>dbGet('issues', id));
+  const overdue = all.filter(i=>isOverdue(i.deadline)).length;
+  const asap = all.filter(i=>i.deadline && i.deadline.type==='asap').length;
+  const soon = all.filter(i=>{ const t = deadlineTs(i.deadline); return i.deadline && i.deadline.type==='date' && !isOverdue(i.deadline) && t - Date.now() < 3*864e5; }).length;
+  const weekAgo = Date.now()-7*864e5;
+  const doneWeek = dbList('issues').filter(i=>(i.history||[]).some(h=>sameName(h.reviewer, me) && h.ts && +new Date(h.ts)>=weekAgo)).length;
+  const ids = myTab==='uploads' ? uploads : assigned;
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
+    <div class="grid grid-4 stagger" style="margin-bottom:20px;">
+      <div class="kpi ${overdue?'crit':''}"><div class="kpi-ic">${icon('alertTriangle',18)}</div><div class="num" data-count="${overdue}">${overdue}</div><div class="lbl">Просрочено</div></div>
+      <div class="kpi high"><div class="kpi-ic">${icon('bell',18)}</div><div class="num" data-count="${asap+soon}">${asap+soon}</div><div class="lbl">Срочно и в ближайшие 3 дня</div></div>
+      <div class="kpi"><div class="kpi-ic">${icon('bookOpen',18)}</div><div class="num" data-count="${assigned.length}">${assigned.length}</div><div class="lbl">Назначено мне</div></div>
+      <div class="kpi ok"><div class="kpi-ic">${icon('check',18)}</div><div class="num" data-count="${doneWeek}">${doneWeek}</div><div class="lbl">Решено мной за 7 дней</div></div>
+    </div>
+    <div class="subtabbar"><button class="subtabbtn ${myTab==='assigned'?'active':''}" onclick="myTab='assigned';router()">Назначено мне · ${assigned.length}</button><button class="subtabbtn ${myTab==='uploads'?'active':''}" onclick="myTab='uploads';router()">В моих загрузках · ${uploads.length}</button></div>
+    ${ids.length ? `<div id="myRoot"></div>` : `<div class="card">${emptyState({img:IMG.SUCCESS, compact:true, title: myTab==='assigned' ? 'Сейчас тебе ничего не назначено' : 'В твоих загрузках нет открытых проблем', text: myTab==='assigned' ? 'Когда кто-то отправит проблемы тебе на проверку, они появятся здесь — самые срочные сверху.' : 'Здесь собираются открытые проблемы из файлов, где в поле «Кто загружает» выбрано твоё имя.'})}</div>`}`;
+  if(ids.length){ delete issuesPageState['myRoot']; renderIssuesTableGeneric({ids, byDeadline:true}, 'myRoot'); }
+}
+
+/* =========================================================
+   FILE VERSIONS — a re-upload of the same file (project + folder + language + name) replaces the
+   previous version. Problems are matched by a fingerprint, so decisions survive: a false positive
+   stays a false positive, an open problem keeps its assignee, deadline, age and history.
+   ========================================================= */
+function previousVersionOf(projectId, componentId, languageCode, filename){
+  return dbList('files').filter(f=>f.projectId===projectId && f.componentId===componentId && f.languageCode===languageCode && f.filename===filename && !f.supersededBy)
+    .sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt))[0] || null;
+}
+function rowIdentity(r){ return (r.key||'')+'\u0001'+(r.key ? '' : r.source||''); }
+function issueFingerprint(i, row){ return rowIdentity(row)+'\u0001'+i.type+'\u0001'+(i.highlightText||''); }
+function rowsQuality(rowIds){
+  const set = new Set(rowIds); if(!set.size) return null;
+  const bad = new Set(dbList('issues').filter(i=>isOpenIssue(i) && set.has(i.rowId)).map(i=>i.rowId));
+  return 1 - bad.size/set.size;
+}
+function reconcileVersions(pairs){
+  const out = {};
+  if(!pairs.length) return out;
+  const rowsById = {}; dbList('rows').forEach(r=>rowsById[r.id]=r);
+  let issues = dbList('issues');
+  const dropRows = new Set(), dropIssues = new Set();
+  pairs.forEach(({prev, next})=>{
+    const prevRows = dbList('rows').filter(r=>r.fileId===prev.id), nextRows = dbList('rows').filter(r=>r.fileId===next.id);
+    const prevRowIds = new Set(prevRows.map(r=>r.id)), nextRowIds = new Set(nextRows.map(r=>r.id));
+    const nextByIdentity = {}; nextRows.forEach(r=>nextByIdentity[rowIdentity(r)] = r);
+    const prevAuto = issues.filter(i=>prevRowIds.has(i.rowId) && !i.visual && !i.manual);
+    const prevByFp = {}; prevAuto.forEach(i=>{ prevByFp[issueFingerprint(i, rowsById[i.rowId])] = i; });
+    const seen = new Set();
+    const st = {fixed:0, added:0, kept:0, carriedDecisions:0, regressions:0, old:0};
+    issues.forEach(i=>{
+      if(!nextRowIds.has(i.rowId) || i.visual || i.manual) return;
+      const fp = issueFingerprint(i, rowsById[i.rowId]);
+      const old = prevByFp[fp];
+      if(!old){ st.added++; return; }
+      seen.add(fp); st.kept++;
+      const note = {ts:nowISO()};
+      if(old.status==='Ложное срабатывание' || old.status==='Отклонена'){
+        i.status = old.status; st.carriedDecisions++;
+        i.history = (old.history||[]).concat([Object.assign(note, {action:'Решение «'+old.status+'» перенесено с прошлой версии файла'})]);
+      } else if(old.status==='Принята' || old.status==='Принята после исправления'){
+        st.regressions++;
+        i.history = (old.history||[]).concat([Object.assign(note, {action:'Снова найдена в новой версии файла (раньше: «'+old.status+'»)'})]);
+      } else {
+        i.status = old.status; i.assignedTo = old.assignedTo || null; i.deadline = old.deadline || null; i.createdAt = old.createdAt;
+        i.history = (old.history||[]).concat([Object.assign(note, {action:'Повторяется в новой версии файла'})]);
+        if(Date.now() - +new Date(old.createdAt) > 14*864e5) st.old++;
+      }
+    });
+    prevAuto.forEach(i=>{ if(!seen.has(issueFingerprint(i, rowsById[i.rowId])) && isOpenIssue(i)) st.fixed++; });
+    // manual and screenshot problems follow their string to the new version (copies, so an undo snapshot stays intact)
+    issues = issues.map(i=>{
+      if(!prevRowIds.has(i.rowId)) return i;
+      if(i.visual || i.manual){ const nr = nextByIdentity[rowIdentity(rowsById[i.rowId])]; return Object.assign({}, i, {rowId: nr ? nr.id : null}, nr ? {componentId:nr.componentId} : {}); }
+      dropIssues.add(i.id); return i;
+    });
+    prevRowIds.forEach(id=>dropRows.add(id));
+    dbUpsert('files', Object.assign({}, prev, {supersededBy: next.id}));
+    const key = next.componentId+'|'+next.languageCode;
+    const acc = out[key] = out[key] || {fixed:0, added:0, kept:0, carriedDecisions:0, regressions:0, old:0, files:[]};
+    Object.keys(st).forEach(k=>acc[k]+=st[k]); acc.files.push(next.filename);
+  });
+  dbSave('issues', issues.filter(i=>!dropIssues.has(i.id)));
+  dbSave('rows', dbList('rows').filter(r=>!dropRows.has(r.id)));
+  return out;
+}
+function versionSummaryText(d){
+  const parts = [];
+  if(d.fixed) parts.push('исправлено '+d.fixed);
+  if(d.added) parts.push('новых '+d.added);
+  if(d.kept) parts.push('осталось '+d.kept+(d.old?' (из них '+d.old+' дольше 2 недель)':''));
+  if(d.carriedDecisions) parts.push('решений перенесено '+d.carriedDecisions);
+  if(d.regressions) parts.push('вернулись после «принята» '+d.regressions);
+  return parts.join(' · ') || 'без изменений';
+}
+function runChangeHtml(r){
+  const d = r.versionDiff; if(!d) return '<span class="hint" style="margin:0;">первая версия</span>';
+  return `<span class="chg">${d.fixed?`<span class="chg-fix" title="исправлено">−${d.fixed}</span>`:''}${d.added?`<span class="chg-new" title="новых">+${d.added}</span>`:''}<span class="chg-keep" title="осталось">${d.kept}</span>${d.carriedDecisions?`<span class="hint" style="margin:0;" title="решений перенесено">↻${d.carriedDecisions}</span>`:''}</span>`;
+}
+// quality over time per language from run records (only runs that stored a quality value)
+function qualityTrendChart(runs){
+  const byLang = {};
+  runs.filter(r=>typeof r.quality==='number').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).forEach(r=>{ (byLang[r.languageCode] = byLang[r.languageCode]||[]).push(r); });
+  const langs = Object.keys(byLang).filter(l=>byLang[l].length);
+  if(!langs.length) return '';
+  const all = runs.filter(r=>typeof r.quality==='number');
+  const t0 = Math.min(...all.map(r=>+new Date(r.createdAt))), t1 = Math.max(...all.map(r=>+new Date(r.createdAt)));
+  const W = 1000, H = 220, pl = 40, pr = 12, pt = 10, pb = 12;
+  const minQ = Math.max(0, Math.floor(Math.min(...all.map(r=>r.quality))*10)/10 - .05);
+  const x = t=> t1===t0 ? pl+(W-pl-pr)/2 : pl + (t-t0)/(t1-t0)*(W-pl-pr);
+  const y = q=> pt + (1-(q-minQ)/(1-minQ))*(H-pt-pb);
+  const palette = ['#9A139E','#2563EB','#059669','#D97706','#DC2626','#7C3AED','#0891B2','#DB2777'];
+  const grid = [0,.25,.5,.75,1].map(k=>{ const q = minQ + (1-minQ)*k; return `<line x1="${pl}" x2="${W-pr}" y1="${y(q)}" y2="${y(q)}" stroke="var(--border)"/><text x="${pl-6}" y="${y(q)+4}" text-anchor="end" font-size="10" fill="var(--text-faint)">${Math.round(q*100)}%</text>`; }).join('');
+  const lines = langs.map((l,n)=>{ const c = palette[n%palette.length]; const pts = byLang[l].map(r=>[x(+new Date(r.createdAt)), y(r.quality)]);
+    return `<polyline points="${pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${c}"><title>${esc(languageLabel(l))}</title></circle>`).join('')}`; }).join('');
+  const legend = langs.map((l,n)=>`<span><i style="background:${palette[n%palette.length]}"></i>${languageFlag(l)} ${esc(l)} ${Math.round(byLang[l][byLang[l].length-1].quality*100)}%</span>`).join('');
+  return `<div class="card"><h3>Качество по языкам во времени</h3><div class="hint" style="margin:-8px 0 10px;">Доля строк без открытых проблем после каждой загрузки</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">${grid}${lines}</svg><div class="trend-legend">${legend}</div></div>`;
+}
+
+/* =========================================================
+   TRANSLATION MEMORY — how the same source text is already translated into the same language.
+   A variant counts as "approved" when it came from an accepted fix or its string has no open
+   problems; approved variants are offered first.
+   ========================================================= */
+function normText(t){ return String(t||'').replace(/\s+/g,' ').trim().toLowerCase(); }
+function tmVariants(source, languageCode, excludeRowId){
+  const src = normText(source); if(!src) return [];
+  const openRows = new Set(dbList('issues').filter(i=>isOpenIssue(i) && i.rowId).map(i=>i.rowId));
+  const fixedTargets = new Set();
+  dbList('issues').forEach(i=>{ if(i.status==='Принята после исправления') (i.history||[]).forEach(h=>{ if(h.newTarget) fixedTargets.add(normText(h.newTarget)); }); });
+  const by = {};
+  dbList('rows').forEach(r=>{
+    if(r.id===excludeRowId || r.languageCode!==languageCode || normText(r.source)!==src || !String(r.target||'').trim()) return;
+    const k = normText(r.target);
+    const v = by[k] = by[k] || {text:r.target, count:0, clean:0, fixed:fixedTargets.has(k), keys:new Set()};
+    v.count++; if(!openRows.has(r.id)) v.clean++; if(r.key) v.keys.add(r.key);
+  });
+  return Object.values(by).map(v=>Object.assign(v, {approved: v.fixed || v.clean>0}))
+    .sort((a,b)=> (b.fixed-a.fixed) || (b.approved-a.approved) || b.count-a.count);
+}
+function tmSuggestionsHtml(r, targetInputId){
+  const vars = tmVariants(r.source, r.languageCode, r.id).filter(v=>normText(v.text)!==normText(r.target));
+  if(!vars.length) return '';
+  return `<div class="tm"><div class="hint" style="margin:0 0 6px;">Как этот текст переведён в других местах (${esc(r.languageCode)}):</div>
+    ${vars.slice(0,5).map(v=>`<button type="button" class="tm-item" data-v="${esc(v.text)}" onclick="document.getElementById('${targetInputId}').value=this.dataset.v">
+      <span class="mono">${esc(v.text)}</span><span class="tm-meta">${v.fixed?'<b style="color:var(--ok)">исправлено и принято</b> · ':v.approved?'<span style="color:var(--ok)">без проблем</span> · ':''}${v.count} ${plural(v.count,'раз','раза','раз')}</span></button>`).join('')}</div>`;
+}
+function tmRowHtml(r){
+  const vars = tmVariants(r.source, r.languageCode, null);
+  if(vars.length<2) return '';
+  return `<div><div class="hint">Этот исходный текст переведён на ${esc(r.languageCode)} по-разному · ${vars.length} ${plural(vars.length,'вариант','варианта','вариантов')}</div>
+    <div class="plural-forms">${vars.slice(0,6).map(v=>`<div><span>${v.count}</span><div class="mono">${esc(v.text)}${v.approved?' <span style="color:var(--ok);font-family:Inter,sans-serif;font-size:12px;">✓</span>':''}</div></div>`).join('')}</div></div>`;
+}
+
+/* ---------- glossary candidates ----------
+   Short source phrases that are translated in several different ways within one language are
+   exactly what a glossary should pin down. */
+function glossaryCandidates(languageCode){
+  const inGlossary = new Set();
+  const gIds = new Set(dbList('glossaries').filter(g=>!g.language || g.language===languageCode).map(g=>g.id));
+  dbList('glossaryTerms').forEach(t=>{ if(gIds.has(t.glossaryId)) inGlossary.add(normText(t.term)); });
+  const dismissed = new Set((getSettings().glossaryDismissed||[]).filter(x=>x.lang===languageCode).map(x=>x.term));
+  const by = {};
+  dbList('rows').forEach(r=>{
+    if(r.languageCode!==languageCode) return;
+    const src = normText(visibleText(r.source));
+    if(!src || src.length>40 || src.split(' ').length>4 || !/\p{L}{3}/u.test(src) || !String(r.target||'').trim()) return;
+    if(inGlossary.has(src) || dismissed.has(src)) return;
+    const g = by[src] = by[src] || {term:r.source.trim(), key:src, rows:0, variants:{}};
+    g.rows++; const t = normText(r.target); g.variants[t] = g.variants[t] || {text:r.target.trim(), count:0}; g.variants[t].count++;
+  });
+  return Object.values(by).filter(g=>g.rows>=2 && Object.keys(g.variants).length>=2)
+    .map(g=>Object.assign(g, {list:Object.values(g.variants).sort((a,b)=>b.count-a.count)}))
+    .sort((a,b)=> b.list.length-a.list.length || b.rows-a.rows).slice(0,40);
+}
+let glossaryCandLang = null;
+function glossaryCandidatesHtml(){
+  const langs = [...new Set(dbList('rows').map(r=>r.languageCode).filter(Boolean))];
+  if(!langs.length) return '';
+  const counts = {}; langs.forEach(l=>counts[l] = glossaryCandidates(l).length);
+  const withAny = langs.filter(l=>counts[l]).sort((a,b)=>counts[b]-counts[a]);
+  if(!withAny.length) return '';
+  if(!glossaryCandLang || !counts[glossaryCandLang]) glossaryCandLang = withAny[0];
+  const list = glossaryCandidates(glossaryCandLang);
+  return `<div class="card" style="margin-top:24px;">
+    <div class="row between" style="align-items:flex-start;"><div><h3 style="margin-bottom:4px;">Кандидаты в глоссарий</h3><div class="hint" style="margin:0;">Короткие фразы, которые в одном языке переведены по-разному. Выбери правильный вариант — он станет термином, и дальше проверка будет следить за ним.</div></div></div>
+    <div class="subtabbar" style="margin:14px 0 12px;flex-wrap:wrap;">${withAny.map(l=>`<button class="subtabbtn ${l===glossaryCandLang?'active':''}" onclick="glossaryCandLang='${esc(l)}';router()">${languageFlag(l)} ${esc(l)} · ${counts[l]}</button>`).join('')}</div>
+    <div class="table-wrap"><table><thead><tr><th>Исходный текст</th><th>Варианты перевода</th><th></th></tr></thead><tbody>
+      ${list.map((g,n)=>`<tr><td style="font-weight:500;">${esc(g.term)}<div class="hint" style="margin:2px 0 0;">${g.rows} ${plural(g.rows,'строка','строки','строк')}</div></td>
+        <td>${g.list.slice(0,4).map(v=>`<span class="chip" style="margin:2px 4px 2px 0;cursor:default;height:26px;">${esc(v.text)} <span class="chip-count">${v.count}</span></span>`).join('')}${g.list.length>4?`<span class="hint">+${g.list.length-4}</span>`:''}</td>
+        <td class="nowrap" style="text-align:right;"><button class="btn sm" onclick="addCandidateToGlossary(${n})">В глоссарий</button><button class="btn ghost sm" title="Не предлагать" onclick="dismissGlossaryCandidate(${n})">${icon('x',14)}</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+function dismissGlossaryCandidate(n){
+  const g = glossaryCandidates(glossaryCandLang)[n]; if(!g) return;
+  const s = getSettings();
+  saveSettings({glossaryDismissed:(s.glossaryDismissed||[]).concat([{lang:glossaryCandLang, term:g.key}])});
+  router();
+}
+function addCandidateToGlossary(n){
+  const g = glossaryCandidates(glossaryCandLang)[n]; if(!g) return;
+  const lang = glossaryCandLang;
+  const gls = dbList('glossaries').filter(x=>x.language===lang);
+  uiDialog(`<h3>«${esc(g.term)}» в глоссарий</h3><div class="dialog-text">Выбери правильный перевод на ${esc(languageLabel(lang))} — или впиши свой.</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-top:12px;">${g.list.map((v,i)=>`<label class="v-row"><input type="radio" name="gcVar" value="${esc(v.text)}" ${i===0?'checked':''}><span>${esc(v.text)} <span class="hint" style="margin:0;">· ${v.count}</span></span></label>`).join('')}
+      <label class="v-row"><input type="radio" name="gcVar" value="__own"><span>Свой вариант: <input type="text" id="gcOwn" style="height:30px;margin-left:6px;" onfocus="document.querySelector('input[name=gcVar][value=__own]').checked=true"></span></label></div>
+    <label class="checkrow" style="border:none;"><input type="checkbox" id="gcForbid" checked> Остальные варианты — запрещённые</label>
+    <label class="field" style="margin-top:6px;">Глоссарий<select id="gcGloss">${gls.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}<option value="__new">+ Новый глоссарий «${esc(languageLabel(lang))}»</option></select></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Добавить термин</button></div>`,
+  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>{
+    const pick = root.querySelector('input[name=gcVar]:checked').value;
+    const approved = pick==='__own' ? root.querySelector('#gcOwn').value.trim() : pick;
+    if(!approved){ toast('Впиши вариант перевода'); return; }
+    let gid = root.querySelector('#gcGloss').value;
+    if(gid==='__new'){ gid = uid(); dbUpsert('glossaries', {id:gid, name:languageLabel(lang), language:lang, projectId:null, createdAt:nowISO()}); }
+    const forbidden = root.querySelector('#gcForbid').checked ? g.list.map(v=>v.text).filter(t=>normText(t)!==normText(approved)) : [];
+    dbUpsert('glossaryTerms', {id:uid(), glossaryId:gid, term:g.term, approved, forbidden, comment:'Добавлено из кандидатов', status:'Активен'});
+    close(true); toast('Термин «'+g.term+'» добавлен в глоссарий'); router();
+  }; });
+}
+
+/* =========================================================
+   INSTALL AS APP (PWA) + FIRST-RUN TOUR
+   ========================================================= */
+let installPromptEvent = null;
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installPromptEvent = e; renderInstallButton(); });
+window.addEventListener('appinstalled', ()=>{ installPromptEvent = null; renderInstallButton(); toast('LQA Hub установлен — ищи его среди приложений'); });
+function renderInstallButton(){
+  const b = document.getElementById('installBtn'); if(!b) return;
+  b.style.display = installPromptEvent ? 'flex' : 'none';
+}
+async function installApp(){
+  if(!installPromptEvent){ toast('Установка доступна в Chrome или Edge: меню браузера → «Установить приложение»'); return; }
+  installPromptEvent.prompt();
+  await installPromptEvent.userChoice.catch(()=>{});
+  installPromptEvent = null; renderInstallButton();
+}
+
+const TOUR_KEY = 'lqa_tour_done';
+const TOUR_STEPS = [
+  {sel:null, title:'Привет! Это LQA Hub 👋', text:'Платформа для проверки локализации: загружаешь файлы переводов и скриншоты — она находит проблемы, а команда их разбирает. Пять коротких подсказок — и можно работать.'},
+  {sel:'.side-link[href="#/projects"]', title:'Проекты и файлы', text:'Создай проект, добавь папки (Web, iOS, checkout…) и загрузи .po, .json или .csv — техническая проверка запустится сама. Повторная загрузка того же файла покажет, что исправлено и что появилось.'},
+  {sel:'.side-link[href="#/issues"]', title:'Проблемы', text:'Все найденные проблемы в одной таблице. Листай стрелками, Enter — открыть, F — ложное срабатывание, A / R — подтвердить или опровергнуть.'},
+  {sel:'.side-link[href="#/visual"]', title:'Визуальная проверка', text:'Скриншоты и видео интерфейса: выдели проблему рамкой прямо на картинке, сравни с русским оригиналом, скачай отчёт для команды или запусти ИИ.'},
+  {sel:'#meAvatar', title:'Кто ты?', text:'Нажми на кружок и выбери своё имя — тогда в «Мои задачи» соберётся всё, что назначено тебе, а комментарии будут подписаны.'},
+  {sel:'.side-link[href="#/settings"]', title:'Настройки', text:'Правила проверки, резервная копия, командное хранилище и ИИ. А клавиша «?» в любой момент покажет все горячие клавиши.'},
+];
+let tourStep = -1;
+function startTour(){ tourStep = 0; renderTour(); }
+function endTour(){
+  tourStep = -1; try{ localStorage.setItem(TOUR_KEY, '1'); }catch(e){}
+  const r = document.getElementById('tourRoot'); if(r) r.remove();
+  if(window.innerWidth<=900) toggleNav(false);
+}
+function renderTour(){
+  const step = TOUR_STEPS[tourStep]; if(!step){ endTour(); return; }
+  let root = document.getElementById('tourRoot');
+  if(!root){ root = document.createElement('div'); root.id = 'tourRoot'; document.body.appendChild(root); }
+  const onSidebar = step.sel && step.sel.startsWith('.side-link');
+  if(window.innerWidth<=900){
+    const wasOpen = document.body.classList.contains('nav-open');
+    toggleNav(!!onSidebar);
+    // the drawer slides in; measure the target once it has arrived
+    if(!!onSidebar !== wasOpen && !renderTour._waiting){ renderTour._waiting = true; root.innerHTML = '<div class="tour-dim"></div>'; setTimeout(()=>{ renderTour._waiting = false; renderTour(); }, 300); return; }
+  }
+  const el = step.sel ? document.querySelector(step.sel) : null;
+  const r = el ? el.getBoundingClientRect() : null;
+  const pad = 6;
+  const spot = r ? `<div class="tour-spot" style="left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px;"></div>` : '<div class="tour-dim"></div>';
+  let pos = 'left:50%;top:50%;transform:translate(-50%,-50%);';
+  if(r && innerWidth<=600) pos = 'left:12px;right:12px;bottom:12px;width:auto;';
+  else if(r){
+    const w = 340, h = 210, right = r.right + 16, below = r.bottom + 14;
+    if(right + w < innerWidth) pos = `left:${right}px;top:${Math.max(12, Math.min(innerHeight-h-12, r.top-10))}px;`;
+    else pos = `left:${Math.max(12, Math.min(innerWidth-w-12, r.right-w))}px;top:${Math.min(innerHeight-h-12, below)}px;`;
+  }
+  root.innerHTML = `${spot}<div class="tour-card" style="${pos}" role="dialog" aria-live="polite">
+    <div class="tour-count">${tourStep+1} из ${TOUR_STEPS.length}</div>
+    <h3>${esc(step.title)}</h3><p>${esc(step.text)}</p>
+    <div class="row between" style="margin-top:14px;flex-wrap:nowrap;">
+      <button class="btn ghost sm" onclick="endTour()">Пропустить</button>
+      <div class="row" style="flex-wrap:nowrap;">${tourStep?`<button class="btn secondary sm" onclick="tourStep--;renderTour()">Назад</button>`:''}<button class="btn sm" onclick="tourStep++;renderTour()">${tourStep===TOUR_STEPS.length-1?'Готово':'Дальше'}</button></div>
+    </div></div>`;
+}
+window.addEventListener('resize', ()=>{ if(tourStep>=0) renderTour(); });
+function maybeStartTour(){
+  let done = false; try{ done = !!localStorage.getItem(TOUR_KEY); }catch(e){ done = true; }
+  if(!done) setTimeout(()=>{ if(tourStep<0 && !document.getElementById('modalRoot').children.length) startTour(); }, 900);
 }
 
 /* =========================================================
@@ -4622,6 +5343,7 @@ function renderSettingsPage(el){
   const s = getSettings();
   el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Настройки</h1><div class="page-sub">Правила технической проверки и общие параметры</div></div></div>
     ${backupCardHtml()}
+    ${syncCardHtml()}
     <div class="card"><h3>Правила LQA</h3>
       <div class="checklist">
         <label class="checkrow"><input type="checkbox" id="sUntranslated" ${s.checkUntranslated?'checked':''}> Пустой перевод / не переведено</label>
@@ -4638,9 +5360,13 @@ function renderSettingsPage(el){
         <label class="checkrow"><input type="checkbox" id="sPlurals" ${s.checkPlurals?'checked':''}> Формы множественного числа (1 товар / 2 товара / 5 товаров)</label>
         <label class="checkrow"><input type="checkbox" id="sLocale" ${s.checkLocale?'checked':''}> Формат под страну: валюта ₽ в чужом языке, кавычки</label>
         <label class="checkrow"><input type="checkbox" id="sDnt" ${s.checkDnt?'checked':''}> Бренды и названия «Не переводить»</label>
+        <label class="checkrow"><input type="checkbox" id="sScript" ${s.checkScript?'checked':''}> Алфавит: кириллица в uz, az, en, hy, ka и других</label>
+        <label class="checkrow"><input type="checkbox" id="sLimits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам (правила ниже)</label>
       </div>
       <label class="field" style="margin-top:16px;">Не переводить <span style="font-weight:400;color:var(--text-faint);">— бренды и названия сервисов, по одному в строке. Если слово есть в исходном тексте, оно должно остаться в переводе как есть</span>
         <textarea id="sDntTerms" style="min-height:96px;font-family:inherit;font-size:14px;" placeholder="Wildberries&#10;WB Partners">${esc(s.dntTerms||'')}</textarea></label>
+      <label class="field" style="margin-top:16px;">Лимиты длины <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: шаблон ключа = максимум символов. Звёздочка — любой текст. Переменные и теги не считаются</span>
+        <textarea id="sLengthRules" class="mono" style="min-height:96px;" placeholder="checkout.button.* = 20&#10;*.tab.title = 14&#10;catalog.filter.* = 24">${esc(s.lengthRules||'')}</textarea></label>
       <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveSettingsForm()">Сохранить</button></div>
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
@@ -4674,6 +5400,9 @@ function saveSettingsForm(){
     checkLocale: document.getElementById('sLocale').checked,
     checkDnt: document.getElementById('sDnt').checked,
     dntTerms: document.getElementById('sDntTerms').value,
+    checkScript: document.getElementById('sScript').checked,
+    checkLimits: document.getElementById('sLimits').checked,
+    lengthRules: document.getElementById('sLengthRules').value,
   });
   toast('Настройки сохранены');
 }
@@ -4786,8 +5515,11 @@ initTheme();
   DB = migrateFromLocalStorageIfNeeded(loaded);
   getSettings();
   lastRouteKey = routeKey();
+  renderMeAvatar();
   router();
   afterNav();
+  if(syncEnabled()){ setSyncStatus('idle'); syncNow(false); }
+  maybeStartTour();
 })();
 </script>
 </body>

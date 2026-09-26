@@ -4,10 +4,13 @@
  * Хранит ключ API у себя (в свойствах скрипта), принимает запросы от платформы
  * и возвращает найденные проблемы. Ключ никогда не попадает в браузер.
  *
- * Три режима запроса (поле `mode`):
- *   - 'ping'   — проверка подключения из Настроек платформы;
- *   - 'visual' — проверка одного скриншота (картинка → проблемы с рамками);
- *   - без mode — проверка пачки строк перевода (как раньше).
+ * Режимы запроса (поле `mode`):
+ *   - 'ping'    — проверка подключения из Настроек платформы;
+ *   - 'visual'  — проверка одного скриншота (картинка → проблемы с рамками);
+ *   - 'summary' — общий вывод по сессии скриншотов (список проблем → короткий разбор);
+ *   - 'sync'    — командное хранилище: браузер отправляет свои изменения и получает чужие.
+ *                 Данные лежат на Google Диске в папке «LQA Hub — данные» (или DATA_FOLDER_ID).
+ *   - без mode  — проверка пачки строк перевода (как раньше).
  *
  * Настройка — Project Settings → Script Properties (подробно в README.md рядом):
  *   PROVIDER           anthropic | openai            (по умолчанию anthropic)
@@ -16,6 +19,9 @@
  *   MODEL              необязательно: своя модель вместо модели по умолчанию
  *   ACCESS_TOKEN       необязательно, но очень желательно: тот же текст вписывается
  *                      в Настройках платформы, без него backend не отвечает чужим
+ *   DATA_FOLDER_ID     необязательно: id папки Google Диска для командного хранилища
+ *
+ * Командное хранилище работает и без ключа ИИ — PROVIDER/ключи нужны только для ИИ-проверок.
  */
 
 var DEFAULT_MODELS = { anthropic: 'claude-opus-5', openai: 'gpt-4o-mini' };
@@ -35,10 +41,16 @@ function doPost(e) {
       return json_({ error: 'Неверный ключ доступа — проверь поле «Ключ доступа» в Настройках платформы' });
     }
     if (req.mode === 'ping') {
-      return json_({ ok: true, provider: cfg.provider, model: pickModel_(cfg, req.model) });
+      return json_({ ok: true, provider: cfg.provider, model: pickModel_(cfg, req.model), aiKey: !!cfg.apiKey, sync: true });
+    }
+    if (req.mode === 'sync') {
+      return json_(sync_(req));
     }
     if (req.mode === 'visual') {
       return json_({ findings: reviewScreenshot_(cfg, req) });
+    }
+    if (req.mode === 'summary') {
+      return json_(summarizeSession_(cfg, req));
     }
     return json_({ results: reviewRows_(cfg, req) });
   } catch (err) {
@@ -57,10 +69,9 @@ function readConfig_() {
   var provider = String(p.getProperty('PROVIDER') || 'anthropic').trim().toLowerCase();
   if (provider !== 'anthropic' && provider !== 'openai') throw new Error('PROVIDER должен быть anthropic или openai');
   var key = provider === 'anthropic' ? p.getProperty('ANTHROPIC_API_KEY') : p.getProperty('OPENAI_API_KEY');
-  if (!key) throw new Error('В свойствах скрипта не задан ' + (provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY'));
   return {
     provider: provider,
-    apiKey: String(key).trim(),
+    apiKey: String(key || '').trim(),
     model: String(p.getProperty('MODEL') || '').trim(),
     accessToken: String(p.getProperty('ACCESS_TOKEN') || '').trim()
   };
@@ -153,6 +164,136 @@ function clampBox_(b) {
   return { x: c(b.x), y: c(b.y), w: c(b.w), h: c(b.h) };
 }
 
+/* ---------------- team storage (sync) ----------------
+   Каждая таблица платформы — файл <таблица>.json в папке данных:
+     {records:{id:запись}, revs:{id:номер}, deleted:{id:номер}}
+   Номер (SYNC_REV в свойствах скрипта) растёт с каждым изменением; браузер присылает свои
+   изменения и номер, до которого он уже всё знает, и получает всё, что новее.
+   Картинки скриншотов (таблица visualShotImages) лежат отдельными файлами, чтобы не
+   переписывать мегабайты при каждом изменении. */
+
+var BLOB_TABLES = { visualShotImages: true };
+
+function sync_(req) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var folder = dataFolder_();
+    var props = PropertiesService.getScriptProperties();
+    var rev = Number(props.getProperty('SYNC_REV') || 0);
+    var push = req.push || {};
+    var pushedIds = {};
+    Object.keys(push).forEach(function (t) {
+      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(t)) throw new Error('Неверное имя таблицы: ' + t);
+      var store = readTable_(folder, t);
+      pushedIds[t] = {};
+      (push[t].upserts || []).forEach(function (rec) {
+        if (!rec || rec.id == null) return;
+        var id = String(rec.id);
+        rev++;
+        if (BLOB_TABLES[t]) { writeBlob_(folder, t, id, rec); store.records[id] = { id: id, _blob: true }; }
+        else store.records[id] = rec;
+        store.revs[id] = rev; delete store.deleted[id];
+        pushedIds[t][id] = true;
+      });
+      (push[t].deletes || []).forEach(function (id) {
+        id = String(id);
+        rev++;
+        if (BLOB_TABLES[t]) deleteBlob_(folder, t, id);
+        delete store.records[id]; store.revs[id] = rev; store.deleted[id] = rev;
+        pushedIds[t][id] = true;
+      });
+      writeTable_(folder, t, store);
+    });
+    props.setProperty('SYNC_REV', String(rev));
+
+    var changes = {};
+    if (req.pull !== false) {
+      var since = Number(req.since || 0);
+      listTables_(folder).forEach(function (t) {
+        var store = readTable_(folder, t), ups = [], dels = [];
+        Object.keys(store.revs).forEach(function (id) {
+          if (store.revs[id] <= since || (pushedIds[t] && pushedIds[t][id])) return;
+          if (store.deleted[id]) dels.push(id);
+          else if (store.records[id]) ups.push(BLOB_TABLES[t] ? readBlob_(folder, t, id) : store.records[id]);
+        });
+        ups = ups.filter(function (x) { return x; });
+        if (ups.length || dels.length) changes[t] = { upserts: ups, deletes: dels };
+      });
+    }
+    return { rev: rev, changes: changes };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function dataFolder_() {
+  var p = PropertiesService.getScriptProperties();
+  var id = p.getProperty('DATA_FOLDER_ID');
+  if (id) return DriveApp.getFolderById(id);
+  var it = DriveApp.getFoldersByName('LQA Hub — данные');
+  var f = it.hasNext() ? it.next() : DriveApp.createFolder('LQA Hub — данные');
+  p.setProperty('DATA_FOLDER_ID', f.getId());
+  return f;
+}
+function fileIn_(folder, name) { var it = folder.getFilesByName(name); return it.hasNext() ? it.next() : null; }
+function readTable_(folder, t) {
+  var f = fileIn_(folder, t + '.json');
+  if (!f) return { records: {}, revs: {}, deleted: {} };
+  var d = JSON.parse(f.getBlob().getDataAsString('UTF-8'));
+  d.records = d.records || {}; d.revs = d.revs || {}; d.deleted = d.deleted || {};
+  return d;
+}
+function writeTable_(folder, t, store) {
+  var text = JSON.stringify(store), f = fileIn_(folder, t + '.json');
+  if (f) f.setContent(text); else folder.createFile(t + '.json', text, 'application/json');
+}
+function listTables_(folder) {
+  var out = [], it = folder.getFiles();
+  while (it.hasNext()) { var n = it.next().getName(); if (/^[A-Za-z][A-Za-z0-9]*\.json$/.test(n)) out.push(n.replace(/\.json$/, '')); }
+  return out;
+}
+function blobFolder_(folder, t) { var it = folder.getFoldersByName(t); return it.hasNext() ? it.next() : folder.createFolder(t); }
+function writeBlob_(folder, t, id, rec) {
+  var bf = blobFolder_(folder, t), f = fileIn_(bf, id + '.json'), text = JSON.stringify(rec);
+  if (f) f.setContent(text); else bf.createFile(id + '.json', text, 'application/json');
+}
+function readBlob_(folder, t, id) { var f = fileIn_(blobFolder_(folder, t), id + '.json'); return f ? JSON.parse(f.getBlob().getDataAsString('UTF-8')) : null; }
+function deleteBlob_(folder, t, id) { var f = fileIn_(blobFolder_(folder, t), id + '.json'); if (f) f.setTrashed(true); }
+
+/* ---------------- session summary ---------------- */
+
+function summarizeSession_(cfg, req) {
+  var items = (req.findings || []).slice(0, 300).map(function (f, n) {
+    return (n + 1) + '. [' + f.severity + '; ' + f.type + '; ' + (f.screen || '') + '] ' + f.text +
+      (f.found ? ' — на экране: «' + f.found + '»' : '') + (f.expected ? ' → «' + f.expected + '»' : '') + (f.status ? ' (статус: ' + f.status + ')' : '');
+  }).join('\n');
+  var prompt = [
+    'Ты — ведущий специалист по качеству локализации. Ниже проблемы, найденные на скриншотах страницы «' + (req.page || '') + '»',
+    'на языке ' + (req.languageName || req.language) + ' (' + req.language + '). Скриншотов: ' + (req.shots || '?') + '.',
+    '',
+    'Напиши по-русски короткий разбор для команды:',
+    '- summary — 2–4 предложения: общее состояние страницы и главные закономерности (например, «системно обрезаются кнопки в карточках товара», «валюта не локализована»);',
+    '- priorities — 3–5 конкретных действий по порядку важности, каждое одной фразой;',
+    '- verdict — одно из: «Можно выпускать», «Выпускать после исправления критичных», «Не готово».',
+    'Опирайся только на список ниже, ничего не выдумывай. Если проблем нет — так и скажи.',
+    '',
+    'Проблемы:',
+    items || '(нет)'
+  ].join('\n');
+  var schema = {
+    type: 'object',
+    properties: {
+      summary: { type: 'string' },
+      priorities: { type: 'array', items: { type: 'string' } },
+      verdict: { type: 'string', enum: ['Можно выпускать', 'Выпускать после исправления критичных', 'Не готово'] }
+    },
+    required: ['summary', 'priorities', 'verdict'],
+    additionalProperties: false
+  };
+  return askModel_(cfg, req.model, prompt, null, schema);
+}
+
 /* ---------------- string check ---------------- */
 
 function reviewRows_(cfg, req) {
@@ -215,6 +356,7 @@ function reviewRows_(cfg, req) {
 /* ---------------- providers ---------------- */
 
 function askModel_(cfg, requestedModel, prompt, image, schema) {
+  if (!cfg.apiKey) throw new Error('В свойствах скрипта не задан ' + (cfg.provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY'));
   var model = pickModel_(cfg, requestedModel);
   return cfg.provider === 'anthropic'
     ? askClaude_(cfg.apiKey, model, prompt, image, schema)
