@@ -700,7 +700,7 @@ function initialsAvatar(name){
 
 function getSettings(){
   const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true,
-    aiEnabled:false, aiEndpointUrl:'', aiModel:'gpt-4o-mini', aiBatchSize:15 };
+    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
     s = Object.assign({}, DEFAULTS);
@@ -1293,7 +1293,7 @@ async function callAiEndpoint(items){
   const res = await fetch(s.aiEndpointUrl, {
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids a CORS preflight that Apps Script doesn't handle
-    body: JSON.stringify({model: s.aiModel || 'gpt-4o-mini', items})
+    body: JSON.stringify({model: s.aiModel || '', token: s.aiToken || '', items})
   });
   if(!res.ok) throw new Error('Backend ответил с ошибкой: HTTP ' + res.status);
   const data = await res.json();
@@ -3976,7 +3976,7 @@ async function runVisualAI(sessionId, shotIds){
     setShotStatus(`ИИ: ${done+1} из ${shots.length}…`);
     try{
       const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({mode:'visual', model:s.aiModel, instructions:VISUAL_AI_PROMPT_HINT, image:shotImage(sh.id), language:sess.languageCode, languageName:languageLabel(sess.languageCode), page:sess.name, pageUrl:sess.pageUrl||'', glossary})});
+        body: JSON.stringify({mode:'visual', model:s.aiModel || '', token:s.aiToken || '', instructions:VISUAL_AI_PROMPT_HINT, image:shotImage(sh.id), language:sess.languageCode, languageName:languageLabel(sess.languageCode), page:sess.name, pageUrl:sess.pageUrl||'', glossary})});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
       if(data.error) throw new Error(data.error);
@@ -4099,16 +4099,16 @@ function renderSettingsPage(el){
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
     <div class="card"><h3>Проверка ИИ</h3>
-      <div class="hint" style="margin:-6px 0 10px;background:var(--primary-bg);color:var(--primary-dark);padding:10px 12px;border-radius:8px;">${icon('image',14)} Этот же адрес используется для <b>ИИ-проверки скриншотов</b> (раздел «Визуальная проверка»): запрос приходит с полем <span class="mono">mode: "visual"</span> и картинкой, ответ ждём в виде <span class="mono">{findings:[{type, severity, text, found, expected, box:{x,y,w,h}}]}</span>. Для этого нужна модель, которая понимает изображения.</div>
-      <div class="hint" style="margin-bottom:12px;">ИИ обращается к модели через отдельный backend (Google Apps Script), который безопасно хранит ключ API — ключ никогда не попадает во фронтенд. Разверни backend по инструкции (файл ai-review-appsscript.gs) и вставь сюда адрес Web App.</div>
+      <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
       <div class="grid grid-2">
-        <label class="field">Backend включён<select id="aiEnabled"><option value="false" ${!s.aiEnabled?'selected':''}>Выключено</option><option value="true" ${s.aiEnabled?'selected':''}>Включено</option></select></label>
-        <label class="field">Модель<input type="text" id="aiModel" value="${esc(s.aiModel)}" placeholder="напр. gpt-4o-mini"></label>
-        <label class="field" style="grid-column:1/-1;">Apps Script Web App URL<input type="text" id="aiEndpointUrl" value="${esc(s.aiEndpointUrl)}" placeholder="https://script.google.com/macros/s/…/exec"></label>
-        <label class="field">Размер пачки (строк за один вызов)<input type="number" id="aiBatchSize" value="${s.aiBatchSize}" style="width:80px;"></label>
+        <label class="field">Backend<select id="aiEnabled"><option value="false" ${!s.aiEnabled?'selected':''}>Выключен</option><option value="true" ${s.aiEnabled?'selected':''}>Включён</option></select></label>
+        <label class="field">Модель <span style="font-weight:400;color:var(--text-faint);">— необязательно</span><input type="text" id="aiModel" value="${esc(s.aiModel||'')}" placeholder="пусто — модель выберет backend"></label>
+        <label class="field" style="grid-column:1/-1;">Адрес backend (Apps Script Web App URL)<input type="text" id="aiEndpointUrl" value="${esc(s.aiEndpointUrl)}" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label class="field">Ключ доступа <span style="font-weight:400;color:var(--text-faint);">— как ACCESS_TOKEN в скрипте</span><input type="password" id="aiToken" value="${esc(s.aiToken||'')}" placeholder="придумай длинную строку" autocomplete="off"></label>
+        <label class="field">Строк за один вызов<input type="number" id="aiBatchSize" value="${s.aiBatchSize}" style="width:100px;"></label>
       </div>
-      <div class="row" style="margin-top:14px;"><button class="btn" onclick="saveAiSettingsForm()">Сохранить</button></div>
-      <div class="hint">Проверку запускай из «Проблемы» (или из вкладки «Строки» внутри проекта/папки): выбери строки чекбоксами → «🤖 ИИ-проверка выбранных». Рекомендуется проверять ИИ только строки, уже отмеченные технической проверкой — так дешевле и быстрее, чем гнать весь файл.</div>
+      <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveAiSettingsForm()">Сохранить</button><button class="btn secondary" onclick="testAiBackend()">Проверить подключение</button><span id="aiPingStatus" class="hint" style="margin:0;"></span></div>
+      <div class="hint" style="margin-top:14px;">Строки: «Проблемы» → отметь строки → «ИИ-проверка выбранных». Дешевле и быстрее проверять только строки, уже отмеченные технической проверкой. Скриншоты: «Визуальная проверка» → сессия → «ИИ-проверка».</div>
     </div>`;
 }
 function saveSettingsForm(){
@@ -4131,10 +4131,27 @@ function saveAiSettingsForm(){
   saveSettings({
     aiEnabled: document.getElementById('aiEnabled').value === 'true',
     aiEndpointUrl: document.getElementById('aiEndpointUrl').value.trim(),
-    aiModel: document.getElementById('aiModel').value.trim() || 'gpt-4o-mini',
+    aiModel: document.getElementById('aiModel').value.trim(),
+    aiToken: document.getElementById('aiToken').value.trim(),
     aiBatchSize: parseInt(document.getElementById('aiBatchSize').value,10) || 15,
   });
   toast('Настройки ИИ сохранены');
+}
+// Saves the form first, then asks the backend who it is — shows provider/model or the exact error.
+async function testAiBackend(){
+  saveAiSettingsForm();
+  const s = getSettings(), out = document.getElementById('aiPingStatus');
+  if(!s.aiEndpointUrl){ out.textContent = 'Сначала вставь адрес backend'; return; }
+  out.style.color = 'var(--text-faint)'; out.textContent = 'Проверяю…';
+  try{
+    const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({mode:'ping', model:s.aiModel||'', token:s.aiToken||''})});
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    out.style.color = 'var(--ok)'; out.textContent = '✓ Работает: ' + (data.provider==='anthropic'?'Claude':data.provider==='openai'?'OpenAI':data.provider) + ', модель ' + data.model;
+  }catch(err){
+    out.style.color = 'var(--crit)';
+    out.textContent = '✕ ' + (err.message && err.message.includes('Failed to fetch') ? 'Не удалось достучаться — проверь адрес и что доступ к Web App открыт для «Все»' : err.message);
+  }
 }
 
 /* =========================================================
