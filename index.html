@@ -51,7 +51,7 @@ button{font-family:inherit;}
 
 /* ---- shell ---- */
 .shell{display:flex;min-height:100vh;}
-.sidebar{width:232px;flex:0 0 232px;background:linear-gradient(175deg,var(--side-bg) 0%,#5B1596 55%,var(--brand-pink) 130%);color:var(--side-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;box-shadow:var(--shadow-lg);position:relative;}
+.sidebar{width:232px;flex:0 0 232px;background:linear-gradient(175deg,var(--side-bg) 0%,#5B1596 55%,var(--brand-pink) 130%);color:var(--side-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;box-shadow:var(--shadow-lg);z-index:30;}
 .sidebar::before{content:'';position:absolute;left:-60px;bottom:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10),transparent 70%);pointer-events:none;}
 .sidebar::after{content:'';position:absolute;right:-80px;top:30%;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,140,220,.12),transparent 70%);pointer-events:none;}
 .sidebar > *{position:relative;z-index:1;}
