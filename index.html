@@ -697,15 +697,28 @@ function idbOpen(){
   });
   return idbConnPromise;
 }
+// Writes are coalesced: one upload calls dbSave on the same 50k-row table many times, and each
+// IndexedDB put clones the whole table. Pending tables are written together 250 ms after the last
+// change, and immediately when the tab is hidden or closed.
+const idbPending = new Map(); let idbTimer = null;
 function idbPersist(table, data){
+  idbPending.set(table, data);
+  if(!idbTimer) idbTimer = setTimeout(idbFlush, 250);
+}
+function idbFlush(){
+  if(idbTimer){ clearTimeout(idbTimer); idbTimer = null; }
+  if(!idbPending.size) return;
+  const batch = [...idbPending]; idbPending.clear();
   idbOpen().then(db=>{
     try{
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put({table, data});
-      tx.onerror = ()=>console.warn('IndexedDB write failed for', table, tx.error);
-    }catch(e){ console.warn('IndexedDB write failed for', table, e); }
+      const tx = db.transaction(IDB_STORE, 'readwrite'), st = tx.objectStore(IDB_STORE);
+      batch.forEach(([table, data])=>st.put({table, data}));
+      tx.onerror = ()=>console.warn('IndexedDB write failed for', batch.map(x=>x[0]).join(', '), tx.error);
+    }catch(e){ console.warn('IndexedDB write failed', e); }
   }).catch(e=>console.warn('IndexedDB unavailable, changes will not persist across reloads', e));
 }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') idbFlush(); });
+window.addEventListener('pagehide', idbFlush);
 async function idbLoadAll(){
   try{
     const db = await idbOpen();
@@ -1661,7 +1674,8 @@ function parsePoText(text){
 function yieldToUI(){ return new Promise(resolve=>setTimeout(resolve, 0)); }
 async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const s = Object.assign({}, getSettings(), override||{});
-  const issues = dbList('issues').filter(i=>!rowIds.includes(i.rowId) || i.manual); // keep manual issues, drop old auto issues for these rows
+  const rowIdSet = new Set(rowIds);
+  const issues = dbList('issues').filter(i=>!rowIdSet.has(i.rowId) || i.manual); // keep manual issues, drop old auto issues for these rows
   const allRows = dbList('rows');
   const rowsById = {}; allRows.forEach(r=>{ rowsById[r.id]=r; });
   const dntTerms = parseDntTerms(s.dntTerms);
@@ -3117,7 +3131,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
     if(d) toast('Новая версия ('+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
   if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
-  const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
+  const newRowSet = new Set(allNewRowIds);
+  const allIssues = dbQuery('issues', i=>newRowSet.has(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
   status.textContent = '';
@@ -3304,7 +3319,8 @@ async function handlePoFiles(projectId, items){
     if(d) toast('Новая версия ('+(dbGet('components',componentId)?.name||'')+', '+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
   if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
-  const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
+  const newRowSet = new Set(allNewRowIds);
+  const allIssues = dbQuery('issues', i=>newRowSet.has(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
   status.textContent = '';
@@ -3316,7 +3332,8 @@ async function rerunFileCheck(fileId){
   const rowIds = dbQuery('rows', r=>r.fileId===fileId).map(r=>r.id);
   toast('Перезапускаю проверку…');
   await runFullCheckForProject(file.projectId, rowIds);
-  const issues = dbQuery('issues', i=>rowIds.includes(i.rowId));
+  const rowIdSet = new Set(rowIds);
+  const issues = dbQuery('issues', i=>rowIdSet.has(i.rowId));
   dbUpsert('runs', {id:uid(), projectId:file.projectId, componentId:file.componentId, languageCode:file.languageCode, fileId, rowCount:rowIds.length, issueCount:issues.length, quality:rowsQuality(rowIds), createdAt:nowISO()});
   toast('Проверка перезапущена');
   router();
