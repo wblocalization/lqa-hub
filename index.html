@@ -1861,7 +1861,80 @@ function extractWordsWithPositions(str){
   while((m=re.exec(str))!==null) words.push({word:m[0], start:m.index});
   return words;
 }
-function containsApprovedForm(tgtLower, approvedLower){
+/* ---------- word forms for the glossary ----------
+   The glossary lists base forms («корзина» → «себет»); strings use them inflected («в корзине» →
+   «себетке», «кітап» → «кітабы»). Source terms are matched through Russian stems; approved
+   translations through the target language's rules: suffix chains and final-consonant alternation
+   for Turkic languages, dropped final vowel for Georgian/Armenian, endings for Slavic languages. */
+const SUFFIXING_LANGS = new Set(['kk','ky','uz','az','tr','tt','ba','tk','ug','crh','tg','hy','ka','mn','fi','et','hu']);
+const SLAVIC_LANGS = new Set(['ru','uk','be','bg','sr','hr','bs','sl','pl','cs','sk','mk']);
+const RU_ENDINGS = ['иями','ями','ами','ого','его','ому','ему','ыми','ими','иях','ией','ием','ях','ах','ям','ам','ом','ем','ой','ей','ую','юю','ая','яя','ое','ее','ые','ие','ый','ий','ов','ев','ью','ия','ии','а','я','о','е','ы','и','у','ю','ь','й'];
+function ruStem(w){
+  w = String(w||'').toLowerCase().replace(/ё/g,'е');
+  if(w.length<4) return w;
+  for(const e of RU_ENDINGS){ if(w.endsWith(e) && w.length-e.length>=3) return w.slice(0, -e.length); }
+  return w;
+}
+const FINAL_ALT = {'к':['г'], 'қ':['ғ'], 'п':['б'], 'k':['g','ğ','y'], 'q':['gʻ','g‘',"g'",'ğ'], 'p':['b'], 't':['d'], 'ç':['c']};
+const VOWELS_RE = /[аәеёиоөұүыіуэюяaeiouıöüəɪ]/;
+// every stem an inflected form of `a` may start with, in language `lang`
+function wordFormStems(a, lang){
+  const l = baseLang(lang), out = [{stem:a, maxTail: 14}];
+  if(SUFFIXING_LANGS.has(l)){
+    const last = a.slice(-1);
+    (FINAL_ALT[last]||[]).forEach(alt=>out.push({stem:a.slice(0,-1)+alt, maxTail:14}));
+    // oğul → oğlu, мұрын → мұрны: the last vowel drops before a vowel suffix
+    const m = a.match(/^(.*[^аәеёиоөұүыіуэюяaeiouıöüə])([аәеёиоөұүыіуэюяaeiouıöüə])([^аәеёиоөұүыіуэюяaeiouıöüə])$/);
+    if(m && a.length>=4) out.push({stem:m[1]+m[3], maxTail:14, vowelNext:true});
+    if((l==='ka' || l==='hy') && VOWELS_RE.test(last) || /[იაე]$/.test(a)) out.push({stem:a.slice(0,-1), maxTail:8});
+  } else if(SLAVIC_LANGS.has(l)){
+    const st = ruStem(a); if(st.length>=3) out.push({stem:st, maxTail:4});
+  } else if(l==='en'){
+    if(a.endsWith('y')) out.push({stem:a.slice(0,-1)+'i', maxTail:3});
+    if(a.endsWith('e')) out.push({stem:a.slice(0,-1), maxTail:3});
+  }
+  return out;
+}
+function isWordForm(w, a, lang){
+  if(w===a) return true;
+  if(a.length<3) return false;
+  const l = baseLang(lang);
+  if(l==='en') return w.startsWith(a) ? /^(s|es|ed|d|ing|'s|’s)$/.test(w.slice(a.length)) || w===a : wordFormStems(a, lang).slice(1).some(x=>w.startsWith(x.stem) && /^(es|ed|ing|d|s)$/.test(w.slice(x.stem.length)));
+  return wordFormStems(a, lang).some(x=>w.startsWith(x.stem) && w.length-x.stem.length<=x.maxTail && (!x.vowelNext || VOWELS_RE.test(w[x.stem.length]||'')));
+}
+// the approved translation (one or more words) appears in the target in some grammatical form
+function findInflected(textLower, phraseLower, lang){
+  const pw = (phraseLower.match(/[\p{L}\p{N}ʻ’']+/gu)||[]); if(!pw.length) return null;
+  const words = []; const re = /[\p{L}\p{N}ʻ’']+/gu; let m;
+  while((m = re.exec(textLower))!==null) words.push({word:m[0], start:m.index});
+  for(let i=0; i+pw.length<=words.length; i++){
+    let ok = true;
+    for(let j=0; j<pw.length && ok; j++) ok = isWordForm(words[i+j].word, pw[j], lang);
+    if(ok){ const end = words[i+pw.length-1].start + words[i+pw.length-1].word.length; return {start:words[i].start, text:textLower.slice(words[i].start, end)}; }
+  }
+  return null;
+}
+// glossary term (Russian source) found in the source string in any case form; whole words only
+function findTermInSource(srcLower, term){
+  if(!term.srcWords.length) return null;
+  if(!srcLower.includes(term.srcProbe)) return null;
+  const words = []; const re = /[\p{L}\p{N}]+/gu; let m;
+  const src = srcLower.replace(/ё/g,'е');
+  while((m = re.exec(src))!==null) words.push({word:m[0], start:m.index});
+  for(let i=0; i+term.srcWords.length<=words.length; i++){
+    let ok = true;
+    for(let j=0; j<term.srcWords.length && ok; j++){
+      const t = term.srcWords[j], w = words[i+j].word;
+      ok = t.exact ? w===t.w : (w.startsWith(t.stem) && w.length-t.stem.length<=4);
+    }
+    if(ok){ const last = words[i+term.srcWords.length-1]; return {start:words[i].start, end:last.start+last.word.length}; }
+  }
+  return null;
+}
+function termSourceWords(termLower){
+  return (termLower.replace(/ё/g,'е').match(/[\p{L}\p{N}]+/gu)||[]).map(w=>w.length<4 || !/[а-я]/.test(w) ? {w, exact:true} : {w, stem:ruStem(w)});
+}
+function containsApprovedForm(tgtLower, approvedLower, lang){
   // Staged, cautious matching so a normal grammatical form (case, number, suffix
   // chains in agglutinative languages) is never treated as a glossary violation:
   //   1. exact/case-insensitive substring at a clean word boundary before it —
@@ -1878,7 +1951,9 @@ function containsApprovedForm(tgtLower, approvedLower){
   if(idx>=0){
     const before = idx>0 ? tgtLower[idx-1] : undefined;
     if(!isLetter(before)) return {matched:true, confidence:'exact', matchedText: approvedLower, matchStart: idx};
+    if(['zh','ja','th'].includes(baseLang(lang))) return {matched:true, confidence:'exact', matchedText: approvedLower, matchStart: idx};   // no spaces between words
   }
+  if(lang){ const f = findInflected(tgtLower, approvedLower, lang); if(f) return {matched:true, confidence:'exact', matchedText:f.text, matchStart:f.start, inflected:true}; }
   const minLen = Math.max(3, Math.ceil(approvedLower.length * 0.7));
   for(let len = approvedLower.length - 1; len >= minLen; len--){
     const stem = approvedLower.slice(0, len);
@@ -1938,7 +2013,7 @@ async function runGlossaryCheck(projectId, override, onProgress){
     termLower: t.term.toLowerCase(), approvedLower: (t.approved||'').toLowerCase(),
     forbidden: t.forbidden||[], forbiddenLower: (t.forbidden||[]).map(f=>(f||'').toLowerCase()),
     language: t.language || ''
-  }));
+  })).map(t=>{ const srcWords = termSourceWords(t.termLower); const first = srcWords[0]; return Object.assign(t, {srcWords, srcProbe: first ? (first.exact ? first.w : first.stem) : t.termLower}); });
   const rows = dbQuery('rows', r=>r.projectId===projectId);
   const componentsById = {}; dbList('components').forEach(c=>{ componentsById[c.id]=c; });
   const CHUNK = 800;
@@ -1950,17 +2025,18 @@ async function runGlossaryCheck(projectId, override, onProgress){
       terms.forEach(term=>{
         const termLang = glossaryLangById[term.glossaryId] || term.language;
         if(termLang && r.languageCode && termLang.toLowerCase()!==r.languageCode.toLowerCase()) return;
-        if(!srcLower.includes(term.termLower)) return;
+        const srcFound = findTermInSource(srcLower, term);
+        if(!srcFound) return;
 
         const forbiddenIdx = term.forbiddenLower.findIndex(f=>f && tgtLower.includes(f));
-        const approvedCheck = term.approvedLower ? containsApprovedForm(tgtLower, term.approvedLower) : {matched:true, confidence:'exact'};
+        const approvedCheck = term.approvedLower ? containsApprovedForm(tgtLower, term.approvedLower, r.languageCode) : {matched:true, confidence:'exact'};
         const isExact = approvedCheck.matched && approvedCheck.confidence==='exact';
         if(forbiddenIdx<0 && isExact) return; // clean — nothing to report, skip the cross-platform scan entirely
 
         const crossExamples = crossPlatformGlossaryExamples(rows, r.languageCode, r.componentId, term.termLower, term.approvedLower, componentsById);
         const crossNote = crossExamples.length ? ' Расхождение между папками — верно переведено в: ' + crossExamples.map(e=>e.component+' («'+e.target+'»)').join('; ') + '.' : '';
         const crossSuggestion = crossExamples.length ? crossExamples[0].target : null;
-        const srcHit = findCaseInsensitiveMatch(r.source, term.term);
+        const srcHit = {matched: r.source.slice(srcFound.start, srcFound.end)};
 
         if(forbiddenIdx>=0){
           const tgtHit = findCaseInsensitiveMatch(r.target, term.forbidden[forbiddenIdx]);
@@ -2999,7 +3075,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -3146,6 +3222,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
+    if(/\.pot?$/i.test(item.name)) dbUpsert('_fileSources', {id:fileRec.id, text});   // kept to rebuild the file with fixes, byte for byte elsewhere
     const rowsArr = dbList('rows');
     const newIdsForThisFile = [];
     entries.forEach(en=>{
@@ -3213,7 +3290,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -3335,6 +3412,7 @@ async function handlePoFiles(projectId, items){
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
+    if(/\.pot?$/i.test(item.name)) dbUpsert('_fileSources', {id:fileRec.id, text});   // kept to rebuild the file with fixes, byte for byte elsewhere
     const rowsArr = dbList('rows');
     const newIdsForThisFile = [];
     entries.forEach(en=>{
@@ -4104,6 +4182,50 @@ function downloadPoFile(text, filename){
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
+/* ---------- the uploaded file back, with the fixes made here ----------
+   With the original text available (uploaded in this browser), only msgstr of changed entries are
+   rewritten: header, comments, order and every other entry stay exactly as they were, and a
+   "fuzzy" flag on a fixed entry is dropped. Without it (a teammate's upload, .json/.csv) the .po is
+   generated from the strings. */
+function correctedPoFor(file){
+  const rows = dbList('rows').filter(r=>r.fileId===file.id);
+  const src = dbGet('_fileSources', file.id);
+  const fixedIds = new Set(rows.filter(r=>(r.targetHistory||[]).some(h=>h.how==='fix')).map(r=>r.id));
+  if(!src || !/\.pot?$/i.test(file.filename)) return {text:generatePoFromRows(rows), changed:fixedIds.size, exact:false, rows:rows.length};
+  const byKey = new Map(rows.map(r=>[(r.key||'')+'\u0001'+r.source, r]));
+  const crlf = src.text.includes('\r\n');
+  const parts = src.text.replace(/\r\n/g,'\n').split(/(\n[ \t]*\n)/);
+  let changed = 0;
+  const out = parts.map(b=>{
+    if(!b.trim() || /^\n[ \t]*\n$/.test(b)) return b;
+    const lines = b.split('\n');
+    if(lines.some(l=>l.trim().startsWith('#~'))) return b;
+    const p = tokenizePoBlock(lines);
+    if(p.msgidIdx<0 || p.msgstrIdx<0 || (p.msgid==='' && !p.msgctxt)) return b;
+    const r = byKey.get((p.msgctxt||'')+'\u0001'+p.msgid); if(!r) return b;
+    const plural = p.msgidPlural!=null;
+    const forms = plural ? (r.targetForms||[r.target]).map((f,i)=>i===0 ? r.target : f) : [r.target];
+    if(forms.length===p.forms.length && forms.every((f,i)=>f===p.forms[i])) return b;
+    changed++;
+    let end = p.msgstrIdx;
+    while(end<lines.length && (/^msgstr(\[\d+\])?\s/.test(lines[end]) || isContinuationLine(lines[end]))) end++;
+    const head = lines.slice(0, p.msgstrIdx).map(l=>{
+      if(!/^#,/.test(l)) return l;
+      const flags = l.slice(2).split(',').map(x=>x.trim()).filter(x=>x && x!=='fuzzy');
+      return flags.length ? '#, '+flags.join(', ') : null;
+    }).filter(l=>l!==null);
+    const body = forms.map((f,i)=>(plural ? 'msgstr['+i+'] ' : 'msgstr ')+'"'+escapePoString(f)+'"');
+    return head.concat(body, lines.slice(end)).join('\n');
+  }).join('');
+  return {text: crlf ? out.replace(/\n/g,'\r\n') : out, changed, exact:true, rows:rows.length};
+}
+function downloadCorrectedPo(fileId){
+  const f = dbGet('files', fileId); if(!f) return;
+  const res = correctedPoFor(f);
+  const name = /\.pot?$/i.test(f.filename) ? f.filename.replace(/^.*\//,'') : f.filename.replace(/^.*\//,'').replace(/\.[^.]+$/,'')+'.po';
+  downloadPoFile(res.text, name);
+  toast(res.changed ? `Скачан ${name}: исправлено строк — ${res.changed}${res.exact?'':' (файл собран из строк: исходник загружали не в этом браузере)'}` : `Скачан ${name}: исправлений пока нет${res.exact?', файл совпадает с загруженным':''}`, {duration:6000});
+}
 function bulkExportPo(key){
   const rowIds = getSelectedRowIds(key);
   if(!rowIds.length){ toast('Выбери хотя бы одну строку'); return; }
@@ -4395,7 +4517,8 @@ function applyFix(issueId){
   if(reviewer) i.assignedTo = reviewer;
   i.history.push({ts:nowISO(), action:'Исправлено', comment, oldTarget, newTarget, reviewer: reviewer||null});
   dbUpsert('issues', i);
-  toast('Исправление сохранено');
+  const fixedFile = r.fileId ? dbGet('files', r.fileId) : null;
+  toast('Исправление сохранено', fixedFile ? {action:{label:'Скачать .po', fn:()=>downloadCorrectedPo(fixedFile.id)}, duration:6000} : undefined);
   closeModal(); closeDetailPanel(); router();
 }
 function passToVisualCheck(issueId){
@@ -5195,6 +5318,26 @@ async function ocrShot(sh, sess, idx){
   lines.forEach(ln=>{ const m = ocrMatchLine(idx, ln.t); if(m){ ln.rowId = m.row.id; ln.kind = m.kind; } });
   return {at:nowISO(), langs, lines};
 }
+// A string that does not fit: the screen shows its beginning and then "…", or only its beginning with
+// nothing continuing it on the next line (a wrapped string continues below and is fine).
+function ocrTruncations(lines){
+  const out = [];
+  lines.forEach((ln, n)=>{
+    if(!ln.rowId || ln.kind!=='target' || ln.c < 60) return;
+    const row = dbGet('rows', ln.rowId); if(!row) return;
+    const full = normScreen(stripForScreen(row.target)), shown = normScreen(ln.t);
+    const ell = /(…|\.\.\.?)\s*$/.test(ln.t) && !/(…|\.\.\.)\s*$/.test(stripForScreen(row.target).trim());
+    let cut = false;
+    if(!ell && shown.length>=3 && full.startsWith(shown) && full.length - shown.length >= 3){
+      const rest = full.slice(shown.length).trim();
+      const continues = lines.some((o, k)=>k!==n && o.b.y > ln.b.y + ln.b.h*.5 && o.b.y < ln.b.y + ln.b.h*3.2 && o.b.x < ln.b.x + ln.b.w && o.b.x + o.b.w > ln.b.x - ln.b.h*2 && rest.startsWith(normScreen(o.t).split(' ')[0]||'\u0000'));
+      cut = !continues;
+    }
+    if(ell || cut) out.push({line:ln, row, type:'Обрезанный текст', severity: ell ? 'Высокая' : 'Средняя',
+      text:(ell ? 'Текст обрезан многоточием' : 'Похоже, текст не помещается: на экране только начало строки')+'. На экране: «'+ln.t+'», в переводе: «'+stripForScreen(row.target).trim()+'»', found:ln.t, expected:stripForScreen(row.target).trim()});
+  });
+  return out;
+}
 function applyOcrFindings(sh, sess){
   const OCR_ACTION = 'Обнаружена (распознавание текста)';
   const isOcr = i=>i.shotId===sh.id && (i.history||[])[0] && i.history[0].action===OCR_ACTION;
@@ -5215,6 +5358,15 @@ function applyOcrFindings(sh, sess){
         status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:OCR_ACTION}]});
       created++;
     });
+  });
+  ocrTruncations(sh.ocr.lines||[]).forEach(f=>{
+    const k = f.type+'|'+normScreen(f.found); if(decided.has(k)) return; decided.add(k);
+    const ln = f.line;
+    kept.push({id:uid(), visual:true, manual:true, sessionId:sess.id, shotId:sh.id, box:{x:Math.max(0,ln.b.x-.004), y:Math.max(0,ln.b.y-.004), w:Math.min(1,ln.b.w+.008), h:Math.min(1,ln.b.h+.008)},
+      projectId:sess.projectId, componentId:f.row.componentId, rowId:f.row.id, languageCode:sess.languageCode,
+      type:f.type, severity:f.severity, text:f.text, highlightText:f.found, expectedText:f.expected,
+      status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:OCR_ACTION}]});
+    created++;
   });
   dbSave('issues', kept);
   return created;
@@ -6653,6 +6805,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   const loaded = await idbLoadAll();
   DB = migrateFromLocalStorageIfNeeded(loaded);
   getSettings();
+  { const ids = new Set(dbList('files').filter(f=>!f.supersededBy).map(f=>f.id)); const src = dbList('_fileSources'); if(src.some(x=>!ids.has(x.id))) dbSave('_fileSources', src.filter(x=>ids.has(x.id))); }
   lastRouteKey = routeKey();
   renderMeAvatar();
   router();
