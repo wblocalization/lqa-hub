@@ -21,5 +21,18 @@ test('20 000 строк: загрузка и новая версия', async ({ 
   await page.evaluate(() => { location.hash = '#/'; });
   await page.waitForSelector('.kpi');
   expect(Date.now() - t).toBeLessThan(5_000);
+  // «Показывать: все» — все 20 000 строк одной таблицей
+  await page.evaluate(() => { location.hash = '#/project/p0/content/strings'; });
+  await page.waitForSelector('.pager-size select');
+  t = Date.now();
+  await page.selectOption('.pager-size select', '0');
+  await expect(page.locator('#projTabStrings tbody tr')).toHaveCount(500);   // сразу первые 500, остальные — по мере прокрутки
+  const all = Date.now() - t;
+  console.log(`20k строк: «показывать все» открылось за ${all} мс`);
+  expect(all).toBeLessThan(5_000);
+  await expect(page.locator('.lazy-more')).toContainText('из 20');
+  await page.locator('.lazy-more').scrollIntoViewIfNeeded();
+  await expect(page.locator('#projTabStrings tbody tr')).toHaveCount(1000);
+  await expect(page.locator('.pager')).toContainText('20000 строк');
   expectNoErrors(errors);
 });
