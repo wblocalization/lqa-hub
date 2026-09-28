@@ -529,6 +529,21 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 .tour-count{font-size:12px;font-weight:600;color:var(--primary);}
 .install-btn{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;margin-bottom:10px;border-radius:var(--r-sm);color:var(--side-text);cursor:pointer;font-size:14px;width:100%;}
 .install-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;}
+.person{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;transition:border-color .15s ease,background .15s ease;}
+.person:hover{border-color:var(--primary);background:var(--primary-bg);}
+.person.on{border-color:var(--primary);background:var(--primary-bg);font-weight:600;}
+.dialog:has(#peopleList){width:620px;}
+.subfolders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:8px;}
+.subfolder{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),box-shadow .2s ease,border-color .2s ease;}
+.subfolder:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.subfolder-ic{width:38px;height:38px;border-radius:10px;background:var(--bg-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.subfolder-name{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.subfolder-new{justify-content:center;border-style:dashed;box-shadow:none;color:var(--text-soft);font-weight:500;gap:8px;}
+.subfolder-new:hover{color:var(--primary);background:var(--primary-bg);border-color:var(--primary);}
+.tree-tg{border:none;background:none;width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;padding:0;transition:transform .15s ease,background .15s ease;}
+.tree-tg:hover{background:var(--bg-2);color:var(--text);}
+.tree-tg.open{transform:rotate(90deg);}
 /* ---- responsive ---- */
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:var(--shadow-lg);width:264px;}
@@ -830,7 +845,8 @@ function folderColor(id){
 }
 function folderBadge(comp){
   if(!comp) return '—';
-  return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:${folderColor(comp.id)};flex-shrink:0;"></span>${esc(comp.name)}</span>`;
+  const parents = comp.parentId ? compAncestors(comp).map(a=>a.name) : [];
+  return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:${folderColor(comp.id)};flex-shrink:0;"></span>${parents.length?`<span style="color:var(--text-faint)">${esc(parents.join(' / '))} /</span>`:''}${esc(comp.name)}</span>`;
 }
 // One look for every "nothing here yet" screen: illustration (or a small icon), title, text, optional action.
 function emptyState(o){
@@ -845,7 +861,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
@@ -1262,6 +1278,140 @@ function parseLengthRules(text){
     return {pattern, max:+m[2], re:new RegExp('^'+pattern.split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$', 'i')};
   }).filter(Boolean);
 }
+/* ---------- numbers ----------
+   "12 990", "12,990", "12.990" and "12990" are the same number; "4,5" and "4.5" too. Only the
+   numbers themselves are compared (as a multiset), so reordering in the sentence is fine. */
+function extractNumbers(str){
+  const vis = visibleText(str).replace(/\{[^{}]*\}/g,' ');
+  const out = [];
+  (vis.match(/\d(?:[\d    .,']*\d)?/g)||[]).forEach(raw=>{
+    let t = raw.replace(/[    ']/g,'');
+    const lastSep = Math.max(t.lastIndexOf('.'), t.lastIndexOf(','));
+    if(lastSep>=0){
+      const tail = t.slice(lastSep+1), head = t.slice(0,lastSep).replace(/[.,]/g,'');
+      // "12.990"/"12,990" (exactly three digits after the only separator, several before) reads as thousands
+      const onlyOne = (t.match(/[.,]/g)||[]).length===1;
+      t = (onlyOne && tail.length===3) ? head+tail : head+'.'+tail;
+    }
+    t = t.replace(/^0+(?=\d)/,'');
+    out.push({raw:raw.trim(), norm:t});
+  });
+  return out;
+}
+function numbersIssue(src, tgt){
+  const a = extractNumbers(src), b = extractNumbers(tgt);
+  if(!a.length) return null;
+  const {missing, extra} = diffMultiset(a.map(x=>x.norm), b.map(x=>x.norm));
+  if(!missing.length) return null;
+  const rawOf = (list, n)=> (list.find(x=>x.norm===n)||{}).raw || n;
+  return {missing: missing.map(n=>rawOf(a,n)), extra: extra.map(n=>rawOf(b,n))};
+}
+
+/* ---------- language rules ----------
+   Built-in, per language; each returns {text, highlight, expected, severity}. Custom rules come
+   from Settings: one per line «язык ; что искать ; подсказка», where «что искать» is text or
+   /регулярка/. */
+const CYR = '\\u0400-\\u04FF', LAT = 'A-Za-z';
+const LANGUAGE_RULES = {
+  uz: [t=>{ const m = t.match(/[oOgG]['’`‘]/); return m && {text:'Узбекский апостроф: в «oʻ» и «gʻ» ставится знак ʻ (U+02BB), а не '+m[0].slice(1), highlight:m[0], expected:m[0][0]+'ʻ', severity:'Низкая'}; }],
+  hy: [t=>{ const m = /[Ա-և][^Ա-և]*$/.test(t) && t.trim().match(/[Ա-և]+([.:])\s*$/); return m && {text:'Армянская точка — «։» (վերջակետ), а не «'+m[1]+'»', highlight:m[1], expected:'։', severity:'Низкая'}; }],
+  az: [t=>{ const m = t.match(/[Әә]/); return m && {text:'Кириллическая «'+m[0]+'» вместо латинской «'+(m[0]==='ә'?'ə':'Ə')+'» в азербайджанском', highlight:m[0], expected:m[0]==='ә'?'ə':'Ə', severity:'Высокая'}; }],
+  kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
+  zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
+};
+// letters from the other alphabet hiding inside a word ("Сeбет" with a Latin «e») — invisible to the eye, breaks search and fonts
+function homoglyphIssue(t, lang){
+  const cyrLang = ['ru','kk','ky','tg','be','uk'].includes(lang) || (lang==='uz' && /[Ѐ-ӿ]{3}/.test(t));
+  const re = cyrLang ? new RegExp('(?:['+CYR+']+['+LAT+']+['+CYR+']*|['+LAT+']+['+CYR+']+['+LAT+']*)','u')
+    : ['en','tr','az','uz','fr'].includes(lang) ? new RegExp('['+LAT+']+['+CYR+']+['+LAT+']*|['+CYR+']+['+LAT+']+','u') : null;
+  if(!re) return null;
+  const m = visibleText(t).match(re);
+  if(!m) return null;
+  return {text:'Смешаны алфавиты внутри слова «'+m[0]+'» — вероятно, латинская буква вместо кириллической (или наоборот)', highlight:m[0], severity:'Высокая'};
+}
+function parseCustomLangRules(text){
+  return String(text||'').split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('#')).map(l=>{
+    const parts = l.split(';').map(x=>x.trim());
+    if(parts.length<2 || !parts[1]) return null;
+    let re;
+    const rx = /^\/(.+)\/([a-z]*)$/.exec(parts[1]);
+    try{ re = rx ? new RegExp(rx[1], rx[2].replace(/[gy]/g,'')+(rx[2].includes('u')?'':'u')) : new RegExp(parts[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'u'); }catch(e){ return null; }
+    return {lang:(parts[0]||'*').toLowerCase(), re, hint:parts[2]||('Найдено «'+parts[1]+'»')};
+  }).filter(Boolean);
+}
+
+/* ---------- ignore rules ----------
+   {id, keyPattern, text, type, lang, action:'skip'|'fp', note}. Checked after every check run:
+   a matching new problem is dropped ('skip') or created already closed as a false positive ('fp'). */
+function globToRe(p){ return new RegExp('^'+String(p).split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$', 'i'); }
+function ignoreRuleMatches(rule, issue, row){
+  if(rule.type && rule.type!==issue.type) return false;
+  if(rule.lang && baseLang(rule.lang)!==baseLang(issue.languageCode) && rule.lang!==issue.languageCode) return false;
+  if(rule.keyPattern && !(row && row.key && globToRe(rule.keyPattern).test(row.key))) return false;
+  if(rule.text){ const hay = ((row?row.source:'')+'\n'+(row?row.target:'')+'\n'+(issue.text||'')).toLowerCase(); if(!hay.includes(String(rule.text).toLowerCase())) return false; }
+  return !!(rule.type || rule.keyPattern || rule.text);
+}
+function applyIgnoreRules(rowIds){
+  const rules = getSettings().ignoreRules || [];
+  if(!rules.length) return {skipped:0, closed:0};
+  const idSet = rowIds ? new Set(rowIds) : null;
+  const rowsById = {}; dbList('rows').forEach(r=>rowsById[r.id]=r);
+  let skipped = 0, closed = 0;
+  const out = [];
+  dbList('issues').forEach(i=>{
+    const fresh = i.status==='Новая' && !i.manual && !i.visual && (i.history||[]).length<=1 && (!idSet || idSet.has(i.rowId));
+    const rule = fresh && rules.find(r=>ignoreRuleMatches(r, i, rowsById[i.rowId]));
+    if(!rule){ out.push(i); return; }
+    if(rule.action==='skip'){ skipped++; return; }
+    closed++;
+    out.push(Object.assign({}, i, {status:'Ложное срабатывание', history:(i.history||[]).concat([{ts:nowISO(), action:'Ложное срабатывание (правило «игнорировать»'+(rule.note?': '+rule.note:'')+')'}])}));
+  });
+  if(skipped || closed) dbSave('issues', out);
+  return {skipped, closed};
+}
+function ignoreRuleText(r){
+  const parts = [];
+  if(r.type) parts.push('тип «'+r.type+'»');
+  if(r.keyPattern) parts.push('ключ '+r.keyPattern);
+  if(r.lang) parts.push('язык '+r.lang);
+  if(r.text) parts.push('текст содержит «'+r.text+'»');
+  return parts.join(' · ');
+}
+function openIgnoreRuleDialog(issueId){
+  const i = issueId ? dbGet('issues', issueId) : null, r = i ? dbGet('rows', i.rowId) : null;
+  const keyGuess = r && r.key ? r.key.replace(/[^.]+$/, '*') : '';
+  uiDialog(`<div class="dialog-ic">${icon('x',20)}</div><h3>Правило «игнорировать»</h3>
+    <div class="dialog-text">Подходящие проблемы больше не будут мешать — ни сейчас, ни в новых загрузках. Заполни хотя бы одно из полей: тип, ключ или текст.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+      <label class="field">Тип проблемы<select id="irType"><option value="">любой</option>${[...new Set(dbList('issues').map(x=>x.type).concat(Object.values(CHECK_TYPE_LABELS)))].sort().map(t=>`<option ${i&&i.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></label>
+      <label class="field">Ключ строки <span style="font-weight:400;color:var(--text-faint)">— звёздочка = любой текст</span><input type="text" id="irKey" value="${esc(keyGuess)}" placeholder="например: debug.* или *.promo.*"></label>
+      <label class="field">Текст содержит<input type="text" id="irText" placeholder="необязательно"></label>
+      <label class="field">Язык<select id="irLang"><option value="">любой</option>${[...new Set(dbList('rows').map(x=>x.languageCode))].filter(Boolean).sort().map(l=>`<option ${i&&i.languageCode===l?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+      <label class="field">Что делать<select id="irAction"><option value="fp">Сразу помечать как ложное срабатывание (видно в истории)</option><option value="skip">Не создавать проблему вообще</option></select></label>
+      <label class="field">Пояснение<input type="text" id="irNote" placeholder="например: отладочные строки, не видны пользователю"></label>
+      ${i?`<label class="checkrow" style="border:none;"><input type="checkbox" id="irNow" checked> Применить и к уже найденным новым проблемам</label>`:''}
+    </div>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить правило</button></div>`,
+  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>{
+    const rule = {id:uid(), type:root.querySelector('#irType').value, keyPattern:root.querySelector('#irKey').value.trim(), text:root.querySelector('#irText').value.trim(),
+      lang:root.querySelector('#irLang').value, action:root.querySelector('#irAction').value, note:root.querySelector('#irNote').value.trim(), createdAt:nowISO(), by:getMe()||null};
+    if(!rule.type && !rule.keyPattern && !rule.text){ toast('Заполни тип, ключ или текст — иначе правило поймает всё подряд'); return; }
+    saveSettings({ignoreRules:(getSettings().ignoreRules||[]).concat([rule])});
+    const now = root.querySelector('#irNow') && root.querySelector('#irNow').checked;
+    close(true);
+    if(now){ const res = applyIgnoreRules(null); toast('Правило сохранено: закрыто '+res.closed+', убрано '+res.skipped); closeDetailPanel(); }
+    else toast('Правило сохранено');
+    router();
+  }; });
+}
+function deleteIgnoreRule(id){ saveSettings({ignoreRules:(getSettings().ignoreRules||[]).filter(r=>r.id!==id)}); router(); }
+function ignoreRulesCardHtml(){
+  const rules = getSettings().ignoreRules || [];
+  return `<div class="card"><div class="row between" style="align-items:flex-start;"><div><h3 style="margin-bottom:4px;">Игнорировать</h3><div class="hint" style="margin:0;max-width:640px;">Правила для проблем, которые не нужно разбирать каждый раз: отладочные ключи, намеренные исключения. Быстрее всего создавать из карточки проблемы — кнопка «Игнорировать похожие».</div></div><button class="btn secondary sm" onclick="openIgnoreRuleDialog()">${icon('plus',14)}Правило</button></div>
+    ${rules.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Условие</th><th>Действие</th><th>Пояснение</th><th></th></tr></thead><tbody>${rules.map(r=>`<tr><td>${esc(ignoreRuleText(r))}</td><td class="nowrap">${r.action==='skip'?'не создавать':'ложное срабатывание'}</td><td>${esc(r.note||'—')}</td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" onclick="deleteIgnoreRule('${r.id}')">${icon('trash',14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="margin-top:12px;">Правил пока нет.</div>'}
+  </div>`;
+}
+
 const REBRAND_TERMS = ['WB','ВБ','RWB','РВБ','Wildberries','Вайлдберриз'];
 const REBRAND_LANGUAGES = ['az']; // languages currently following the WB→N11 rebrand rule
 function isUrlOrEmailContext(text, matchStart, matchEnd){
@@ -1463,6 +1613,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const rowsById = {}; allRows.forEach(r=>{ rowsById[r.id]=r; });
   const dntTerms = parseDntTerms(s.dntTerms);
   const lengthRules = parseLengthRules(s.lengthRules);
+  const customLangRules = parseCustomLangRules(s.customLangRules);
   const CHUNK = 1500;
   for(let start=0; start<rowIds.length; start+=CHUNK){
     const chunk = rowIds.slice(start, start+CHUNK);
@@ -1544,6 +1695,17 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
           push('Формат под страну','Низкая','Прямые кавычки вместо «ёлочек», как в исходном тексте', {highlightField:'target', highlightText:m[0], expectedText:'«'+m[0].slice(1,-1)+'»'});
         if(lang==='en' && (m = tgt.match(/«[^»]*»/)))
           push('Формат под страну','Низкая','«Ёлочки» в английском тексте — принято “…” или "…"', {highlightField:'target', highlightText:m[0]});
+      }
+      if(s.checkNumbers && srcTrim && tgtTrim){
+        const n = numbersIssue(src, tgt);
+        if(n) push('Числа','Высокая','В переводе нет числа '+n.missing.map(x=>'«'+x+'»').join(', ')+(n.extra.length?' — вместо него '+n.extra.map(x=>'«'+x+'»').join(', '):''), {highlightField:n.extra.length?'target':'source', highlightText:n.extra.length?n.extra[0]:n.missing[0], expectedText:n.extra.length?n.missing[0]:null});
+      }
+      if(s.checkLangRules && tgtTrim){
+        const found = [];
+        (LANGUAGE_RULES[lang]||[]).forEach(fn=>{ const x = fn(tgt); if(x) found.push(x); });
+        if(!found.length){ const h = homoglyphIssue(tgt, lang); if(h) found.push(h); } // a specific rule already names the odd letter
+        customLangRules.forEach(cr=>{ if(cr.lang!=='*' && cr.lang!==lang && cr.lang!==String(r.languageCode||'').toLowerCase()) return; const m = tgt.match(cr.re); if(m) found.push({text:cr.hint, highlight:m[0], severity:'Средняя'}); });
+        found.forEach(x=>push('Правила языка', x.severity||'Средняя', x.text, {highlightField:'target', highlightText:x.highlight||null, expectedText:x.expected||null}));
       }
       if(s.checkScript && NON_CYRILLIC_LANGS.includes(lang) && tgtTrim){
         const vis = visibleText(tgt);
@@ -1767,6 +1929,8 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
   await runTechnicalCheckOnRows(newRowIds, override, onProgress);
   runConsistencyCheck(projectId, override); // fast even at scale (project-wide grouping, no per-term work) — no chunking needed
   await runGlossaryCheck(projectId, override, onProgress);
+  const ig = applyIgnoreRules(newRowIds);
+  if(ig.skipped || ig.closed) toast('Правила «игнорировать»: закрыто '+ig.closed+', убрано '+ig.skipped);
 }
 function checkSettingsFieldsHtml(prefix, collapsed){
   const s = getSettings();
@@ -1787,6 +1951,8 @@ function checkSettingsFieldsHtml(prefix, collapsed){
     <label class="checkrow"><input type="checkbox" id="${prefix}Dnt" ${s.checkDnt?'checked':''}> Бренды «Не переводить»</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Script" ${s.checkScript?'checked':''}> Алфавит языка</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Limits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Numbers" ${s.checkNumbers?'checked':''}> Числа</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}LangRules" ${s.checkLangRules?'checked':''}> Правила языка</label>
   </div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
@@ -1799,7 +1965,7 @@ const CHECK_TYPE_LABELS = {
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
   checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
   checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить',
-  checkScript:'Не тот алфавит', checkLimits:'Лимит длины'
+  checkScript:'Не тот алфавит', checkLimits:'Лимит длины', checkNumbers:'Числа', checkLangRules:'Правила языка'
 };
 // After an upload that ran with only SOME checks enabled (e.g. only "Ребрендинг"), jumping
 // to the unfiltered Строки view would bury the handful of real findings under thousands of
@@ -1832,6 +1998,8 @@ function readCheckSettingsOverride(prefix){
     checkDnt: get('Dnt').checked,
     checkScript: get('Script').checked,
     checkLimits: get('Limits').checked,
+    checkNumbers: get('Numbers').checked,
+    checkLangRules: get('LangRules').checked,
   };
   if(get('SaveDefault') && get('SaveDefault').checked) saveSettings(override);
   return override;
@@ -2552,27 +2720,38 @@ function removeProjectLanguage(projectId, code){
   toast('Язык «'+languageLabel(code)+'» убран из проекта', {duration:8000, action:{label:'Отменить', fn:()=>{ const q = dbGet('projects', projectId); if(q){ q.languages = before; dbUpsert('projects', q); router(); } }}});
 }
 function renderProjectComponents(p){
-  const comps = dbQuery('components', c=>c.projectId===p.id);
+  const tree = componentTree(p.id);
+  const top = tree.filter(c=>!c._depth);
+  const visible = tree.filter(c=>{ let cur = c; while(cur.parentId){ if(!expandedFolders.has(cur.parentId)) return false; cur = dbGet('components', cur.parentId) || {}; } return true; });
   return `<div class="card">
-    <div class="row between"><h3 style="margin:0;">Папки</h3><button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Папка</button></div>
-    ${comps.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Название</th><th>Строк</th><th>Проблем</th><th></th></tr></thead><tbody>
-      ${comps.map(c=>{
-        const rc = dbQuery('rows', r=>r.componentId===c.id).length;
-        const ic = dbQuery('issues', i=>i.componentId===c.id).length;
-        return `<tr class="clickable" onclick="location.hash='#/project/${p.id}/folder/${c.id}'"><td style="font-weight:500;">${folderBadge(c)}</td><td>${rc}</td><td>${ic}</td><td class="nowrap" style="text-align:right;"><button class="btn ghost sm" title="Переименовать" onclick="event.stopPropagation();renameComponent('${c.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить" style="color:var(--crit);" onclick="event.stopPropagation();deleteComponent('${c.id}')">${icon('trash',14)}</button><span style="color:var(--text-faint);margin-left:4px;">${icon('chevronRight',16)}</span></td></tr>`;
+    <div class="row between"><h3 style="margin:0;">Папки</h3><div class="row">${tree.some(c=>compChildren(c.id).length)?`<button class="btn ghost sm" onclick="${tree.every(c=>!compChildren(c.id).length||expandedFolders.has(c.id))?'expandedFolders=new Set();router()':`expandedFolders=new Set(${esc(JSON.stringify(tree.map(c=>c.id)))});router()`}">${tree.every(c=>!compChildren(c.id).length||expandedFolders.has(c.id))?'Свернуть все':'Развернуть все'}</button>`:''}<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Папка</button></div></div>
+    ${top.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Название</th><th>Строк</th><th>Открыто</th><th>Проблем</th><th></th></tr></thead><tbody>
+      ${visible.map(c=>{
+        const n = folderCounts(c.id), kids = compChildren(c.id).length, open = expandedFolders.has(c.id);
+        return `<tr class="clickable" onclick="location.hash='#/project/${p.id}/folder/${c.id}'"><td style="font-weight:500;padding-left:${12+c._depth*26}px;">
+          <span class="row" style="gap:6px;flex-wrap:nowrap;">${kids?`<button class="tree-tg ${open?'open':''}" title="${open?'Свернуть':'Показать подпапки'}" onclick="toggleFolderExpand('${c.id}', event)">${icon('chevronRight',14)}</button>`:'<span style="width:22px;display:inline-block;"></span>'}
+          <span style="width:8px;height:8px;border-radius:50%;background:${folderColor(c.id)};flex-shrink:0;"></span>${esc(c.name)}${kids?`<span class="hint" style="margin:0;font-weight:400;">· ${kids} ${plural(kids,'подпапка','подпапки','подпапок')}</span>`:''}</span></td>
+          <td>${n.rows.toLocaleString('ru-RU')}</td><td>${n.open?`<span style="color:var(--high);font-weight:600;">${n.open}</span>`:'0'}</td><td>${n.issues}</td>
+          <td class="nowrap" style="text-align:right;"><button class="btn ghost sm" title="Создать подпапку" onclick="event.stopPropagation();addComponent('${p.id}','${c.id}')">${icon('plus',14)}</button><button class="btn ghost sm" title="Переименовать" onclick="event.stopPropagation();renameComponent('${c.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить" style="color:var(--crit);" onclick="event.stopPropagation();deleteComponent('${c.id}')">${icon('trash',14)}</button><span style="color:var(--text-faint);margin-left:4px;">${icon('chevronRight',16)}</span></td></tr>`;
       }).join('')}
-    </tbody></table></div>` : emptyState({icon:'folder', compact:true, title:'Папок ещё нет', text:'Папка — любой модуль, платформа или раздел продукта (Web, iOS, каталог, checkout…), который ты сам называешь.', action:`<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Создать папку</button>`})}
+    </tbody></table></div><div class="hint">Цифры включают подпапки. Стрелка слева раскрывает вложенные папки.</div>` : emptyState({icon:'folder', compact:true, title:'Папок ещё нет', text:'Папка — любой модуль, платформа или раздел продукта (Web, iOS, каталог, checkout…). Внутри папки можно создавать подпапки.', action:`<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Создать папку</button>`})}
   </div>`;
 }
-function addComponent(projectId){
-  openModal(`<h3>Новая папка</h3><div style="margin-top:14px;"><label class="field">Название<input type="text" id="compName" placeholder="например: Web, iOS, каталог, checkout…"></label></div>
+function addComponent(projectId, parentId){
+  const parent = parentId ? dbGet('components', parentId) : null;
+  openModal(`<h3>${parent?'Новая подпапка в «'+esc(parent.name)+'»':'Новая папка'}</h3><div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;"><label class="field">Название<input type="text" id="compName" placeholder="${parent?'например: iOS, Android, web':'например: Web, iOS, каталог, checkout…'}" onkeydown="if(event.key==='Enter')saveComponent('${projectId}')"></label>
+    ${dbList('components').some(c=>c.projectId===projectId) ? `<label class="field">Внутри папки<select id="compParent">${componentOptionsHtml(projectId, parentId||'', true)}</select></label>` : ''}</div>
     <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Отмена</button><button class="btn" onclick="saveComponent('${projectId}')">Создать</button></div>`);
+  setTimeout(()=>{ const n = document.getElementById('compName'); if(n) n.focus(); }, 50);
 }
 function saveComponent(projectId){
   const name = document.getElementById('compName').value.trim();
   if(!name){ toast('Укажи название папки'); return; }
-  dbUpsert('components', {id:uid(), projectId, name, createdAt:nowISO()});
-  closeModal(); toast('Папка создана'); router();
+  const parentEl = document.getElementById('compParent');
+  const parentId = parentEl && parentEl.value ? parentEl.value : null;
+  dbUpsert('components', {id:uid(), projectId, name, parentId, createdAt:nowISO()});
+  if(parentId) expandedFolders.add(parentId);
+  closeModal(); toast(parentId ? 'Подпапка создана' : 'Папка создана'); router();
 }
 async function renameComponent(id){
   const c = dbGet('components', id);
@@ -2581,15 +2760,75 @@ async function renameComponent(id){
 }
 async function deleteComponent(id){
   const c0 = dbGet('components', id);
-  if(!await uiConfirm({title:'Удалить папку «'+(c0?c0.name:'')+'»?', text:'Удалятся её строки, файлы и найденные проблемы.', okText:'Удалить папку'})) return;
+  const all = compWithDescendants(id), kids = all.size-1;
+  if(!await uiConfirm({title:'Удалить папку «'+(c0?c0.name:'')+'»?', text:'Удалятся её строки, файлы и найденные проблемы'+(kids?' — и '+kids+' '+plural(kids,'подпапка','подпапки','подпапок')+' внутри':'')+'.', okText:'Удалить папку'})) return;
   const snap = snapshotTables(['components','rows','issues','files']);
   const projectId = c0?.projectId;
-  dbSave('rows', dbList('rows').filter(r=>r.componentId!==id));
-  dbSave('issues', dbList('issues').filter(i=>i.componentId!==id));
-  dbSave('files', dbList('files').filter(f=>f.componentId!==id));
-  dbRemove('components', id);
+  dbSave('rows', dbList('rows').filter(r=>!all.has(r.componentId)));
+  dbSave('issues', dbList('issues').filter(i=>!all.has(i.componentId)));
+  dbSave('files', dbList('files').filter(f=>!all.has(f.componentId)));
+  dbSave('components', dbList('components').filter(c=>!all.has(c.id)));
   toastUndo('Папка удалена', snap);
   location.hash = projectId ? '#/project/'+projectId+'/folders' : '#/projects';
+  router();
+}
+
+/* ---------- folder tree ----------
+   Folders (components) may sit inside another folder via parentId. Everything that counts rows or
+   problems "for a folder" can include its subfolders through compDescendants(). */
+function compChildren(id){ return dbList('components').filter(c=>c.parentId===id).sort((a,b)=>a.name.localeCompare(b.name,'ru')); }
+function compDescendants(id){
+  const out = new Set(), stack = [id];
+  const byParent = {}; dbList('components').forEach(c=>{ if(c.parentId) (byParent[c.parentId] = byParent[c.parentId]||[]).push(c.id); });
+  while(stack.length){ const cur = stack.pop(); (byParent[cur]||[]).forEach(ch=>{ if(!out.has(ch)){ out.add(ch); stack.push(ch); } }); }
+  return out;
+}
+function compWithDescendants(id){ const s = compDescendants(id); s.add(id); return s; }
+function compAncestors(c){ const out = []; let cur = c, guard = 0; while(cur && cur.parentId && guard++<20){ cur = dbGet('components', cur.parentId); if(cur) out.unshift(cur); } return out; }
+function compPath(c){ return c ? compAncestors(c).map(a=>a.name).concat([c.name]).join(' / ') : ''; }
+// depth-first list for selects and trees
+function componentTree(projectId){
+  const all = dbList('components').filter(c=>c.projectId===projectId);
+  const ids = new Set(all.map(c=>c.id));
+  const out = [];
+  const walk = (parent, depth)=>all.filter(c=>(c.parentId||null)===parent || (!parent && c.parentId && !ids.has(c.parentId)))
+    .filter(c=>parent ? true : !c.parentId || !ids.has(c.parentId))
+    .sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(c=>{ if(out.includes(c)) return; out.push(c); c._depth = depth; walk(c.id, depth+1); });
+  walk(null, 0);
+  return out;
+}
+function componentOptionsHtml(projectId, selected, withNone){
+  return (withNone?`<option value="">— в корне проекта —</option>`:'') + componentTree(projectId).map(c=>`<option value="${c.id}" ${c.id===selected?'selected':''}>${'   '.repeat(c._depth)}${c._depth?'└ ':''}${esc(c.name)}</option>`).join('');
+}
+let expandedFolders = new Set();
+function toggleFolderExpand(id, ev){ if(ev) ev.stopPropagation(); if(expandedFolders.has(id)) expandedFolders.delete(id); else expandedFolders.add(id); router(); }
+function folderCounts(id){
+  const set = compWithDescendants(id);
+  let rows = 0, issues = 0, open = 0;
+  dbList('rows').forEach(r=>{ if(set.has(r.componentId)) rows++; });
+  dbList('issues').forEach(i=>{ if(set.has(i.componentId)){ issues++; if(isOpenIssue(i)) open++; } });
+  return {rows, issues, open};
+}
+function subfolderCardsHtml(projectId, parentId){
+  const kids = compChildren(parentId);
+  return `<div class="section-label" style="margin-top:4px;">Подпапки${kids.length?' · '+kids.length:''}</div>
+    <div class="subfolders">${kids.map(c=>{ const n = folderCounts(c.id), sub = compChildren(c.id).length;
+      return `<a class="subfolder" href="#/project/${projectId}/folder/${c.id}"><span class="subfolder-ic" style="color:${folderColor(c.id)};">${icon('folder',20)}</span>
+        <div style="min-width:0;"><div class="subfolder-name">${esc(c.name)}</div><div class="hint" style="margin:0;">${n.rows.toLocaleString('ru-RU')} ${plural(n.rows,'строка','строки','строк')}${n.open?' · <span style="color:var(--high)">'+n.open+' открыто</span>':''}${sub?' · '+sub+' '+plural(sub,'подпапка','подпапки','подпапок'):''}</div></div></a>`; }).join('')}
+      <button type="button" class="subfolder subfolder-new" onclick="addComponent('${projectId}','${parentId}')">${icon('plus',18)}Подпапка</button></div>`;
+}
+
+/* ---------- deleting a file ---------- */
+async function deleteFile(fileId){
+  const f = dbGet('files', fileId); if(!f) return;
+  const rowIds = new Set(dbList('rows').filter(r=>r.fileId===fileId).map(r=>r.id));
+  const nIssues = dbList('issues').filter(i=>rowIds.has(i.rowId) && !i.visual).length;
+  if(!await uiConfirm({title:'Удалить файл «'+f.filename+'»?', text:f.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues} ${plural(nIssues,'проблема','проблемы','проблем')} из этого файла. Проблемы со скриншотов останутся, но отвяжутся от строк.`, okText:'Удалить файл'})) return;
+  const snap = snapshotTables(['files','rows','issues']);
+  dbSave('issues', dbList('issues').filter(i=>!(rowIds.has(i.rowId) && !i.visual)).map(i=>rowIds.has(i.rowId) ? Object.assign({}, i, {rowId:null}) : i));
+  dbSave('rows', dbList('rows').filter(r=>r.fileId!==fileId));
+  dbRemove('files', fileId);
+  toastUndo('Файл удалён', snap);
   router();
 }
 
@@ -2599,9 +2838,10 @@ function renderFolderDetail(el, projectId, componentId, tab){
   const project = dbGet('projects', projectId);
   const comp = dbGet('components', componentId);
   if(!project || !comp){ el.innerHTML = '<div class="empty"><b>Папка не найдена</b></div>'; return; }
-  setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id}, {label:comp.name, hash:'#/project/'+project.id+'/folder/'+componentId}, FOLDER_TABS.find(t=>t[0]===tab)?.[1]||'']);
-  const rows = dbQuery('rows', r=>r.componentId===componentId);
-  const issues = dbQuery('issues', i=>i.componentId===componentId);
+  setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id+'/folders'}].concat(compAncestors(comp).map(a=>({label:a.name, hash:'#/project/'+project.id+'/folder/'+a.id}))).concat([{label:comp.name, hash:'#/project/'+project.id+'/folder/'+componentId}, FOLDER_TABS.find(t=>t[0]===tab)?.[1]||'']));
+  const withKids = compWithDescendants(componentId);
+  const rows = dbQuery('rows', r=>withKids.has(r.componentId));
+  const issues = dbQuery('issues', i=>withKids.has(i.componentId));
   const files = dbQuery('files', f=>f.componentId===componentId).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
   const crit = issues.filter(i=>i.severity==='Критическая').length;
 
@@ -2609,11 +2849,14 @@ function renderFolderDetail(el, projectId, componentId, tab){
 
   let body = '';
   if(tab==='overview'){
-    body = `<div class="grid grid-4">
-      <div class="kpi"><div class="num">${rows.length}</div><div class="lbl">Строк</div></div>
+    const kids = withKids.size-1;
+    body = `${subfolderCardsHtml(projectId, componentId)}
+    <div class="section-label">Сводка${kids?' · вместе с подпапками':''}</div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num">${rows.length.toLocaleString('ru-RU')}</div><div class="lbl">Строк</div></div>
       <div class="kpi"><div class="num">${issues.length}</div><div class="lbl">Проблем</div></div>
       <div class="kpi crit"><div class="num">${crit}</div><div class="lbl">Критических</div></div>
-      <div class="kpi"><div class="num">${files.length}</div><div class="lbl">Файлов</div></div>
+      <div class="kpi"><div class="num">${files.length}</div><div class="lbl">Файлов в этой папке</div></div>
     </div>`;
   } else if(tab==='files'){
     const langs = project.languages||[];
@@ -2638,7 +2881,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td>${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -2647,7 +2890,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
 
   el.innerHTML = `
     <div class="page-head"><div><h1 class="page-title"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${folderColor(comp.id)};margin-right:8px;"></span>${esc(comp.name)}</h1><div class="page-sub">${esc(project.name)} · папка</div></div>
-      <div class="row"><button class="btn secondary" onclick="renameComponent('${componentId}')">Переименовать</button><button class="btn danger" onclick="deleteComponent('${componentId}')">Удалить папку</button></div>
+      <div class="row"><button class="btn secondary" onclick="addComponent('${projectId}','${componentId}')">${icon('plus',14)}Подпапка</button><button class="btn secondary" onclick="renameComponent('${componentId}')">Переименовать</button><button class="btn danger" onclick="deleteComponent('${componentId}')">Удалить папку</button></div>
     </div>
     <div class="tabbar">${tabsHtml}</div>
     <div id="folderTabBody">${body}</div>
@@ -2829,7 +3072,7 @@ function renderProjectFiles(p){
   return `<div class="card">
     <h3>Загрузить .po</h3>
     <div class="grid grid-2">
-      <label class="field">Папка<select id="uploadComponent">${comps.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+      <label class="field">Папка<select id="uploadComponent">${componentOptionsHtml(p.id, '')}</select></label>
       <label class="field">Язык<select id="uploadLanguage">${langs.map(l=>`<option value="${l.code}">${esc(l.name)} (${l.code})</option>`).join('')}</select></label>
       <label class="field">Кто загружает (менеджер)<select id="uploadManager">${managerSelectOptions()}</select></label>
     </div>
@@ -2849,7 +3092,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td class="mono">${esc(f.filename)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td>${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`;
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -3672,6 +3915,7 @@ function openIssueDetail(issueId){
       ${i.shotId ? `<button class="btn ghost sm" onclick="openShotViewer('${i.shotId}','${issueId}')">${icon('image',14)}Открыть скриншот</button>` : ''}
       ${r ? `<button class="btn ghost sm" onclick="openRowDetail('${i.rowId}')">Открыть строку</button>` : ''}
       ${i.visual ? '' : `<button class="btn ghost sm" onclick="passToVisualCheck('${issueId}')">В визуальную проверку</button>`}
+      ${i.visual ? '' : `<button class="btn ghost sm" onclick="openIgnoreRuleDialog('${issueId}')">${icon('x',14)}Игнорировать похожие</button>`}
     </div>
     ${!i.visual ? rowContextHtml(r, issueId) : ''}
     ${issueDiscussionHtml(i, issueId)}
@@ -4889,15 +5133,58 @@ function renderMeAvatar(){
   el.title = me ? me+' — сменить' : 'Кто ты? Выбери себя, чтобы видеть свои задачи';
   el.style.background = me ? `linear-gradient(135deg,${folderColor(me)},${folderColor(me+'x')})` : '';
 }
+const ROLE_KEY = 'lqa_role';
+function getRole(){ try{ return localStorage.getItem(ROLE_KEY) || ''; }catch(e){ return ''; } }
+function peopleByRole(){
+  const editorsByLang = Object.entries(EDITORS_BY_LANGUAGE).map(([code, list])=>({label:'Редакторы · '+languageLabel(code), names:list}));
+  return {
+    manager: [{label:'Менеджеры', names:MANAGERS}],
+    editor: [{label:'Редакторы', names:EDITORS}].concat(editorsByLang),
+  };
+}
+function roleOf(name){
+  if(MANAGERS.some(m=>sameName(m, name))) return 'manager';
+  if(EDITORS.concat(Object.values(EDITORS_BY_LANGUAGE).flat()).some(m=>sameName(m, name))) return 'editor';
+  return 'other';
+}
+const ROLE_LABELS = {manager:'Менеджер', editor:'Редактор', other:'Другое'};
 function openWhoAmI(){
   const me = getMe();
-  uiDialog(`<div class="dialog-ic">${icon('home',20)}</div><h3>Кто ты?</h3>
-    <div class="dialog-text">Нужно только этому браузеру: по имени платформа покажет твои задачи в «Мои задачи» и подпишет твои комментарии.</div>
-    <label class="field" style="margin-top:14px;">Имя<input type="text" id="meInput" list="mePeople" value="${esc(me)}" placeholder="Начни вводить — или выбери из списка" autocomplete="off"></label>
-    <datalist id="mePeople">${allPeople().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
-    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
-    (root, close)=>{ const inp = root.querySelector('#meInput'); root.querySelector('[data-ok]').onclick = ()=>close(inp.value.trim()); inp.focus(); inp.select(); })
-  .then(v=>{ if(v==null) return; try{ localStorage.setItem(ME_KEY, v); }catch(e){} renderMeAvatar(); router(); toast(v ? 'Привет, '+v.split(' ')[0]+'!' : 'Имя сброшено'); });
+  let role = getRole() || (me ? roleOf(me) : 'manager');
+  const groups = peopleByRole();
+  const listHtml = (r, q)=>{
+    if(r==='other') return `<label class="field" style="margin-top:4px;">Имя<input type="text" id="meOther" value="${esc(me && roleOf(me)==='other'?me:'')}" placeholder="Как тебя подписывать"></label>`;
+    const ql = (q||'').trim().toLowerCase();
+    return groups[r].map(g=>{ const names = g.names.filter(n=>!ql || n.toLowerCase().includes(ql)); if(!names.length) return '';
+      return `<div class="section-label" style="margin:12px 0 6px;">${esc(g.label)}</div><div class="people">${names.map(n=>`<button type="button" class="person ${sameName(n,me)?'on':''}" data-name="${esc(n)}"><span class="bubble-ava" style="background:${folderColor(n)}">${esc(initialsOf(n).toUpperCase())}</span>${esc(n)}</button>`).join('')}</div>`; }).join('') || '<div class="hint">Никого не нашлось</div>';
+  };
+  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.</div>
+    <div class="subtabbar" style="margin:14px 0 6px;" id="roleTabs">${Object.entries(ROLE_LABELS).map(([k,l])=>`<button type="button" class="subtabbtn ${k===role?'active':''}" data-role="${k}">${l}</button>`).join('')}</div>
+    <input type="text" id="peopleSearch" placeholder="Поиск по имени" style="width:100%;margin-top:8px;${role==='other'?'display:none;':''}">
+    <div id="peopleList" style="max-height:46vh;overflow:auto;margin-top:4px;">${listHtml(role)}</div>
+    <div class="modal-actions">${me?`<button class="btn ghost" data-reset style="margin-right:auto;color:var(--text-faint);">Сбросить</button>`:''}<button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok ${role==='other'?'':'style="display:none;"'}>Сохранить</button></div>`,
+  (root, close)=>{
+    const list = root.querySelector('#peopleList'), search = root.querySelector('#peopleSearch'), ok = root.querySelector('[data-ok]');
+    const wire = ()=>list.querySelectorAll('.person').forEach(b=>b.onclick = ()=>close({name:b.dataset.name, role}));
+    root.querySelectorAll('[data-role]').forEach(b=>b.onclick = ()=>{
+      role = b.dataset.role;
+      root.querySelectorAll('[data-role]').forEach(x=>x.classList.toggle('active', x===b));
+      search.style.display = role==='other' ? 'none' : ''; search.value = '';
+      ok.style.display = role==='other' ? '' : 'none';
+      list.innerHTML = listHtml(role); wire();
+      (role==='other' ? root.querySelector('#meOther') : search).focus();
+    });
+    search.oninput = ()=>{ list.innerHTML = listHtml(role, search.value); wire(); };
+    ok.onclick = ()=>{ const v = (root.querySelector('#meOther')||{}).value; if(!v || !v.trim()){ toast('Впиши имя'); return; } close({name:v.trim(), role:'other'}); };
+    const reset = root.querySelector('[data-reset]'); if(reset) reset.onclick = ()=>close({name:'', role:''});
+    wire(); (role==='other' ? root.querySelector('#meOther') : search).focus();
+  }).then(v=>{
+    if(!v) return;
+    try{ localStorage.setItem(ME_KEY, v.name); localStorage.setItem(ROLE_KEY, v.role); }catch(e){}
+    myTab = v.role==='manager' ? 'uploads' : 'assigned';
+    renderMeAvatar(); router();
+    toast(v.name ? 'Привет, '+v.name.split(' ')[0]+'!' : 'Имя сброшено');
+  });
 }
 function deadlineTs(d){ if(!d) return Infinity; if(d.type==='asap') return +new Date(new Date().toDateString()); // overdue dates sort above «как можно скорее»
   if(d.type==='date' && d.date) return +new Date(d.date); return Infinity; }
@@ -4929,7 +5216,7 @@ function renderMyTasks(el){
   const weekAgo = Date.now()-7*864e5;
   const doneWeek = dbList('issues').filter(i=>(i.history||[]).some(h=>sameName(h.reviewer, me) && h.ts && +new Date(h.ts)>=weekAgo)).length;
   const ids = myTab==='uploads' ? uploads : assigned;
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)}${getRole()?' · '+esc(ROLE_LABELS[getRole()]||''):''} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
     <div class="grid grid-4 stagger" style="margin-bottom:20px;">
       <div class="kpi ${overdue?'crit':''}"><div class="kpi-ic">${icon('alertTriangle',18)}</div><div class="num" data-count="${overdue}">${overdue}</div><div class="lbl">Просрочено</div></div>
       <div class="kpi high"><div class="kpi-ic">${icon('bell',18)}</div><div class="num" data-count="${asap+soon}">${asap+soon}</div><div class="lbl">Срочно и в ближайшие 3 дня</div></div>
@@ -5362,14 +5649,21 @@ function renderSettingsPage(el){
         <label class="checkrow"><input type="checkbox" id="sDnt" ${s.checkDnt?'checked':''}> Бренды и названия «Не переводить»</label>
         <label class="checkrow"><input type="checkbox" id="sScript" ${s.checkScript?'checked':''}> Алфавит: кириллица в uz, az, en, hy, ka и других</label>
         <label class="checkrow"><input type="checkbox" id="sLimits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам (правила ниже)</label>
+        <label class="checkrow"><input type="checkbox" id="sNumbers" ${s.checkNumbers?'checked':''}> Числа: «12 990» в исходнике — «12 900» в переводе</label>
+        <label class="checkrow"><input type="checkbox" id="sLangRules" ${s.checkLangRules?'checked':''}> Правила языка: смешанные алфавиты, апостроф uz, точка hy и свои правила</label>
       </div>
       <label class="field" style="margin-top:16px;">Не переводить <span style="font-weight:400;color:var(--text-faint);">— бренды и названия сервисов, по одному в строке. Если слово есть в исходном тексте, оно должно остаться в переводе как есть</span>
         <textarea id="sDntTerms" style="min-height:96px;font-family:inherit;font-size:14px;" placeholder="Wildberries&#10;WB Partners">${esc(s.dntTerms||'')}</textarea></label>
       <label class="field" style="margin-top:16px;">Лимиты длины <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: шаблон ключа = максимум символов. Звёздочка — любой текст. Переменные и теги не считаются</span>
         <textarea id="sLengthRules" class="mono" style="min-height:96px;" placeholder="checkout.button.* = 20&#10;*.tab.title = 14&#10;catalog.filter.* = 24">${esc(s.lengthRules||'')}</textarea></label>
+      <label class="field" style="margin-top:16px;">Свои правила языков <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: язык ; что искать ; подсказка. «Что искать» — текст или /регулярное выражение/, язык * — для всех</span>
+        <textarea id="sCustomLangRules" class="mono" style="min-height:96px;" placeholder="kk ; тенге ; В интерфейсе пишем знак ₸, а не слово&#10;en ; /\bpls\b/i ; Без сокращений в интерфейсе&#10;* ; !! ; Двойной восклицательный знак">${esc(s.customLangRules||'')}</textarea></label>
+      <details class="hint" style="margin-top:8px;"><summary style="cursor:pointer;">Встроенные правила языков</summary>
+        <ul style="margin:6px 0 0;padding-left:18px;line-height:1.7;"><li>Все языки: латинская буква внутри кириллического слова и наоборот («Сeбет»)</li><li>uz: апостроф в oʻ/gʻ — знак ʻ</li><li>hy: точка в конце предложения — «։»</li><li>az: латинская ə, а не кириллическая ә</li><li>kk: кириллическая ә, а не латинская ə</li><li>zh: полноширинная пунктуация</li></ul></details>
       <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveSettingsForm()">Сохранить</button></div>
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
+    ${ignoreRulesCardHtml()}
     <div class="card"><h3>Проверка ИИ</h3>
       <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
       <div class="grid grid-2">
@@ -5403,6 +5697,9 @@ function saveSettingsForm(){
     checkScript: document.getElementById('sScript').checked,
     checkLimits: document.getElementById('sLimits').checked,
     lengthRules: document.getElementById('sLengthRules').value,
+    checkNumbers: document.getElementById('sNumbers').checked,
+    checkLangRules: document.getElementById('sLangRules').checked,
+    customLangRules: document.getElementById('sCustomLangRules').value,
   });
   toast('Настройки сохранены');
 }
