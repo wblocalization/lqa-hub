@@ -65,8 +65,13 @@
 /* ---- base ---- */
 *{box-sizing:border-box;}
 html,body{margin:0;min-height:100%;}
-body{background:var(--bg);color:var(--text);font:14px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01";}
-.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;}
+/* Country flags: Windows has no flag emoji and shows "AZ" instead of 🇦🇿. This font holds only the flags
+   (Twemoji, CC BY 4.0 — twitter.github.io/twemoji; packaged by country-flag-emoji-polyfill, MIT) and, thanks to
+   unicode-range, is used for nothing else. */
+@font-face{font-family:"Twemoji Country Flags";src:url("fonts/TwemojiCountryFlags.woff2") format("woff2");font-display:swap;
+  unicode-range:U+1F1E6-1F1FF,U+1F3F4,U+E0062-E0063,U+E0065,U+E0067,U+E006C,U+E006E,U+E0073-E0074,U+E0077,U+E007F;}
+body{background:var(--bg);color:var(--text);font:14px/1.5 "Twemoji Country Flags","Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01";}
+.mono{font-family:"Twemoji Country Flags","IBM Plex Mono",ui-monospace,monospace;font-size:13px;}
 a{color:inherit;}
 button{font-family:inherit;}
 ::selection{background:var(--primary-bg);color:var(--primary-dark);}
@@ -177,7 +182,7 @@ input[type=text],input[type=number],input[type=date],input[type=url],input[type=
   border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:0 12px;height:36px;font-size:14px;background:var(--input-bg);color:var(--text);font-family:inherit;transition:border-color .15s ease,box-shadow .15s ease;
 }
 input[type=file]{padding:6px 10px;height:auto;}
-textarea{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;padding:10px 12px;height:auto;min-height:80px;line-height:1.5;}
+textarea{font-family:"Twemoji Country Flags","IBM Plex Mono",ui-monospace,monospace;font-size:13px;padding:10px 12px;height:auto;min-height:80px;line-height:1.5;}
 input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--primary) 30%,var(--border-strong));}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--focus);}
 input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;height:16px;cursor:pointer;vertical-align:-3px;}
