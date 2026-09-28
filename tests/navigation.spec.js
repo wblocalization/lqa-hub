@@ -68,3 +68,18 @@ test('отчёт за период считает найденное и решё
   await expect(page.locator('#content')).toContainText('Кто решал');
   expectNoErrors(errors);
 });
+
+test('отчёт показывает менеджеров: кто загружал файлы', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page);
+  await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
+  await page.waitForSelector('#folderUploadManager');
+  const manager = await page.evaluate(() => MANAGERS[0]);
+  await page.selectOption('#folderUploadManager', manager);
+  await uploadPo(page, { text: po('kk', [['a', 'Корзина', 'Себет  бос'], ['b', 'Заказ', 'Тапсырыс']]) });
+  await page.evaluate(() => { location.hash = '#/report'; });
+  const card = page.locator('.card', { has: page.locator('h3', { hasText: 'Менеджеры' }) });
+  await expect(card).toContainText(manager);
+  await expect(card.locator('tbody tr').first().locator('td').nth(2)).toHaveText('2');   // строк
+  expectNoErrors(errors);
+});

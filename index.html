@@ -210,6 +210,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 .obox:hover{border-style:solid;}
 .shot-ocr{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
 .ocr-sum{font-size:12.5px;color:var(--text-soft);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;}
+.file-meta{margin-top:12px;}
+.file-meta>summary{cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text-soft);}
 .chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
 .chip-view{padding:0 4px 0 0;gap:0;}
 .chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
@@ -2896,12 +2898,49 @@ function subfolderCardsHtml(projectId, parentId){
       <button type="button" class="subfolder subfolder-new" onclick="addComponent('${projectId}','${parentId}')">${icon('plus',18)}Подпапка</button></div>`;
 }
 
+/* ---------- file name and description ----------
+   Optional: a readable name ("Корзина, релиз 5.2") and a note about the file. The original file name
+   stays and is still what links a new upload to its previous version. */
+function fileLabel(f){ return f ? (f.title || f.filename) : ''; }
+function fileCellHtml(f){
+  return `<div style="font-weight:${f.title?600:400};" class="${f.title?'':'mono'}">${esc(fileLabel(f))}</div>${f.title?`<div class="hint mono" style="margin:0;font-size:11.5px;">${esc(f.filename)}</div>`:''}${f.description?`<div class="hint" style="margin:2px 0 0;max-width:420px;white-space:normal;">${esc(f.description)}</div>`:''}`;
+}
+function fileMetaFieldsHtml(prefix){
+  return `<details class="file-meta"${document.getElementById(prefix+'Title')?.value?' open':''}><summary>Название и описание файла <span class="hint" style="margin:0;">— необязательно</span></summary>
+    <div class="grid grid-2" style="margin-top:10px;">
+      <label class="field">Название<input type="text" id="${prefix}Title" placeholder="например: Корзина, релиз 5.2"></label>
+      <label class="field">Описание<input type="text" id="${prefix}Desc" placeholder="что в файле, откуда он, что проверить"></label>
+    </div><div class="hint" style="margin:6px 0 0;">Если загружаешь несколько файлов сразу, название и описание достанутся всем. У новой версии файла без названия останется прежнее.</div></details>`;
+}
+function readFileMetaFields(prefix){
+  const t = document.getElementById(prefix+'Title'), d = document.getElementById(prefix+'Desc');
+  return {title: t ? t.value.trim() : '', description: d ? d.value.trim() : ''};
+}
+function fileMetaFor(meta, item, count){
+  const out = {};
+  if(meta && meta.title) out.title = count>1 ? meta.title+' · '+item.name.replace(/^.*\//,'') : meta.title;
+  if(meta && meta.description) out.description = meta.description;
+  return out;
+}
+async function editFileMeta(fileId){
+  const f = dbGet('files', fileId); if(!f) return;
+  const res = await uiDialog(`<h3>Файл ${esc(f.filename)}</h3>
+    <label class="field" style="margin-top:14px;">Название<input type="text" id="fmTitle" value="${esc(f.title||'')}" placeholder="например: Корзина, релиз 5.2"></label>
+    <label class="field" style="margin-top:10px;">Описание<textarea id="fmDesc" style="min-height:70px;" placeholder="что в файле, откуда он, что проверить">${esc(f.description||'')}</textarea></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({title:root.querySelector('#fmTitle').value.trim(), description:root.querySelector('#fmDesc').value.trim()}); root.querySelector('#fmTitle').focus(); });
+  if(!res) return;
+  const rec = Object.assign({}, f, {title: res.title || undefined, description: res.description || undefined});
+  if(!rec.title) delete rec.title; if(!rec.description) delete rec.description;
+  dbUpsert('files', rec); toast('Сохранено'); router();
+}
+
 /* ---------- deleting a file ---------- */
 async function deleteFile(fileId){
   const f = dbGet('files', fileId); if(!f) return;
   const rowIds = new Set(dbList('rows').filter(r=>r.fileId===fileId).map(r=>r.id));
   const nIssues = dbList('issues').filter(i=>rowIds.has(i.rowId) && !i.visual).length;
-  if(!await uiConfirm({title:'Удалить файл «'+f.filename+'»?', text:f.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues} ${plural(nIssues,'проблема','проблемы','проблем')} из этого файла. Проблемы со скриншотов останутся, но отвяжутся от строк.`, okText:'Удалить файл'})) return;
+  if(!await uiConfirm({title:'Удалить файл «'+fileLabel(f)+'»?', text:f.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues} ${plural(nIssues,'проблема','проблемы','проблем')} из этого файла. Проблемы со скриншотов останутся, но отвяжутся от строк.`, okText:'Удалить файл'})) return;
   const snap = snapshotTables(['files','rows','issues']);
   dbSave('issues', dbList('issues').filter(i=>!(rowIds.has(i.rowId) && !i.visual)).map(i=>rowIds.has(i.rowId) ? Object.assign({}, i, {rowId:null}) : i));
   dbSave('rows', dbList('rows').filter(r=>r.fileId!==fileId));
@@ -2943,8 +2982,9 @@ function renderFolderDetail(el, projectId, componentId, tab){
       ${langs.length ? `
         <div class="grid grid-2">
           <label class="field">Язык<select id="folderUploadLanguage">${langs.map(l=>`<option value="${l.code}">${esc(l.name)} (${l.code})</option>`).join('')}</select></label>
-          <label class="field">Кто загружает (менеджер)<select id="folderUploadManager">${managerSelectOptions()}</select></label>
+          <label class="field">Кто загружает (менеджер)<select id="folderUploadManager">${managerSelectOptions(roleOf(getMe())==='manager'?getMe():'')}</select></label>
         </div>
+        ${fileMetaFieldsHtml('folderUpload')}
         ${checkSettingsFieldsHtml('folderChk', true)}
         <label class="drop" id="folderPoDrop" style="margin-top:12px;">
           <img src="${IMG.IMPORT}" alt="">
@@ -2959,7 +2999,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -3087,6 +3127,7 @@ async function uploadFolderPendingFiles(){
 }
 async function handleFolderPoFiles(projectId, componentId, items){
   const uploadedBy = document.getElementById('folderUploadManager') ? document.getElementById('folderUploadManager').value : '';
+  const meta = readFileMetaFields('folderUpload');
   const checkOverride = document.getElementById('folderChkUntranslated') ? readCheckSettingsOverride('folderChk') : null;
   if(!items.length){ toast('Выбери .po файл'); return; }
   const status = document.getElementById('folderUploadStatus');
@@ -3101,7 +3142,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
     let entries;
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
-    const fileRec = {id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy};
+    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy}, fileMetaFor(meta, item, items.length));
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
@@ -3153,8 +3194,9 @@ function renderProjectFiles(p){
     <div class="grid grid-2">
       <label class="field">Папка<select id="uploadComponent">${componentOptionsHtml(p.id, '')}</select></label>
       <label class="field">Язык<select id="uploadLanguage">${langs.map(l=>`<option value="${l.code}">${esc(l.name)} (${l.code})</option>`).join('')}</select></label>
-      <label class="field">Кто загружает (менеджер)<select id="uploadManager">${managerSelectOptions()}</select></label>
+      <label class="field">Кто загружает (менеджер)<select id="uploadManager">${managerSelectOptions(roleOf(getMe())==='manager'?getMe():'')}</select></label>
     </div>
+    ${fileMetaFieldsHtml('upload')}
     ${checkSettingsFieldsHtml('projChk', true)}
     <label class="drop" id="poDrop" style="margin-top:12px;">
       <img src="${IMG.IMPORT}" alt="">
@@ -3170,8 +3212,8 @@ function renderProjectFiles(p){
     ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Папка</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
-        return `<tr><td class="mono">${esc(f.filename)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
+        return `<tr><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -3263,6 +3305,7 @@ async function uploadProjectPendingFiles(){
 }
 async function handlePoFiles(projectId, items){
   const uploadedBy = document.getElementById('uploadManager') ? document.getElementById('uploadManager').value : '';
+  const meta = readFileMetaFields('upload');
   const checkOverride = document.getElementById('projChkUntranslated') ? readCheckSettingsOverride('projChk') : null;
   if(!items.length){ toast('Выбери файл'); return; }
   const status = document.getElementById('uploadStatus');
@@ -3288,7 +3331,7 @@ async function handlePoFiles(projectId, items){
     let entries;
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
-    const fileRec = {id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy};
+    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy}, fileMetaFor(meta, item, items.length));
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
@@ -3676,7 +3719,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
     let html = '';
     if(!fixedFilter.projectId) html += renderMsel(key, 'proj', 'Проект', projects.map(p=>[p.id,p.name]));
     if(!fixedFilter.componentId) html += renderMsel(key, 'comp', 'Папка', componentOptions.map(c=>[c.id,c.name]));
-    html += renderMsel(key, 'file', 'Файл', fileOptions.map(f=>[f.id, f.filename+' ('+f.languageCode+')']));
+    html += renderMsel(key, 'file', 'Файл', fileOptions.map(f=>[f.id, fileLabel(f)+' ('+f.languageCode+')']));
     html += renderMsel(key, 'lang', 'Язык', languageOptions);
     html += renderMsel(key, 'sev', 'Важность', SEV_OPTS);
     html += renderMsel(key, 'status', 'Статус', STATUS_OPTS);
@@ -3801,7 +3844,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
     let html = '';
     if(!fixedFilter.projectId) html += renderMsel(key, 'proj', 'Проект', projects.map(p=>[p.id,p.name]));
     if(!fixedFilter.componentId) html += renderMsel(key, 'comp', 'Папка', componentOptions.map(c=>[c.id,c.name]));
-    html += renderMsel(key, 'file', 'Файл', fileOptions.map(f=>[f.id, f.filename+' ('+f.languageCode+')']));
+    html += renderMsel(key, 'file', 'Файл', fileOptions.map(f=>[f.id, fileLabel(f)+' ('+f.languageCode+')']));
     html += renderMsel(key, 'lang', 'Язык', languageOptions);
     html += renderMsel(key, 'sev', 'Важность', SEV_OPTS);
     html += renderMsel(key, 'status', 'Статус', STATUS_OPTS);
@@ -4116,7 +4159,7 @@ function confirmBulkStatus(ids){
     const i = issues.find(x=>x.id===id);
     if(!i) return;
     i.status = status;
-    i.history.push({ts:nowISO(), action:'Статус изменён вручную (массово): '+status, comment});
+    i.history.push({ts:nowISO(), action:'Статус изменён вручную (массово): '+status, comment, by:getMe()||null});
   });
   dbSave('issues', issues);
   closeModal();
@@ -4184,7 +4227,7 @@ function confirmSendToReview(ids){
       i.status = 'На проверке';
       i.assignedTo = assignee || null;
       i.deadline = deadline;
-      i.history.push({ts:nowISO(), action:'Отправлена на проверку', comment, reviewer:assignee||null});
+      i.history.push({ts:nowISO(), action:'Отправлена на проверку', comment, reviewer:assignee||null, by:getMe()||null});
     }
   });
   dbSave('issues', issues);
@@ -4321,7 +4364,7 @@ function decideIssue(issueId, action){
   const reviewer = reviewerEl ? reviewerEl.value.trim() : '';
   i.status = map[action];
   if(reviewer) i.assignedTo = reviewer;
-  i.history.push({ts:nowISO(), action, reviewer: reviewer||null});
+  i.history.push({ts:nowISO(), action, reviewer: reviewer||null, by:getMe()||null});
   dbUpsert('issues', i);
   toast('Решение сохранено: '+i.status);
   closeDetailPanel(); router();
@@ -4815,7 +4858,7 @@ function visualLangOptions(projectId, selected){
 function saveVisualSession(id){
   const name = document.getElementById('vsName').value.trim();
   if(!name){ toast('Напиши, что проверяем — например, «Корзина»'); return; }
-  const rec = id ? dbGet('visualSessions', id) : {id:uid(), createdAt:nowISO()};
+  const rec = id ? dbGet('visualSessions', id) : {id:uid(), createdAt:nowISO(), createdBy:getMe()||null};
   rec.projectId = document.getElementById('vsProject').value;
   rec.languageCode = document.getElementById('vsLang').value;
   rec.name = name;
@@ -5823,6 +5866,7 @@ function reconcileVersions(pairs){
     });
     prevRowIds.forEach(id=>dropRows.add(id));
     dbUpsert('files', Object.assign({}, prev, {supersededBy: next.id}));
+    if((!next.title && prev.title) || (!next.description && prev.description)) dbUpsert('files', Object.assign(next, {title: next.title || prev.title || undefined, description: next.description || prev.description || undefined}));
     const key = next.componentId+'|'+next.languageCode;
     const acc = out[key] = out[key] || {fixed:0, added:0, kept:0, carriedDecisions:0, regressions:0, old:0, files:[]};
     Object.keys(st).forEach(k=>acc[k]+=st[k]); acc.files.push(next.filename);
@@ -6164,6 +6208,7 @@ function computePeriodReport(st){
   const types = count(found, i=>i.type);
   const folders = count(found, i=>i.componentId);
   const people = count(resolved, i=>issueResolvedBy(i));
+  const team = reportTeam(st, inRange, files, sessions, runs, resolved, issues);
   // per-day (or per-week for long ranges)
   const days = Math.round((to-from)/864e5);
   const step = days > 92 ? 7 : 1;
@@ -6172,9 +6217,24 @@ function computePeriodReport(st){
   const bi = ts=>Math.min(buckets.length-1, Math.floor((+new Date(ts)-from)/(step*864e5)));
   found.forEach(i=>buckets[bi(i.createdAt)].found++);
   resolved.forEach(i=>buckets[bi(issueResolvedAt(i))].resolved++);
-  return {from, to, found, resolved, openAtEnd, fixedInPlatform, fp, byLang, types, folders, people, buckets, step, files, sessions,
+  return {from, to, found, resolved, openAtEnd, fixedInPlatform, fp, byLang, types, folders, people, team, buckets, step, files, sessions,
     rowsChecked: runs.filter(r=>inRange(r.createdAt)).reduce((a,r)=>a+(r.rowCount||0),0),
     crit: found.filter(i=>i.severity==='Критическая').length};
+}
+// Managers upload files, start screenshot sessions and send problems to review; editors decide and fix.
+function reportTeam(st, inRange, files, sessions, runs, resolved, issues){
+  const P = {}; const who = n=>{ n = String(n||'').trim(); if(!n) return null; return P[n] = P[n] || {name:n, role:roleOf(n), files:0, rows:0, found:0, sessions:0, sent:0, resolved:0, fixed:0, dismissed:0}; };
+  files.forEach(f=>{ const p = who(f.uploadedBy); if(p){ p.files++; p.rows += f.rowCount||0; } });
+  runs.filter(r=>inRange(r.createdAt)).forEach(r=>{ const p = who(r.runBy); if(p) p.found += r.issueCount||0; });
+  sessions.forEach(v=>{ const p = who(v.createdBy); if(p) p.sessions++; });
+  issues.forEach(i=>(i.history||[]).forEach(h=>{ if(h && h.by && h.action==='Отправлена на проверку' && inRange(h.ts)){ const p = who(h.by); if(p) p.sent++; } }));
+  resolved.forEach(i=>{ const p = who(issueResolvedBy(i)); if(!p) return; p.resolved++; if(i.status==='Принята после исправления') p.fixed++; if(i.status==='Отклонена'||i.status==='Ложное срабатывание') p.dismissed++; });
+  const list = Object.values(P);
+  const managers = list.filter(p=>p.role==='manager' || (p.role==='other' && (p.files||p.sessions||p.sent) && !p.resolved)).sort((a,b)=>b.files-a.files || b.rows-a.rows);
+  const editors = list.filter(p=>!managers.includes(p) && p.resolved).sort((a,b)=>b.resolved-a.resolved);
+  // a manager who also decided problems shows up in both tables
+  list.filter(p=>managers.includes(p) && p.resolved).forEach(p=>editors.push(p));
+  return {managers, editors};
 }
 function reportChartSvg(rep){
   const B = rep.buckets; if(!B.length) return '';
@@ -6230,7 +6290,20 @@ function renderPeriodReport(el){
       <div class="card"><h3>Частые типы проблем</h3>${bar(rep.types, rep.found.length, k=>esc(k))}</div>
       <div class="card"><h3>Папки с проблемами</h3>${bar(rep.folders, rep.found.length, k=>{ const c = dbGet('components', k); return c ? esc(compPath(c)) : 'без папки'; })}</div>
     </div>
-    ${rep.people.length ? `<div class="card"><h3>Кто решал</h3>${bar(rep.people, rep.resolved.length, k=>esc(k))}</div>` : ''}`;
+    ${reportTeamHtml(rep.team)}`;
+}
+function reportTeamHtml(team){
+  if(!team.managers.length && !team.editors.length) return `<div class="card"><h3>Команда</h3><div class="hint">За этот период нет действий с указанным именем. Имя берётся из «Кто загружает» при загрузке файла и из «Кто я» (кнопка с инициалами вверху).</div></div>`;
+  const person = p=>`<td class="nowrap">${initialsAvatar(p.name)}</td>`;
+  const num = v=>`<td>${v?v.toLocaleString('ru-RU'):'<span class="hint" style="margin:0;">—</span>'}</td>`;
+  return `<div>
+    <div class="card"><h3>Менеджеры</h3>${team.managers.length ? `<div class="table-wrap"><table><thead><tr><th>Кто</th><th>Файлов</th><th>Строк</th><th>Найдено</th><th>Скриншот-сессий</th><th>На проверку</th></tr></thead><tbody>
+      ${team.managers.map(p=>`<tr>${person(p)}${num(p.files)}${num(p.rows)}${num(p.found)}${num(p.sessions)}${num(p.sent)}</tr>`).join('')}</tbody></table></div>
+      <div class="hint">Файлы и строки — что загрузил менеджер, «Найдено» — проблемы в этих загрузках, «На проверку» — сколько проблем отправил редакторам.</div>` : '<div class="hint">Менеджеры за этот период ничего не загружали. Имя менеджера выбирается в поле «Кто загружает» при загрузке файла.</div>'}</div>
+    <div class="card"><h3>Кто решал</h3>${team.editors.length ? `<div class="table-wrap"><table><thead><tr><th>Кто</th><th>Роль</th><th>Решено</th><th>Исправлено здесь</th><th>Отклонено</th></tr></thead><tbody>
+      ${team.editors.map(p=>`<tr>${person(p)}<td><span class="hint" style="margin:0;">${ROLE_LABELS[p.role]}</span></td>${num(p.resolved)}${num(p.fixed)}${num(p.dismissed)}</tr>`).join('')}</tbody></table></div>
+      <div class="hint">«Отклонено» — опровергнуто или ложное срабатывание.</div>` : '<div class="hint">За этот период никто не принимал решений по проблемам.</div>'}</div>
+  </div>`;
 }
 function setReportPreset(p){ const r = reportPresetRange(p); if(!r) return; Object.assign(reportState, {preset:p, from:isoDay(r[0]), to:isoDay(r[1])}); router(); }
 function setReportField(k, v){ if((k==='from'||k==='to') && !v) return; reportState[k] = v; if(k==='from'||k==='to'){ reportState.preset = ''; if(reportState.from > reportState.to){ const t = reportState.from; reportState.from = reportState.to; reportState.to = t; } } router(); }
@@ -6248,6 +6321,8 @@ function exportPeriodReportXlsx(){
       ['Проверено строк', rep.rowsChecked], ['Загружено файлов', rep.files.length], ['Сессий визуальной проверки', rep.sessions.length]]), 'Сводка');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.byLang.map(l=>({Язык:languageLabel(l.code), Код:l.code, Найдено:l.found, Критических:l.crit, Решено:l.resolved, Открыто_на_конец:l.open, Качество_в_начале:l.q0==null?'':Math.round(l.q0*100)+'%', Качество_в_конце:l.q1==null?'':Math.round(l.q1*100)+'%'}))), 'По языкам');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.types.map(([k,v])=>({Тип:k, Найдено:v}))), 'Типы');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.team.managers.map(p=>({Менеджер:p.name, Файлов:p.files, Строк:p.rows, Найдено_проблем:p.found, Скриншот_сессий:p.sessions, Отправлено_на_проверку:p.sent}))), 'Менеджеры');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.team.editors.map(p=>({Кто:p.name, Роль:ROLE_LABELS[p.role], Решено:p.resolved, Исправлено_в_платформе:p.fixed, Отклонено:p.dismissed}))), 'Кто решал');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.buckets.map(b=>({Дата:new Date(b.t).toLocaleDateString('ru-RU'), Найдено:b.found, Решено:b.resolved}))), 'По дням');
     const rowOf = i=>{ const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId);
       return {Проект:p?p.name:'', Папка:c?compPath(c):'', Язык:i.languageCode, Ключ:r?r.key||'':'', Исходный_текст:r?r.source:'', Перевод:r?r.target:'', Тип:i.type, Важность:i.severity, Описание:i.text, Статус:i.status, Найдена:fmtDate(i.createdAt), Решена:fmtDate(issueResolvedAt(i)), Кто:issueResolvedBy(i)||''}; };
@@ -6459,6 +6534,7 @@ function paletteCompute(qRaw){
     addScored(dbList('components').map(c=>({group:'Папки', icon:'folder', label:compPath(c), hint:dbGet('projects',c.projectId)?.name||'', run:()=>{ location.hash='#/project/'+c.projectId+'/folder/'+c.id; }})), 6);
     addScored(dbList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
     addScored(dbList('glossaries').map(g=>({group:'Глоссарии', icon:'bookOpen', label:g.name, run:()=>{ location.hash='#/glossary/'+g.id; }})), 4);
+    addScored(dbList('files').filter(f=>!f.supersededBy).map(f=>({group:'Файлы', icon:'file', label:fileLabel(f), hint:[f.title?f.filename:'', f.description||'', f.languageCode].filter(Boolean).join(' · '), run:()=>{ location.hash='#/project/'+f.projectId+'/folder/'+f.componentId+'/files'; }})), 5);
     if(q.length>=2){
       const rows = []; const all = dbList('rows');
       for(let k=0;k<all.length && rows.length<8;k++){ const r = all[k]; if((r.key||'').toLowerCase().includes(q) || (r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q)) rows.push(r); }
