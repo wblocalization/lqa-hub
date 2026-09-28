@@ -68,3 +68,16 @@ test('процент с суффиксом — не переменная: «7%-d
   expect((await issuesByKey(page)).filter(i => i.key === 'cb' && /еременн/.test(i.type))).toEqual([]);
   expectNoErrors(errors);
 });
+
+test('другой порядок переменных — не ошибка; пустой перевод — только «Не переведено»', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['az'] });
+  await uploadPo(page, { lang: 'az', text: po('az', [
+    ['order', 'Дальше — %1$s за %2$d месяцев', 'Daha sonra — %2$d ay ərzində %1$s'],
+    ['empty', 'Внесите <b>%2$s</b> по оплате\\nдо %1$s', ''],
+  ]) });
+  const issues = await issuesByKey(page);
+  expect(issues.filter(i => i.key === 'order')).toEqual([]);
+  expect(issues.filter(i => i.key === 'empty').map(i => i.type)).toEqual(['Не переведено']);
+  expectNoErrors(errors);
+});
