@@ -1745,18 +1745,16 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
         highlightField:null, highlightText:null, expectedText:null, confidence:'high', matchType:null
       }, extra||{}));
 
-      if(s.checkUntranslated){
-        if(!tgtTrim && srcTrim) push('Не переведено','Критическая','Пустой перевод');
-        else if(tgtTrim && srcTrim && tgtTrim===srcTrim && looksLikeTranslatableText(srcTrim)) push('Не переведено','Высокая','Перевод совпадает с исходным текстом');
-      }
+      // an empty translation is always reported — it's a fact, not a heuristic; the setting covers «same as the source»
+      if(!tgtTrim && srcTrim) push('Не переведено','Критическая','Пустой перевод');
+      else if(s.checkUntranslated && tgtTrim && srcTrim && tgtTrim===srcTrim && looksLikeTranslatableText(srcTrim)) push('Не переведено','Высокая','Перевод совпадает с исходным текстом');
+      // an empty translation is just not translated — its variables, tags and line breaks aren't "lost"
+      if(!tgtTrim && !(r.targetForms||[]).slice(1).some(f=>String(f||'').trim())) return;
       if(s.checkVars){
         const {missing, extra} = diffMultiset(extractAll(src,VAR_RE), extractAll(tgt,VAR_RE));
         if(missing.length) push('Переменные','Критическая','Потеряна переменная: '+missing.join(', '), {highlightField:'source', highlightText:missing[0]});
         if(extra.length) push('Переменные','Критическая','Лишняя переменная: '+extra.join(', '), {highlightField:'target', highlightText:extra[0]});
-        if(!missing.length && !extra.length){
-          const so=extractAll(src,VAR_RE), to=extractAll(tgt,VAR_RE);
-          if(so.length>1 && so.join('|')!==to.join('|')) push('Переменные','Средняя','Порядок переменных отличается от исходного');
-        }
+        // no check of the order: languages put words in a different order, and «%2$s üçün %1$s» is correct Azerbaijani
       }
       if(s.checkTags){
         const {missing, extra} = diffMultiset(extractTagsNormalized(src), extractTagsNormalized(tgt));
@@ -2068,7 +2066,7 @@ async function runGlossaryCheck(projectId, override, onProgress){
     const chunk = rows.slice(start, start+CHUNK);
     chunk.forEach(r=>{
       const srcLower = (r.source||'').toLowerCase(), tgtLower=(r.target||'').toLowerCase();
-      if(!srcLower) return;
+      if(!srcLower || !tgtLower.trim()) return;   // empty translation is reported as not translated, not as a glossary miss
       terms.forEach(term=>{
         const termLang = glossaryLangById[term.glossaryId] || term.language;
         if(termLang && r.languageCode && termLang.toLowerCase()!==r.languageCode.toLowerCase()) return;
@@ -2129,7 +2127,7 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
 function checkSettingsFieldsHtml(prefix, collapsed){
   const s = getSettings();
   const body = `<div class="checklist" style="margin-top:10px;">
-    <label class="checkrow"><input type="checkbox" id="${prefix}Untranslated" ${s.checkUntranslated?'checked':''}> Пустой перевод / не переведено</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Untranslated" ${s.checkUntranslated?'checked':''}> Перевод совпадает с исходным текстом (пустой перевод отмечается всегда)</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Vars" ${s.checkVars?'checked':''}> Переменные ({{name}}, %s, {0}, ${'${var}'})</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Tags" ${s.checkTags?'checked':''}> HTML/XML разметка</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Breaks" ${s.checkBreaks?'checked':''}> Переносы строк (\\n)</label>
@@ -7514,7 +7512,7 @@ function renderSettingsPage(el){
     ${syncCardHtml()}
     <div class="card"><h3>Правила LQA</h3>
       <div class="checklist">
-        <label class="checkrow"><input type="checkbox" id="sUntranslated" ${s.checkUntranslated?'checked':''}> Пустой перевод / не переведено</label>
+        <label class="checkrow"><input type="checkbox" id="sUntranslated" ${s.checkUntranslated?'checked':''}> Перевод совпадает с исходным текстом (пустой перевод отмечается всегда)</label>
         <label class="checkrow"><input type="checkbox" id="sVars" ${s.checkVars?'checked':''}> Переменные ({{name}}, %s, {0}, ${'${var}'})</label>
         <label class="checkrow"><input type="checkbox" id="sTags" ${s.checkTags?'checked':''}> HTML/XML разметка</label>
         <label class="checkrow"><input type="checkbox" id="sBreaks" ${s.checkBreaks?'checked':''}> Переносы строк (\\n)</label>
