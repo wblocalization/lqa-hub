@@ -908,7 +908,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
@@ -1976,6 +1976,8 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
   await runTechnicalCheckOnRows(newRowIds, override, onProgress);
   runConsistencyCheck(projectId, override); // fast even at scale (project-wide grouping, no per-term work) — no chunking needed
   await runGlossaryCheck(projectId, override, onProgress);
+  const sp = Object.assign({}, getSettings(), override||{});
+  if(sp.checkSpelling) await runSpellCheck(newRowIds, sp, onProgress);
   const ig = applyIgnoreRules(newRowIds);
   if(ig.skipped || ig.closed) toast('Правила «игнорировать»: закрыто '+ig.closed+', убрано '+ig.skipped);
 }
@@ -2000,6 +2002,7 @@ function checkSettingsFieldsHtml(prefix, collapsed){
     <label class="checkrow"><input type="checkbox" id="${prefix}Limits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Numbers" ${s.checkNumbers?'checked':''}> Числа</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}LangRules" ${s.checkLangRules?'checked':''}> Правила языка</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Spelling" ${s.checkSpelling?'checked':''}> Орфография (словари)</label>
   </div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
@@ -2012,7 +2015,7 @@ const CHECK_TYPE_LABELS = {
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
   checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
   checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить',
-  checkScript:'Не тот алфавит', checkLimits:'Лимит длины', checkNumbers:'Числа', checkLangRules:'Правила языка'
+  checkScript:'Не тот алфавит', checkLimits:'Лимит длины', checkNumbers:'Числа', checkLangRules:'Правила языка', checkSpelling:'Орфография'
 };
 // After an upload that ran with only SOME checks enabled (e.g. only "Ребрендинг"), jumping
 // to the unfiltered Строки view would bury the handful of real findings under thousands of
@@ -2047,6 +2050,7 @@ function readCheckSettingsOverride(prefix){
     checkLimits: get('Limits').checked,
     checkNumbers: get('Numbers').checked,
     checkLangRules: get('LangRules').checked,
+    checkSpelling: get('Spelling') ? get('Spelling').checked : getSettings().checkSpelling,
   };
   if(get('SaveDefault') && get('SaveDefault').checked) saveSettings(override);
   return override;
@@ -3096,7 +3100,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
   }
   status.textContent = 'Запускаю проверку…';
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
-    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
+    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : stage==='spell' ? 'Орфография: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
   const diffs = reconcileVersions(versionPairs);
   Object.entries(byLanguage).forEach(([languageCode, rowIds])=>{
@@ -3283,7 +3287,7 @@ async function handlePoFiles(projectId, items){
   }
   status.textContent = 'Запускаю проверку…';
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
-    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
+    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : stage==='spell' ? 'Орфография: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
   const diffs = reconcileVersions(versionPairs);
   Object.values(byGroup).forEach(({componentId, languageCode, rowIds})=>{
@@ -3319,6 +3323,171 @@ function pluralFormsHtml(r){
   return `<div><div class="hint">Формы множественного числа · ${r.targetForms.length}${need?' из '+need:''}${r.sourcePlural?` · исходная мн. форма: <span class="mono">${esc(r.sourcePlural)}</span>`:''}</div>
     <div class="plural-forms">${r.targetForms.map((f,i)=>`<div><span>${i+1}</span><div class="mono">${String(f||'').trim()?highlightTokens(f):'<i style="color:var(--crit);">пусто</i>'}</div></div>`).join('')}</div></div>`;
 }
+/* ---------- spelling ----------
+   Hunspell dictionaries through nspell. Built-in ones come from the npm "dictionary-xx" packages on
+   jsDelivr (downloaded on first use, then from the browser cache); any other language works with an
+   uploaded .aff + .dic pair, kept in this browser only (_dictionaries). The dictionary is compiled in a
+   Web Worker so a big one (ru ≈ 3 s) doesn't freeze the page. Team words to accept live in settings.spellWords. */
+const SPELL_CDN_DICTS = {ru:'dictionary-ru@3', en:'dictionary-en@4', hy:'dictionary-hy@2', ka:'dictionary-ka@2', tr:'dictionary-tr@2', uk:'dictionary-uk@4', be:'dictionary-be@1'};
+const SPELL_SCRIPT = {ru:'Cyrl', uk:'Cyrl', be:'Cyrl', kk:'Cyrl', ky:'Cyrl', tg:'Cyrl', en:'Latn', tr:'Latn', az:'Latn', uz:'Latn', hy:'Armn', ka:'Geor'};
+function cdnBase(){ return (typeof window!=='undefined' && window.LQA_CDN) || 'https://cdn.jsdelivr.net/npm/'; }
+function spellBaseLang(code){ return String(code||'').toLowerCase().split(/[-_]/)[0]; }
+function spellDictSource(code){
+  const l = spellBaseLang(code); const custom = dbGet('_dictionaries', l);
+  if(custom) return {kind:'custom', l, custom};
+  if(SPELL_CDN_DICTS[l]) return {kind:'cdn', l, pkg:SPELL_CDN_DICTS[l]};
+  return null;
+}
+function scriptOfWord(w){ return /\p{Script=Cyrillic}/u.test(w) ? 'Cyrl' : /\p{Script=Latin}/u.test(w) ? 'Latn' : /\p{Script=Armenian}/u.test(w) ? 'Armn' : /\p{Script=Georgian}/u.test(w) ? 'Geor' : 'Other'; }
+function detectDicScript(dic){
+  const counts = {}; String(dic).split('\n').slice(1, 400).forEach(line=>{ const sc = scriptOfWord(line.split('/')[0]); counts[sc] = (counts[sc]||0)+1; });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+}
+const SPELL_WORKER_SRC = `let sp = null;
+self.onmessage = async e=>{ const m = e.data;
+  try{
+    if(m.type==='init'){ const mod = await import(m.url); const nspell = mod.default || mod; sp = nspell(m.aff, m.dic); postMessage({id:m.id, ok:true}); }
+    else if(m.type==='check'){ const out = {}; let n = 0; for(const w of m.words){ if(!sp.correct(w)) out[w] = n++ < (m.maxSuggest||200) ? sp.suggest(w).slice(0,3) : []; } postMessage({id:m.id, ok:true, out}); }
+  }catch(err){ postMessage({id:m.id, ok:false, error:String(err && err.message || err)}); }
+};`;
+const spellers = {};
+function getSpeller(code){
+  const src = spellDictSource(code); if(!src) return null;
+  const key = src.l + (src.kind==='custom' ? ':'+src.custom.uploadedAt : '');
+  if(spellers[key]) return spellers[key];
+  return spellers[key] = (async ()=>{
+    let aff, dic;
+    if(src.kind==='custom'){ aff = src.custom.aff; dic = src.custom.dic; }
+    else {
+      const base = cdnBase()+src.pkg+'/';
+      const [a, d] = await Promise.all([fetch(base+'index.aff'), fetch(base+'index.dic')]);
+      if(!a.ok || !d.ok) throw new Error('словарь '+src.l+' не загрузился');
+      aff = await a.text(); dic = await d.text();
+    }
+    const script = SPELL_SCRIPT[src.l] || detectDicScript(dic);
+    const url = cdnBase()+'nspell@2.1.5/+esm';
+    let worker = null;
+    try{ worker = new Worker(URL.createObjectURL(new Blob([SPELL_WORKER_SRC], {type:'text/javascript'})), {type:'module'}); }catch(e){ worker = null; }
+    if(worker){
+      let seq = 0; const pending = {};
+      worker.onmessage = e=>{ const p = pending[e.data.id]; if(!p) return; delete pending[e.data.id]; e.data.ok ? p.res(e.data) : p.rej(new Error(e.data.error)); };
+      worker.onerror = e=>{ Object.values(pending).forEach(p=>p.rej(new Error(e.message || 'не запустилась проверка орфографии'))); };
+      const call = msg=>new Promise((res, rej)=>{ const id = ++seq; pending[id] = {res, rej}; worker.postMessage(Object.assign({id}, msg)); });
+      try{
+        await call({type:'init', url, aff, dic});
+        return {script, check:(words, maxSuggest)=>call({type:'check', words, maxSuggest}).then(r=>r.out)};
+      }catch(e){ worker.terminate(); } // e.g. a page opened from disk can't start module workers — compile on the page instead
+    }
+    const mod = await import(url); const sp = (mod.default || mod)(aff, dic);
+    return {script, check: async (words, maxSuggest)=>{ const out = {}; let n = 0; words.forEach(w=>{ if(!sp.correct(w)) out[w] = n++ < (maxSuggest||200) ? sp.suggest(w).slice(0,3) : []; }); return out; }};
+  })().catch(e=>{ delete spellers[key]; throw e; });
+}
+// words worth checking: no placeholders, tags, links, numbers, short words, abbreviations or camelCase ids
+function spellTokens(text){
+  const t = String(text||'').replace(TAG_RE,' ').replace(VAR_RE,' ').replace(/\{[^{}]*\}/g,' ').replace(/https?:\/\/\S+|www\.\S+|\S+@\S+\.\S+/g,' ').replace(/\\n/g,' ');
+  const out = [];
+  (t.match(/[\p{L}\p{M}'’ʼ]+(?:-[\p{L}\p{M}'’ʼ]+)*/gu)||[]).forEach(tok=>{
+    tok.split('-').forEach(w=>{
+      w = w.replace(/’|ʼ/g, "'").replace(/^'+|'+$/g,'');
+      if(w.length<3 || w===w.toUpperCase() || /\p{Ll}\p{Lu}/u.test(w)) return;
+      out.push(w);
+    });
+  });
+  return out;
+}
+function spellPersonalSet(s){
+  const set = new Set();
+  const add = txt=>spellTokens(txt).forEach(w=>set.add(w.toLowerCase()));
+  String(s.spellWords||'').split(/[\n,;]+/).forEach(w=>{ w = w.trim(); if(w) set.add(w.toLowerCase().replace(/’|ʼ/g,"'")); });
+  parseDntTerms(s.dntTerms).forEach(add);
+  dbList('glossaryTerms').forEach(t=>{ add(t.term); add(t.approved); });
+  return set;
+}
+let spellFailToastShown = {};
+async function runSpellCheck(rowIds, s, onProgress){
+  const rowSet = new Set(rowIds);
+  const rows = dbList('rows').filter(r=>rowSet.has(r.id));
+  const personal = spellPersonalSet(s);
+  const byLang = {};
+  rows.forEach(r=>{ if((r.target||'').trim()){ const l = spellBaseLang(r.languageCode); (byLang[l] = byLang[l]||[]).push(r); } });
+  const newIssues = [];
+  const mk = (r, text, words, sugg, field)=>({id:uid(), rowId:r.id, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode,
+    type:'Орфография', severity:'Низкая', text, status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:'Обнаружена (проверка орфографии)'}],
+    aiExplanation:null, aiSuggestion:null, aiConfidence:null, highlightField:field, highlightText:words[0], expectedText:(sugg[words[0]]||[])[0]||null, confidence:'high', matchType:null, spellWords:words});
+  const describe = (words, sugg)=>words.slice(0,4).map(w=>'«'+w+'»'+((sugg[w]||[]).length?' (может быть: '+sugg[w].join(', ')+')':'')).join('; ')+(words.length>4?' и ещё '+(words.length-4):'');
+  const tasks = Object.entries(byLang).map(([l, list])=>({l, list, field:'target', get:r=>r.target}));
+  if(s.spellSource){
+    // a typo in the source is one problem, not one per language: skip strings already flagged through another language's row
+    const seen = new Set(dbList('issues').filter(i=>i.type==='Орфография' && i.highlightField==='source' && !rowSet.has(i.rowId)).map(i=>{ const r = dbGet('rows', i.rowId); return r ? r.componentId+'|'+(r.key||r.source) : ''; }));
+    const list = rows.filter(r=>{ const k = r.componentId+'|'+(r.key||r.source); if(seen.has(k) || !(r.source||'').trim()) return false; seen.add(k); return true; });
+    if(list.length) tasks.push({l:'ru', list, field:'source', get:r=>r.source});
+  }
+  let done = 0; const total = rows.length;
+  for(const task of tasks){
+    let sp;
+    try{ sp = getSpeller(task.l); if(!sp){ done += task.field==='target' ? task.list.length : 0; continue; } sp = await sp; }
+    catch(e){ if(!spellFailToastShown[task.l]){ spellFailToastShown[task.l] = 1; toast('Орфография '+task.l+': '+e.message); } continue; }
+    const wordsByRow = new Map(), uniq = new Set();
+    task.list.forEach(r=>{ const ws = [...new Set(spellTokens(task.get(r)).filter(w=>!personal.has(w.toLowerCase()) && (!sp.script || scriptOfWord(w)===sp.script)))]; wordsByRow.set(r.id, ws); ws.forEach(w=>uniq.add(w)); });
+    const all = [...uniq], bad = {};
+    for(let k=0; k<all.length; k+=2000){ Object.assign(bad, await sp.check(all.slice(k, k+2000), 300)); }
+    task.list.forEach(r=>{
+      const miss = wordsByRow.get(r.id).filter(w=>w in bad);
+      if(miss.length) newIssues.push(mk(r, (task.field==='source' ? 'Опечатка в исходном тексте: ' : 'Возможная опечатка: ')+describe(miss, bad), miss, bad, task.field));
+    });
+    if(task.field==='target'){ done += task.list.length; if(onProgress) onProgress(done, total, 'spell'); }
+  }
+  if(newIssues.length) dbSave('issues', dbList('issues').concat(newIssues));
+  return newIssues.length;
+}
+function addSpellWordsFromIssue(issueId){
+  const i = dbGet('issues', issueId); if(!i) return;
+  const words = (i.spellWords||[]).map(w=>w.toLowerCase());
+  const s = getSettings();
+  const cur = new Set(String(s.spellWords||'').split(/[\n,;]+/).map(w=>w.trim().toLowerCase()).filter(Boolean));
+  words.forEach(w=>cur.add(w));
+  saveSettings({spellWords:[...cur].sort().join('\n')});
+  // close every open spelling problem that is only about words now accepted
+  let closed = 0;
+  dbSave('issues', dbList('issues').map(x=>{
+    if(x.type!=='Орфография' || !isOpenIssue(x) || !(x.spellWords||[]).every(w=>cur.has(w.toLowerCase()))) return x;
+    closed++; return Object.assign({}, x, {status:'Ложное срабатывание', history:(x.history||[]).concat([{ts:nowISO(), action:'Слово добавлено в словарь команды', by:getMe()||null}])});
+  }));
+  toast('В словаре: '+words.join(', ')+(closed>1?' · закрыто похожих: '+closed:''));
+  closeDetailPanel(); router();
+}
+function spellCardHtml(){
+  const s = getSettings();
+  const langs = [...new Set(dbList('projects').flatMap(p=>(p.languages||[]).map(l=>spellBaseLang(l.code))).concat(dbList('_dictionaries').map(d=>d.id)))].sort();
+  const rowsHtml = langs.map(l=>{ const src = spellDictSource(l);
+    const st = !src ? '<span class="pill st-rejected">нет словаря</span>' : src.kind==='custom' ? `<span class="pill st-accepted">свой: ${esc(src.custom.name)}</span>` : '<span class="pill st-new">встроенный</span>';
+    return `<tr><td>${languageFlag(l)} ${esc(languageLabel(l))} <span class="hint" style="margin:0;">${l}</span></td><td>${st}</td><td class="nowrap" style="text-align:right;"><button class="btn ghost sm" onclick="pickSpellDictionary('${l}')">${icon('upload',14)}${src&&src.kind==='custom'?'Заменить':'Загрузить .aff + .dic'}</button>${src&&src.kind==='custom'?`<button class="btn ghost sm" style="color:var(--crit);" title="Удалить свой словарь" onclick="deleteSpellDictionary('${l}')">${icon('trash',14)}</button>`:''}</td></tr>`; }).join('');
+  return `<div class="card"><h3 style="margin-bottom:4px;">Орфография</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Ищет опечатки в переводе по словарям Hunspell. Встроенные словари: русский, английский, армянский, грузинский, турецкий, украинский, белорусский — скачиваются при первой проверке. Для казахского, узбекского, киргизского и других загрузи свой словарь: пару файлов <span class="mono">.aff</span> и <span class="mono">.dic</span> (их можно взять, например, из словарей LibreOffice). Свои словари хранятся в этом браузере. Бренды из «Не переводить», термины глоссария и слова ниже считаются правильными.</div>
+    <label class="checkrow"><input type="checkbox" id="spEnabled" ${s.checkSpelling?'checked':''} onchange="saveSettings({checkSpelling:this.checked});toast(this.checked?'Орфография включена':'Орфография выключена')"> Проверять орфографию при загрузке файлов</label>
+    <label class="checkrow"><input type="checkbox" id="spSource" ${s.spellSource?'checked':''} onchange="saveSettings({spellSource:this.checked})"> Проверять и исходный текст (русский) — одна проблема на строку, а не на каждый язык</label>
+    ${langs.length ? `<div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>Язык</th><th>Словарь</th><th></th></tr></thead><tbody>${rowsHtml}</tbody></table></div>` : ''}
+    <label class="field" style="margin-top:14px;">Слова команды <span style="font-weight:400;color:var(--text-faint);">— считаются правильными во всех языках, по одному в строке. Пополняется кнопкой «В словарь» в карточке проблемы</span>
+      <textarea id="spWords" style="min-height:80px;font-family:inherit;font-size:14px;" placeholder="маркетплейс&#10;пункт выдачи" onchange="saveSettings({spellWords:this.value});toast('Слова сохранены')">${esc(s.spellWords||'')}</textarea></label>
+    <input type="file" id="spFile" accept=".aff,.dic" multiple style="display:none;" onchange="loadSpellDictionaryFiles(this)">
+  </div>`;
+}
+let spellPickLang = null;
+function pickSpellDictionary(l){ spellPickLang = l; const f = document.getElementById('spFile'); f.value = ''; f.click(); }
+async function loadSpellDictionaryFiles(input){
+  const files = [...input.files]; const aff = files.find(f=>/\.aff$/i.test(f.name)), dic = files.find(f=>/\.dic$/i.test(f.name));
+  if(!aff || !dic){ toast('Выбери сразу два файла: .aff и .dic'); return; }
+  const readText = async f=>{ const buf = await f.arrayBuffer(); const head = new TextDecoder('latin1').decode(buf.slice(0, 4000)); const m = f===aff ? head.match(/^SET\s+(\S+)/m) : null; const enc = (m ? m[1] : (readText.enc||'utf-8')).toLowerCase(); if(f===aff) readText.enc = enc; try{ return new TextDecoder(enc).decode(buf); }catch(e){ return new TextDecoder('utf-8').decode(buf); } };
+  const affText = await readText(aff), dicText = await readText(dic);
+  dbUpsert('_dictionaries', {id:spellPickLang, lang:spellPickLang, name:dic.name.replace(/\.dic$/i,''), aff:affText, dic:dicText, uploadedAt:nowISO()});
+  toast('Словарь для «'+languageLabel(spellPickLang)+'» загружен: '+(dicText.split('\n').length-1).toLocaleString('ru-RU')+' слов');
+  router();
+}
+async function deleteSpellDictionary(l){
+  if(!await uiConfirm({title:'Удалить свой словарь «'+languageLabel(l)+'»?', text:SPELL_CDN_DICTS[l]?'Дальше будет использоваться встроенный словарь.':'Орфография для этого языка перестанет проверяться.', okText:'Удалить'})) return;
+  dbRemove('_dictionaries', l); router();
+}
+
 /* ---------- string history ----------
    rows keep targetHistory: [{ts, how:'upload'|'fix', from, to, file, by, comment}] — every change of the
    translation between file versions and every fix made in the platform. */
@@ -4012,6 +4181,8 @@ function detectionSourceLabel(issue){
   const a = first.action;
   if(a.includes('техническая проверка')) return 'Техническая проверка';
   if(a.includes('глоссария')) return 'Глоссарий';
+  if(a.includes('орфографии')) return 'Проверка орфографии';
+  if(a.includes('распознавание текста')) return 'Распознавание текста на скриншоте';
   if(a.includes('согласованности')) return 'Проверка согласованности';
   if(a.includes('по скриншоту')) return 'AI по скриншоту';
   if(a.includes('визуальная')) return 'Визуальная проверка';
@@ -4047,6 +4218,7 @@ function openIssueDetail(issueId){
       ${r ? `<button class="btn ghost sm" onclick="openRowDetail('${i.rowId}')">Открыть строку</button>` : ''}
       ${i.visual ? '' : `<button class="btn ghost sm" onclick="passToVisualCheck('${issueId}')">В визуальную проверку</button>`}
       ${i.visual ? '' : `<button class="btn ghost sm" onclick="openIgnoreRuleDialog('${issueId}')">${icon('x',14)}Игнорировать похожие</button>`}
+      ${i.type==='Орфография' && (i.spellWords||[]).length ? `<button class="btn ghost sm" onclick="addSpellWordsFromIssue('${issueId}')">${icon('plus',14)}В словарь: ${esc(i.spellWords.slice(0,3).join(', '))}</button>` : ''}
     </div>
     ${!i.visual ? rowContextHtml(r, issueId) : ''}
     ${issueDiscussionHtml(i, issueId)}
@@ -5955,6 +6127,7 @@ function renderSettingsPage(el){
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
     ${ignoreRulesCardHtml()}
+    ${spellCardHtml()}
     <div class="card"><h3>Проверка ИИ</h3>
       <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
       <div class="grid grid-2">
