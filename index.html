@@ -212,6 +212,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 .ocr-sum{font-size:12.5px;color:var(--text-soft);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;}
 .file-meta{margin-top:12px;}
 .file-meta>summary{cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text-soft);}
+.gsi-row{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:10px;padding:10px 12px;margin-top:12px;min-height:44px;}
+.gsi-row img{width:34px;height:34px;border-radius:50%;flex-shrink:0;}
 .chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
 .chip-view{padding:0 4px 0 0;gap:0;}
 .chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
@@ -930,7 +932,7 @@ function initialsAvatar(name){
 
 function getSettings(){
   const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
-    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
+    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{} };
   let s = dbGet('settings','global');
   if(!s){
     s = Object.assign({}, DEFAULTS);
@@ -5855,6 +5857,8 @@ function renderMeAvatar(){
   el.textContent = me ? initialsOf(me).toUpperCase() : '?';
   el.title = me ? me+' — сменить' : 'Кто ты? Выбери себя, чтобы видеть свои задачи';
   el.style.background = me ? `linear-gradient(135deg,${folderColor(me)},${folderColor(me+'x')})` : '';
+  const g = googleIdentity();
+  if(me && g && g.picture){ el.style.background = `center/cover no-repeat url("${g.picture.replace(/"/g,'')}")`; el.textContent = ''; el.title = me+' · '+g.email+' — сменить'; }
 }
 const ROLE_KEY = 'lqa_role';
 function getRole(){ try{ return localStorage.getItem(ROLE_KEY) || ''; }catch(e){ return ''; } }
@@ -5881,7 +5885,10 @@ function openWhoAmI(){
     return groups[r].map(g=>{ const names = g.names.filter(n=>!ql || n.toLowerCase().includes(ql)); if(!names.length) return '';
       return `<div class="section-label" style="margin:12px 0 6px;">${esc(g.label)}</div><div class="people">${names.map(n=>`<button type="button" class="person ${sameName(n,me)?'on':''}" data-name="${esc(n)}"><span class="bubble-ava" style="background:${folderColor(n)}">${esc(initialsOf(n).toUpperCase())}</span>${esc(n)}</button>`).join('')}</div>`; }).join('') || '<div class="hint">Никого не нашлось</div>';
   };
-  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.</div>
+  const g = googleIdentity();
+  const gBlock = !googleEnabled() ? '' : g ? `<div class="gsi-row">${g.picture?`<img src="${esc(g.picture)}" alt="" referrerpolicy="no-referrer">`:''}<div style="min-width:0;flex:1;"><div style="font-weight:600;">${esc(g.email)}</div><div class="hint" style="margin:0;">${(getSettings().googleAccounts||{})[g.email] ? 'Выбери другого человека, если связано неверно' : 'Выбери себя — это запомнится для этой почты на всех устройствах'}</div></div><button type="button" class="btn ghost sm" data-gout>Выйти</button></div>`
+    : `<div class="gsi-row"><div class="gsi-btn"></div><span class="hint" style="margin:0;">или выбери себя из списка</span></div>`;
+  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">${googleEnabled() ? 'Войди через Google — в следующий раз платформа узнает тебя сама.' : 'Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.'}</div>${gBlock}
     <div class="subtabbar" style="margin:14px 0 6px;" id="roleTabs">${Object.entries(ROLE_LABELS).map(([k,l])=>`<button type="button" class="subtabbtn ${k===role?'active':''}" data-role="${k}">${l}</button>`).join('')}</div>
     <input type="text" id="peopleSearch" placeholder="Поиск по имени" style="width:100%;margin-top:8px;${role==='other'?'display:none;':''}">
     <div id="peopleList" style="max-height:46vh;overflow:auto;margin-top:4px;">${listHtml(role)}</div>
@@ -5900,14 +5907,121 @@ function openWhoAmI(){
     search.oninput = ()=>{ list.innerHTML = listHtml(role, search.value); wire(); };
     ok.onclick = ()=>{ const v = (root.querySelector('#meOther')||{}).value; if(!v || !v.trim()){ toast('Впиши имя'); return; } close({name:v.trim(), role:'other'}); };
     const reset = root.querySelector('[data-reset]'); if(reset) reset.onclick = ()=>close({name:'', role:''});
+    const gout = root.querySelector('[data-gout]'); if(gout) gout.onclick = ()=>close({name:'', role:''});
+    renderGoogleButtons();
     wire(); (role==='other' ? root.querySelector('#meOther') : search).focus();
   }).then(v=>{
     if(!v) return;
-    try{ localStorage.setItem(ME_KEY, v.name); localStorage.setItem(ROLE_KEY, v.role); }catch(e){}
-    myTab = v.role==='manager' ? 'uploads' : 'assigned';
-    renderMeAvatar(); router();
-    toast(v.name ? 'Привет, '+v.name.split(' ')[0]+'!' : 'Имя сброшено');
+    if(!v.name) googleSignOut();
+    setIdentity(v.name, v.role);
+    const g = googleIdentity();
+    if(v.name && g) linkGoogleAccount(g.email, v.name, v.role);
+    router();
+    toast(v.name ? 'Привет, '+v.name.split(' ')[0]+'!'+(g?' Для '+g.email+' это запомнится на всех устройствах.':'') : 'Имя сброшено');
   });
+}
+function setIdentity(name, role){
+  try{ localStorage.setItem(ME_KEY, name||''); localStorage.setItem(ROLE_KEY, role||''); }catch(e){}
+  myTab = role==='manager' ? 'uploads' : 'assigned';
+  renderMeAvatar();
+}
+
+/* ---------- sign in with Google ----------
+   Google Identity Services (the "Sign in with Google" button and One Tap) tells the page which Gmail
+   account is signed in. The team maps each email to a person once (settings.googleAccounts, synced),
+   after that a person is recognised on any device without picking a name. This is for convenience,
+   not access control: the token is only decoded in the browser, not verified by a server. */
+const GOOGLE_KEY = 'lqa_google';
+function googleIdentity(){ try{ return JSON.parse(localStorage.getItem(GOOGLE_KEY)||'null'); }catch(e){ return null; } }
+function googleEnabled(){ return !!(getSettings().googleClientId||'').trim(); }
+function decodeJwtPayload(t){
+  const p = String(t).split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(p + '='.repeat((4 - p.length % 4) % 4));
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c=>c.charCodeAt(0))));
+}
+let gsiLoad = null, gsiReady = false;
+function loadGoogleIdentity(){
+  if(window.google && window.google.accounts && window.google.accounts.id) return Promise.resolve();
+  if(gsiLoad) return gsiLoad;
+  return gsiLoad = new Promise((res, rej)=>{
+    const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+    sc.onload = ()=>res(); sc.onerror = ()=>{ gsiLoad = null; rej(new Error('не загрузился вход Google')); };
+    document.head.appendChild(sc);
+  });
+}
+async function initGoogleSignIn(){
+  if(!googleEnabled()) return;
+  if(!/^https?:$/.test(location.protocol) && !window.google) return;   // Google sign-in needs the published site, not a file on disk
+  try{ await loadGoogleIdentity(); }catch(e){ console.warn(e); return; }
+  google.accounts.id.initialize({client_id:getSettings().googleClientId.trim(), callback:onGoogleCredential, auto_select:true, cancel_on_tap_outside:false, use_fedcm_for_prompt:true});
+  gsiReady = true;
+  if(!getMe()) google.accounts.id.prompt();
+  renderGoogleButtons();
+}
+function renderGoogleButtons(){
+  if(!gsiReady) return;
+  document.querySelectorAll('.gsi-btn:not([data-done])').forEach(el=>{ el.dataset.done = '1'; google.accounts.id.renderButton(el, {theme:'outline', size:'large', text:'signin_with', shape:'pill', locale:'ru'}); });
+}
+function linkGoogleAccount(email, name, role){
+  const acc = Object.assign({}, getSettings().googleAccounts||{});
+  acc[String(email).toLowerCase()] = {name, role, linkedAt:nowISO()};
+  saveSettings({googleAccounts:acc});
+}
+function onGoogleCredential(resp){
+  let p; try{ p = decodeJwtPayload(resp.credential); }catch(e){ toast('Не получилось прочитать ответ Google'); return; }
+  if(!p.email){ toast('Google не передал почту'); return; }
+  const g = {email:String(p.email).toLowerCase(), name:p.name||'', picture:p.picture||''};
+  try{ localStorage.setItem(GOOGLE_KEY, JSON.stringify(g)); }catch(e){}
+  closeDialogIfOpen();
+  const known = (getSettings().googleAccounts||{})[g.email];
+  if(known && known.name){
+    setIdentity(known.name, known.role || roleOf(known.name));
+    if(known.role!=='manager' && (!location.hash || location.hash==='#/')) location.hash = '#/my'; else router();
+    toast('Привет, '+known.name.split(' ')[0]+'!');
+    return;
+  }
+  // first time with this email: pick yourself once; a unique match by the Google name is pre-selected
+  const guess = allPeople().filter(n=>sameName(n, g.name) || sameName(n.split(' ').reverse().join(' '), g.name));
+  if(guess.length===1){ setIdentity(guess[0], roleOf(guess[0])); linkGoogleAccount(g.email, guess[0], roleOf(guess[0])); router(); toast('Привет, '+guess[0].split(' ')[0]+'! Почта '+g.email+' теперь связана с тобой. Если это не ты — нажми на аватар и выбери себя.', {duration:8000}); return; }
+  renderMeAvatar();
+  openWhoAmI();
+}
+function closeDialogIfOpen(){ const root = document.getElementById('dialogRoot'); if(root && root.innerHTML){ const c = root.querySelector('[data-cancel]'); if(c) c.click(); } }
+function googleSignOut(){
+  const g = googleIdentity();
+  try{ localStorage.removeItem(GOOGLE_KEY); }catch(e){}
+  if(g && window.google && google.accounts && google.accounts.id){ try{ google.accounts.id.disableAutoSelect(); }catch(e){} }
+}
+function unlinkGoogleAccount(email){
+  const acc = Object.assign({}, getSettings().googleAccounts||{}); delete acc[email]; saveSettings({googleAccounts:acc}); router();
+}
+function googleCardHtml(){
+  const s = getSettings(), acc = Object.entries(s.googleAccounts||{}).sort((a,b)=>a[1].name.localeCompare(b[1].name,'ru'));
+  const origin = /^https?:$/.test(location.protocol) ? location.origin : 'https://wblocalization.github.io';
+  return `<div class="card"><h3 style="margin-bottom:4px;">Вход через Google</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Каждый входит своим Gmail, и платформа сразу знает, кто это: редактор попадает в «Мои задачи». При первом входе человек один раз выбирает себя из списка, дальше его почта узнаётся на всех устройствах. Это для удобства, а не защита: данные команды по-прежнему видны всем, у кого есть доступ к платформе.</div>
+    <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;">
+      <label class="field" style="flex:1;min-width:280px;margin:0;">Client ID <span style="font-weight:400;color:var(--text-faint);">— из Google Cloud, заканчивается на .apps.googleusercontent.com</span><input type="text" id="gClientId" value="${esc(s.googleClientId||'')}" placeholder="1234567890-abc….apps.googleusercontent.com" autocomplete="off"></label>
+      <button class="btn" onclick="saveGoogleClientId()">Сохранить</button></div>
+    <details class="hint" style="margin-top:12px;" ${s.googleClientId?'':'open'}><summary style="cursor:pointer;font-weight:500;color:var(--text-soft);">Как получить Client ID (10 минут, один раз на команду)</summary>
+      <ol style="margin:8px 0 0;padding-left:20px;line-height:1.8;">
+        <li>Открой <a class="link" href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> под своим Gmail → вверху выбор проекта → <b>Новый проект</b>, название «LQA Hub» → Создать.</li>
+        <li>Меню → <b>APIs &amp; Services → OAuth consent screen</b> (в новом интерфейсе — <b>Google Auth Platform → Branding</b>). Название приложения «LQA Hub», почта поддержки — твоя. Тип пользователей — <b>External</b>.</li>
+        <li>Раздел <b>Audience</b> (или кнопка на той же странице) → <b>Publish app</b> / «Опубликовать». Иначе войти смогут только те, кого добавишь в список тестировщиков. Для входа по почте и имени проверка Google не нужна.</li>
+        <li><b>Credentials → Create credentials → OAuth client ID</b> (или <b>Clients → Create client</b>). Тип — <b>Web application</b>. В <b>Authorized JavaScript origins</b> добавь <span class="mono">${esc(origin)}</span>. Создать.</li>
+        <li>Скопируй <b>Client ID</b> и вставь сюда → Сохранить. Настройка общая: у всей команды включится автоматически через командное хранилище.</li>
+      </ol>
+      <div style="margin-top:6px;">Вход работает на опубликованном сайте (${esc(origin)}), а не в файле, открытом с диска.</div></details>
+    ${acc.length ? `<div class="section-label" style="margin-top:16px;">Связанные почты · ${acc.length}</div><div class="table-wrap"><table><thead><tr><th>Почта</th><th>Кто</th><th>Роль</th><th></th></tr></thead><tbody>
+      ${acc.map(([email, a])=>`<tr><td class="mono">${esc(email)}</td><td>${initialsAvatar(a.name)}</td><td>${esc(ROLE_LABELS[a.role]||'—')}</td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" title="Отвязать: при следующем входе человек снова выберет себя" onclick="unlinkGoogleAccount('${esc(email)}')">${icon('x',14)}</button></td></tr>`).join('')}
+    </tbody></table></div>` : ''}
+  </div>`;
+}
+function saveGoogleClientId(){
+  const v = document.getElementById('gClientId').value.trim();
+  if(v && !/\.apps\.googleusercontent\.com$/.test(v)){ toast('Client ID должен заканчиваться на .apps.googleusercontent.com'); return; }
+  saveSettings({googleClientId:v}); toast(v ? 'Вход через Google включён' : 'Вход через Google выключен');
+  gsiReady = false; initGoogleSignIn(); router();
 }
 function deadlineTs(d){ if(!d) return Infinity; if(d.type==='asap') return +new Date(new Date().toDateString()); // overdue dates sort above «как можно скорее»
   if(d.type==='date' && d.date) return +new Date(d.date); return Infinity; }
@@ -5928,7 +6042,8 @@ function renderMyTasks(el){
   const me = getMe();
   if(!me){
     el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">Проблемы, которые назначены тебе, и проблемы в файлах, которые ты загрузил(а)</div></div></div>
-      <div class="card">${emptyState({icon:'home', title:'Сначала скажи, кто ты', text:'Выбери своё имя — платформа соберёт здесь всё, что назначено тебе на проверку, с дедлайнами.', action:'<button class="btn" onclick="openWhoAmI()">Выбрать себя</button>'})}</div>`;
+      <div class="card">${emptyState({icon:'home', title:'Сначала скажи, кто ты', text:'Выбери своё имя — платформа соберёт здесь всё, что назначено тебе на проверку, с дедлайнами.', action:(googleEnabled()?'<div class="gsi-btn" style="display:inline-block;margin-right:10px;vertical-align:middle;"></div>':'')+'<button class="btn'+(googleEnabled()?' secondary':'')+'" onclick="openWhoAmI()">Выбрать себя</button>'})}</div>`;
+    setTimeout(renderGoogleButtons, 0);
     return;
   }
   const {assigned, uploads} = myTaskIds(me);
@@ -6571,13 +6686,14 @@ function renderSettingsPage(el){
       <label class="field" style="margin-top:16px;">Лимиты длины <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: шаблон ключа = максимум символов. Звёздочка — любой текст. Переменные и теги не считаются</span>
         <textarea id="sLengthRules" class="mono" style="min-height:96px;" placeholder="checkout.button.* = 20&#10;*.tab.title = 14&#10;catalog.filter.* = 24">${esc(s.lengthRules||'')}</textarea></label>
       <label class="field" style="margin-top:16px;">Свои правила языков <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: язык ; что искать ; подсказка. «Что искать» — текст или /регулярное выражение/, язык * — для всех</span>
-        <textarea id="sCustomLangRules" class="mono" style="min-height:96px;" placeholder="kk ; тенге ; В интерфейсе пишем знак ₸, а не слово&#10;en ; /\bpls\b/i ; Без сокращений в интерфейсе&#10;* ; !! ; Двойной восклицательный знак">${esc(s.customLangRules||'')}</textarea></label>
+        <textarea id="sCustomLangRules" class="mono" style="min-height:96px;" placeholder="kk ; тенге ; В интерфейсе пишем знак ₸, а не слово&#10;en ; /\\bpls\\b/i ; Без сокращений в интерфейсе&#10;* ; !! ; Двойной восклицательный знак">${esc(s.customLangRules||'')}</textarea></label>
       <details class="hint" style="margin-top:8px;"><summary style="cursor:pointer;">Встроенные правила языков</summary>
         <ul style="margin:6px 0 0;padding-left:18px;line-height:1.7;"><li>Все языки: латинская буква внутри кириллического слова и наоборот («Сeбет»)</li><li>uz: апостроф в oʻ/gʻ — знак ʻ</li><li>hy: точка в конце предложения — «։»</li><li>az: латинская ə, а не кириллическая ә</li><li>kk: кириллическая ә, а не латинская ə</li><li>zh: полноширинная пунктуация</li></ul></details>
       <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveSettingsForm()">Сохранить</button></div>
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
     ${ignoreRulesCardHtml()}
+    ${googleCardHtml()}
     ${spellCardHtml()}
     <div class="card"><h3>Проверка ИИ</h3>
       <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
@@ -6810,8 +6926,11 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   renderMeAvatar();
   router();
   afterNav();
-  if(syncEnabled()){ setSyncStatus('idle'); syncNow(false); }
+  if(syncEnabled()){ setSyncStatus('idle'); Promise.resolve(syncNow(false)).then(()=>{ if(!gsiReady) initGoogleSignIn(); }).catch(()=>{}); }   // Client ID may arrive with the team's settings
+  // editors signed in on this browser start on their tasks
+  if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';
   maybeStartTour();
+  initGoogleSignIn();
 })();
 </script>
 </body>
