@@ -46,7 +46,7 @@ test('распознавание текста: связь со строками 
   await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Корзина', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
   await page.setInputFiles('#shotFileInput', { name: 'cart.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
-  await page.click('button:has-text("Распознать текст")');
+  await page.click('button:has-text("Найти текст на скриншотах")');
   await page.waitForFunction(() => dbList('visualShots')[0] && dbList('visualShots')[0].ocr, null, { timeout: 150_000 });
 
   const lines = await page.evaluate(() => dbList('visualShots')[0].ocr.lines.map(l => ({ t: l.t, key: l.rowId ? dbGet('rows', l.rowId).key : null, kind: l.kind })));
@@ -77,7 +77,7 @@ test('распознавание текста: обрезанный текст �
   await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Заказ', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
   await page.setInputFiles('#shotFileInput', { name: 'order.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
-  await page.click('button:has-text("Распознать текст")');
+  await page.click('button:has-text("Найти текст на скриншотах")');
   await page.waitForFunction(() => dbList('visualShots')[0] && dbList('visualShots')[0].ocr, null, { timeout: 150_000 });
 
   const cut = await page.evaluate(() => dbList('issues').filter(i => i.type === 'Обрезанный текст').map(i => dbGet('rows', i.rowId).key).sort());

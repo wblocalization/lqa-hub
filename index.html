@@ -208,7 +208,26 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 .obox.ok{border-color:rgba(21,128,61,.85);background:rgba(21,128,61,.10);cursor:pointer;}
 .obox.src{border-color:rgba(217,45,32,.9);background:rgba(217,45,32,.12);cursor:pointer;}
 .obox:hover{border-style:solid;}
-.shot-ocr{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
+.shot-ocr{position:absolute;left:8px;bottom:8px;display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
+.vendor-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--primary-dark);background:var(--primary-bg);border-radius:99px;padding:1px 8px;margin-bottom:3px;text-decoration:none;}
+.lang-chip{display:inline-block;font-size:11.5px;background:var(--bg-2);border-radius:6px;padding:1px 6px;margin:1px 0;white-space:nowrap;}
+.sample-bar{display:flex;flex-wrap:wrap;gap:3px;margin:16px 0 12px;}
+.sample-bar .sb{width:14px;height:14px;border-radius:4px;border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;}
+.sample-bar .sb.ok{background:var(--ok);border-color:var(--ok);} .sample-bar .sb.error{background:var(--crit);border-color:var(--crit);} .sample-bar .sb.unnecessary{background:var(--med);border-color:var(--med);}
+.sample-bar .sb.cur{outline:2px solid var(--primary);outline-offset:1px;}
+.sample-text{padding:10px 12px;background:var(--bg);border-radius:8px;font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+.sample-err{margin-top:14px;padding:14px;border:1px solid var(--crit-bg);background:color-mix(in srgb,var(--crit-bg) 45%,transparent);border-radius:10px;}
+.kbd{display:inline-block;font-size:10.5px;font-weight:700;border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:6px;opacity:.7;}
+.ext-status{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border);margin-bottom:16px;line-height:1.55;}
+.ext-status svg{flex-shrink:0;margin-top:2px;color:var(--primary);}
+.ext-status.ok{background:var(--ok-bg);border-color:transparent;} .ext-status.ok svg{color:var(--ok);}
+.ext-status.warn{background:var(--high-bg);border-color:transparent;} .ext-status.warn svg{color:var(--high);}
+.ext-steps{margin:14px 0 0;padding-left:22px;line-height:1.7;display:flex;flex-direction:column;gap:8px;}
+.ocr-legend{display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center;margin:6px 0;}
+.ocr-legend>span{white-space:nowrap;}
+.ocr-legend i{display:inline-block;width:12px;height:9px;border:1.5px dashed rgba(120,120,140,.8);border-radius:2px;margin-right:3px;vertical-align:-1px;}
+.ocr-legend i.ok{border-color:rgba(21,128,61,.9);background:rgba(21,128,61,.12);}
+.ocr-legend i.src{border-color:rgba(217,45,32,.9);background:rgba(217,45,32,.12);}
 .ocr-sum{font-size:12.5px;color:var(--text-soft);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;}
 .file-meta{margin-top:12px;}
 .file-meta>summary{cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text-soft);}
@@ -439,7 +458,7 @@ body.viewer-open{overflow:hidden;}
 @media(max-width:900px){ .viewer-stage.compare{grid-template-columns:1fr;} }
 /* dialogs + toasts with actions */
 .dialog-bg{position:fixed;inset:0;z-index:500;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease;}
-.dialog{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:440px;max-width:100%;padding:24px;animation:modalIn .2s var(--ease);}
+.dialog{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:440px;max-width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:24px;animation:modalIn .2s var(--ease);}
 .dialog h3{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.01em;}
 .dialog-text{color:var(--text-soft);font-size:14px;line-height:1.55;}
 .dialog-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:var(--primary-bg);color:var(--primary);}
@@ -932,7 +951,7 @@ function initialsAvatar(name){
 
 function getSettings(){
   const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
-    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{} };
+    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{}, vendorPass:98, vendorWeights:{'Критическая':10,'Высокая':5,'Средняя':2,'Низкая':1} };
   let s = dbGet('settings','global');
   if(!s){
     s = Object.assign({}, DEFAULTS);
@@ -2279,7 +2298,9 @@ const NAV = [
   {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Основное'},
   {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
   {icon:'file', label:'Отчёт за период', route:'#/report', group:'Отчёты'},
+  {icon:'user', label:'Подрядчики', route:'#/vendors', group:'Отчёты'},
   {icon:'download', label:'Экспорт', route:'#/export', group:'Отчёты'},
+  {icon:'globe', label:'Расширение', route:'#/extension', group:'Система'},
   {icon:'settings', label:'Настройки', route:'#/settings', group:'Система'},
 ];
 // UI theme is a per-browser display preference, not app data, so it's kept outside the
@@ -2358,6 +2379,10 @@ function router(){
     if(parts[0]==='export') return renderExportPage(content);
     if(parts[0]==='report') return renderPeriodReport(content);
     if(parts[0]==='settings') return renderSettingsPage(content);
+    if(parts[0]==='extension') return renderExtensionPage(content);
+    if(parts[0]==='vendors' && parts[1]) return renderVendorDetail(content, parts[1]);
+    if(parts[0]==='vendors') return renderVendorsPage(content);
+    if(parts[0]==='sample' && parts[1]) return renderSamplePage(content, parts[1]);
     setCrumbs(['Страница не найдена']);
     content.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Страница не найдена', text:'Такой страницы нет — возможно, ссылка устарела.', action:'<a class="btn secondary" href="#/">На главную</a>'});
   }catch(err){
@@ -2980,24 +3005,38 @@ function subfolderCardsHtml(projectId, parentId){
    Optional: a readable name ("Корзина, релиз 5.2") and a note about the file. The original file name
    stays and is still what links a new upload to its previous version. */
 function fileLabel(f){ return f ? (f.title || f.filename) : ''; }
+function vendorBadgeHtml(f){
+  const v = f.vendorId ? dbGet('vendors', f.vendorId) : null; if(!v) return '';
+  return `<a class="vendor-badge" href="#/vendors/${v.id}" onclick="event.stopPropagation()">${icon('user',11)}${esc(v.name)} · ${f.delivery==='review'?'проверка':'перевод'}</a>`;
+}
 function fileCellHtml(f){
-  return `<div style="font-weight:${f.title?600:400};" class="${f.title?'':'mono'}">${esc(fileLabel(f))}</div>${f.title?`<div class="hint mono" style="margin:0;font-size:11.5px;">${esc(f.filename)}</div>`:''}${f.description?`<div class="hint" style="margin:2px 0 0;max-width:420px;white-space:normal;">${esc(f.description)}</div>`:''}`;
+  return vendorBadgeHtml(f) + `<div style="font-weight:${f.title?600:400};" class="${f.title?'':'mono'}">${esc(fileLabel(f))}</div>${f.title?`<div class="hint mono" style="margin:0;font-size:11.5px;">${esc(f.filename)}</div>`:''}${f.description?`<div class="hint" style="margin:2px 0 0;max-width:420px;white-space:normal;">${esc(f.description)}</div>`:''}`;
+}
+function vendorSelectOptions(selected){
+  return `<option value="">— наш перевод, не подрядчик —</option>` + dbList('vendors').slice().sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(v=>`<option value="${v.id}" ${v.id===selected?'selected':''}>${esc(v.name)}</option>`).join('');
+}
+function vendorFieldsHtml(prefix){
+  return `<div class="grid grid-2" style="margin-top:4px;">
+    <label class="field">Подрядчик <span style="font-weight:400;color:var(--text-faint);">— кто сдал файл</span><select id="${prefix}Vendor">${vendorSelectOptions('')}</select></label>
+    <label class="field">Что сдали<select id="${prefix}Delivery"><option value="translation">Перевод</option><option value="review">Проверку (LQA) чужого перевода</option></select></label>
+  </div>`;
 }
 function fileMetaFieldsHtml(prefix){
-  return `<details class="file-meta"${document.getElementById(prefix+'Title')?.value?' open':''}><summary>Название и описание файла <span class="hint" style="margin:0;">— необязательно</span></summary>
+  return vendorFieldsHtml(prefix) + `<details class="file-meta"${document.getElementById(prefix+'Title')?.value?' open':''}><summary>Название и описание файла <span class="hint" style="margin:0;">— необязательно</span></summary>
     <div class="grid grid-2" style="margin-top:10px;">
       <label class="field">Название<input type="text" id="${prefix}Title" placeholder="например: Корзина, релиз 5.2"></label>
       <label class="field">Описание<input type="text" id="${prefix}Desc" placeholder="что в файле, откуда он, что проверить"></label>
     </div><div class="hint" style="margin:6px 0 0;">Если загружаешь несколько файлов сразу, название и описание достанутся всем. У новой версии файла без названия останется прежнее.</div></details>`;
 }
 function readFileMetaFields(prefix){
-  const t = document.getElementById(prefix+'Title'), d = document.getElementById(prefix+'Desc');
-  return {title: t ? t.value.trim() : '', description: d ? d.value.trim() : ''};
+  const t = document.getElementById(prefix+'Title'), d = document.getElementById(prefix+'Desc'), v = document.getElementById(prefix+'Vendor'), dl = document.getElementById(prefix+'Delivery');
+  return {title: t ? t.value.trim() : '', description: d ? d.value.trim() : '', vendorId: v ? v.value : '', delivery: dl ? dl.value : 'translation'};
 }
 function fileMetaFor(meta, item, count){
   const out = {};
   if(meta && meta.title) out.title = count>1 ? meta.title+' · '+item.name.replace(/^.*\//,'') : meta.title;
   if(meta && meta.description) out.description = meta.description;
+  if(meta && meta.vendorId){ out.vendorId = meta.vendorId; out.delivery = meta.delivery || 'translation'; }
   return out;
 }
 async function editFileMeta(fileId){
@@ -3005,11 +3044,13 @@ async function editFileMeta(fileId){
   const res = await uiDialog(`<h3>Файл ${esc(f.filename)}</h3>
     <label class="field" style="margin-top:14px;">Название<input type="text" id="fmTitle" value="${esc(f.title||'')}" placeholder="например: Корзина, релиз 5.2"></label>
     <label class="field" style="margin-top:10px;">Описание<textarea id="fmDesc" style="min-height:70px;" placeholder="что в файле, откуда он, что проверить">${esc(f.description||'')}</textarea></label>
+    <label class="field" style="margin-top:10px;">Подрядчик<select id="fmVendor">${vendorSelectOptions(f.vendorId||'')}</select></label>
+    <label class="field" style="margin-top:10px;">Что сдали<select id="fmDelivery"><option value="translation" ${f.delivery!=='review'?'selected':''}>Перевод</option><option value="review" ${f.delivery==='review'?'selected':''}>Проверку (LQA) чужого перевода</option></select></label>
     <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
-    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({title:root.querySelector('#fmTitle').value.trim(), description:root.querySelector('#fmDesc').value.trim()}); root.querySelector('#fmTitle').focus(); });
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({title:root.querySelector('#fmTitle').value.trim(), description:root.querySelector('#fmDesc').value.trim(), vendorId:root.querySelector('#fmVendor').value, delivery:root.querySelector('#fmDelivery').value}); root.querySelector('#fmTitle').focus(); });
   if(!res) return;
-  const rec = Object.assign({}, f, {title: res.title || undefined, description: res.description || undefined});
-  if(!rec.title) delete rec.title; if(!rec.description) delete rec.description;
+  const rec = Object.assign({}, f, {title: res.title || undefined, description: res.description || undefined, vendorId: res.vendorId || undefined, delivery: res.vendorId ? res.delivery : undefined});
+  ['title','description','vendorId','delivery'].forEach(k=>{ if(!rec[k]) delete rec[k]; });
   dbUpsert('files', rec); toast('Сохранено'); router();
 }
 
@@ -3077,7 +3118,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -3220,7 +3261,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
     let entries;
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
-    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy}, fileMetaFor(meta, item, items.length));
+    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, words:entries.reduce((a,e)=>a+wordCount(e.source),0), uploadedBy}, fileMetaFor(meta, item, items.length));
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
@@ -3292,7 +3333,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}<button class="btn ghost sm" title="Название и описание" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -3410,7 +3451,7 @@ async function handlePoFiles(projectId, items){
     let entries;
     try{ entries = parseTranslationFile(item.name, text); }
     catch(err){ toast('Не удалось прочитать «'+item.name+'»: '+err.message); continue; }
-    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, uploadedBy}, fileMetaFor(meta, item, items.length));
+    const fileRec = Object.assign({id:uid(), projectId, componentId, languageCode, filename:item.name, uploadedAt:nowISO(), rowCount:entries.length, words:entries.reduce((a,e)=>a+wordCount(e.source),0), uploadedBy}, fileMetaFor(meta, item, items.length));
     const prevVersion = previousVersionOf(projectId, componentId, languageCode, item.name);
     if(prevVersion){ fileRec.previousVersionId = prevVersion.id; versionPairs.push({prev:prevVersion, next:fileRec}); }
     dbUpsert('files', fileRec);
@@ -5031,7 +5072,7 @@ function renderVisualSession(el, sessionId){
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
         <button class="btn secondary sm" ${issues.length?'':'disabled'} onclick="runSessionSummary('${s.id}')" title="${aiReady?'Короткий разбор страницы: главное и что исправлять первым':'Подключи ИИ в Настройках'}">${icon('sparkles',14)}ИИ-вывод</button>
         <button class="btn secondary" onclick="openCrawlModal('${s.id}')" title="Расширение Chrome само откроет страницы WB и снимет скриншоты">${icon('globe',16)}Обойти страницы</button>
-        <button class="btn secondary" ${shots.length?'':'disabled'} onclick="runSessionOcr('${s.id}')" title="Бесплатно, в браузере: прочитать текст со скриншотов, связать его со строками и найти непереведённое">${icon('search',16)}Распознать текст</button>
+        <button class="btn secondary" ${shots.length?'':'disabled'} onclick="runSessionOcr('${s.id}')" title="Бесплатно, в браузере: прочитать весь текст на скриншотах, найти его в строках перевода и отметить непереведённое, обрезанное, видимые переменные">${icon('search',16)}Найти текст на скриншотах</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
       </div>
     </div>
@@ -5056,7 +5097,7 @@ function renderVisualSession(el, sessionId){
       return `<div class="shot-card" onclick="openShotViewer('${sh.id}')">
         <div class="shot-thumb"><img src="${sh.thumb}" alt="" loading="lazy">
           ${si.length?`<span class="pill sev-${severityClass(w)} shot-count">${si.length}</span>`:''}
-          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}${sh.ocr?`<span class="shot-ocr" title="Текст распознан: ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')}, связано ${sh.ocr.lines.filter(l=>l.rowId).length}">Aa</span>`:''}</div>
+          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}${sh.ocr?`<span class="shot-ocr" title="Текст найден: ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')}, из них в переводе ${sh.ocr.lines.filter(l=>l.rowId).length}">${icon('search',11)} текст</span>`:''}</div>
         <div class="shot-meta"><span title="${esc(sh.pageUrl||'')}">${idx+1}. ${esc(sh.name)}</span>${sh.source==='video'?`<span class="hint" style="margin:0;">${fmtClock(sh.frameTime)}</span>`:''}</div>
       </div>`;
     }).join('')}</div>` : ''}
@@ -5106,7 +5147,7 @@ async function addShotFiles(sessionId, files, how){
         const full = drawScaled(img, SHOT_MAX_W, SHOT_MAX_H);
         const id = uid();
         const meta = f._lqa || {};
-        shots.push(Object.assign({id, sessionId, name: meta.name || (how==='paste' ? 'Вставлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : f.name.replace(/\.[^.]+$/,'')), source: meta.url ? 'crawl' : 'image', w:full.width, h:full.height, thumb:drawScaled(img, THUMB_W, THUMB_W*3).toDataURL('image/webp', .8), order:++order, createdAt:nowISO()}, meta.url ? {pageUrl:meta.url, viewport:meta.viewport} : {}));
+        shots.push(Object.assign({id, sessionId, name: meta.name || (how==='paste' ? 'Вставлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : f.name.replace(/\.[^.]+$/,'')), source: meta.url ? 'crawl' : 'image', w:full.width, h:full.height, thumb:drawScaled(img, THUMB_W, THUMB_W*3).toDataURL('image/webp', .8), order:++order, createdAt:nowISO()}, meta.url ? {pageUrl:meta.url, viewport:meta.viewport, pageTitle:meta.title||''} : {}));
         images.push({id, dataUrl: full.toDataURL('image/webp', .86)}); added++; newIds.push(id);
       }
     }
@@ -5193,7 +5234,7 @@ let crawlState = null;
 window.addEventListener('message', e=>{
   if(e.source!==window || !e.data || typeof e.data.lqaExt!=='string') return;
   const m = e.data;
-  if(m.lqaExt==='ready'){ crawlExt = m.version; return; }
+  if(m.lqaExt==='ready'){ const changed = crawlExt!==m.version; crawlExt = m.version; if(changed && (location.hash||'')==='#/extension') router(); return; }
   if(!crawlState) return;
   if(m.lqaExt==='progress') crawlStatus(`Обход ${m.done+1} из ${m.total}: ${m.name} — ${m.stage}`);
   else if(m.lqaExt==='shot') crawlQueueShot(m);
@@ -5204,46 +5245,474 @@ window.addEventListener('message', e=>{
 function crawlStatus(t){ setShotStatus(t); const b = document.getElementById('crawlStopBtn'); if(b) b.style.display = t ? '' : 'none'; }
 const CRAWL_DEFAULT_PAGES = 'Главная | https://www.wildberries.ru/\nПоиск | https://www.wildberries.ru/catalog/0/search.aspx?search=платье';
 function crawlRouteFor(projectId){ return dbGet('crawlRoutes', projectId) || {id:projectId, pages:CRAWL_DEFAULT_PAGES, viewports:['desktop','mobile'], screens:3, ocr:true}; }
+// "Название | ссылка | шаг | шаг": steps run after the page opens, before the screenshot —
+// нажать: текст (click the element with this text, e.g. a language switch), ждать: секунды,
+// cookie: имя=значение, storage: ключ=значение (set before the page loads).
+const CRAWL_STEP_RE = /^(нажать|click|ждать|wait|cookie|storage|localstorage)\s*:\s*(.+)$/i;
 function parseCrawlPages(text){
-  return String(text||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-    const i = l.lastIndexOf('|'); const name = i>=0 ? l.slice(0,i).trim() : '', url = (i>=0 ? l.slice(i+1) : l).trim();
-    return {name: name || url.replace(/^https?:\/\/(www\.)?/,'').slice(0,40), url};
-  }).filter(p=>/^https?:\/\//.test(p.url));
+  return String(text||'').split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('#')).map(l=>{
+    const parts = l.split('|').map(x=>x.trim()).filter(Boolean);
+    const ui = parts.findIndex(x=>/^https?:\/\//i.test(x)); if(ui<0) return null;
+    const url = parts[ui], name = parts.slice(0, ui).join(' ');
+    const steps = [], bad = [];
+    parts.slice(ui+1).forEach(x=>{
+      const m = x.match(CRAWL_STEP_RE); if(!m){ bad.push(x); return; }
+      const k = m[1].toLowerCase(), v = m[2].trim();
+      const type = k==='нажать'||k==='click' ? 'click' : k==='ждать'||k==='wait' ? 'wait' : k==='cookie' ? 'cookie' : 'storage';
+      if((type==='cookie'||type==='storage') && !v.includes('=')){ bad.push(x); return; }
+      steps.push({type, value:v});
+    });
+    return {name: name || url.replace(/^https?:\/\/(www\.)?/,'').slice(0,40), url, steps, bad};
+  }).filter(Boolean);
+}
+function versionAtLeast(v, need){ const a = String(v||'0').split('.').map(Number), b = need.split('.').map(Number); for(let i=0;i<3;i++){ if((a[i]||0)!==(b[i]||0)) return (a[i]||0) > (b[i]||0); } return true; }
+/* =========================================================
+   VENDORS — quality of contractors' translations and of their reviews (LQA)
+   A delivery is an uploaded file marked with a vendor (files.vendorId) and what they delivered
+   (files.delivery: 'translation' | 'review'). Scoring follows MQM: every problem has a penalty by
+   severity (settings.vendorWeights), score = 100 − penalty × 100 / words, pass at settings.vendorPass.
+   When a file is replaced by a newer version, its score is frozen in files.quality.
+   Review deliveries are judged by what changed against the previous version (files.versionDiff):
+   errors fixed, errors left in place, errors introduced. Sampling (table samples) lets our editor
+   check a random part of a delivery by hand; errors found there become problems on those strings.
+   ========================================================= */
+const DEFAULT_VENDORS = [
+  {id:'v_logrusit', name:'LogrusIT', languages:['az','hy','ka','kk','ky','tg','uz','am','en']},
+  {id:'v_logrusglobal', name:'LogrusGlobal', languages:[]},
+  {id:'v_janusww', name:'JanusWW', languages:[]},
+  {id:'v_awatera', name:'Awatera', languages:[]},
+  {id:'v_buro', name:'Бюро переводов', languages:[]},
+];
+const SAMPLE_ERROR_TYPES = ['Смысл','Терминология','Грамматика','Орфография','Пунктуация','Стиль','Не переведено','Переменные / теги','Длина / не помещается','Формат (числа, даты, валюта)','Другое'];
+const CONFIRMED_STATUSES = new Set(['Принята','Принята после исправления']);
+function wordCount(t){ return (String(t||'').replace(TAG_RE,' ').replace(VAR_RE,' ').match(/[\p{L}\p{N}]+/gu)||[]).length; }
+function ensureDefaultVendors(){
+  if(dbList('vendors').length || getSettings().vendorsSeeded) return;
+  const now = nowISO();
+  dbSave('vendors', DEFAULT_VENDORS.map(v=>Object.assign({createdAt:now}, v)));
+  saveSettings({vendorsSeeded:true});
+}
+function mqmScore(penalty, words){ return words ? Math.max(0, 100 - penalty*100/words) : null; }
+function fmtScore(x){ return x==null ? '—' : (Math.round(x*10)/10).toLocaleString('ru-RU')+'%'; }
+function scoreHtml(x){ if(x==null) return '<span class="hint" style="margin:0;">—</span>'; const pass = x >= (+getSettings().vendorPass||98); return `<b style="color:${pass?'var(--ok)':'var(--crit)'}">${fmtScore(x)}</b>`; }
+function deliveryQuality(f){
+  if(f.supersededBy && f.quality) return f.quality;
+  const rows = dbList('rows').filter(r=>r.fileId===f.id); const rowSet = new Set(rows.map(r=>r.id));
+  const words = f.words || rows.reduce((a,r)=>a+wordCount(r.source),0);
+  const w = getSettings().vendorWeights || {};
+  let confirmed = 0, open = 0, dismissed = 0, penC = 0, penAll = 0; const types = {};
+  dbList('issues').forEach(i=>{
+    if(!rowSet.has(i.rowId)) return;
+    const p = +w[i.severity] || 1;
+    if(CONFIRMED_STATUSES.has(i.status)){ confirmed++; penC += p; penAll += p; types[i.type] = (types[i.type]||0)+1; }
+    else if(isOpenIssue(i)){ open++; penAll += p; types[i.type] = (types[i.type]||0)+1; }
+    else dismissed++;
+  });
+  return {words, confirmed, open, dismissed, penaltyConfirmed:penC, penaltyAll:penAll, scoreConfirmed:mqmScore(penC, words), scoreAll:mqmScore(penAll, words), types, at:nowISO()};
+}
+function vendorDeliveries(vendorId){ return dbList('files').filter(f=>f.vendorId===vendorId).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt)); }
+function latestSample(fileId){ return dbList('samples').filter(x=>x.fileId===fileId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0] || null; }
+function sampleStats(smp){
+  const res = smp.results || {}, w = getSettings().vendorWeights || {};
+  let ok = 0, err = 0, extra = 0, pen = 0;
+  Object.values(res).forEach(r=>{ if(r.verdict==='ok') ok++; else if(r.verdict==='unnecessary') extra++; else if(r.verdict==='error'){ err++; pen += +w[r.severity] || 1; } });
+  const done = ok+err+extra, total = smp.rowIds.length;
+  const score = mqmScore(pen, smp.words);
+  return {ok, err, extra, done, total, pen, score, finished: done>=total, pass: score!=null && score >= (+getSettings().vendorPass||98)};
+}
+function reviewStats(f){
+  const d = f.versionDiff || {}; const found = (d.fixed||0) + (d.kept||0);
+  const q = deliveryQuality(f);
+  return {changed: f.changedRows||0, fixed: d.fixed||0, left: d.kept||0, added: d.added||0, foundRate: found ? (d.fixed||0)/found : null, openNow: q.open + q.confirmed};
+}
+function vendorSummary(v, sinceTs){
+  const all = vendorDeliveries(v.id).filter(f=>!sinceTs || +new Date(f.uploadedAt) >= sinceTs);
+  const tr = all.filter(f=>f.delivery!=='review'), rv = all.filter(f=>f.delivery==='review');
+  let words = 0, confirmed = 0, open = 0, penC = 0, penAll = 0; const types = {}, byLang = {};
+  tr.forEach(f=>{ const q = deliveryQuality(f); words += q.words; confirmed += q.confirmed; open += q.open; penC += q.penaltyConfirmed; penAll += q.penaltyAll; Object.entries(q.types||{}).forEach(([k,n])=>types[k]=(types[k]||0)+n);
+    const L = byLang[f.languageCode] = byLang[f.languageCode] || {words:0, pen:0, errors:0, files:0}; L.words += q.words; L.pen += q.penaltyConfirmed; L.errors += q.confirmed; L.files++; });
+  let fixed = 0, left = 0, added = 0, changed = 0;
+  rv.forEach(f=>{ const r = reviewStats(f); fixed += r.fixed; left += r.left; added += r.added; changed += r.changed; });
+  const samples = all.map(f=>latestSample(f.id)).filter(Boolean);
+  return {all, tr, rv, words, confirmed, open, per1000: words ? confirmed*1000/words : null, score: mqmScore(penC, words), scoreAll: mqmScore(penAll, words), types, byLang,
+    review: {fixed, left, added, changed, foundRate: fixed+left ? fixed/(fixed+left) : null}, samples};
+}
+
+/* ---- vendors list page ---- */
+let vendorPeriod = 'all';
+function vendorSince(){ return vendorPeriod==='30' ? Date.now()-30*864e5 : vendorPeriod==='90' ? Date.now()-90*864e5 : vendorPeriod==='365' ? Date.now()-365*864e5 : 0; }
+function periodChipsHtml(){ return [['30','30 дней'],['90','Квартал'],['365','Год'],['all','Всё время']].map(([k,l])=>`<button type="button" class="chip ${vendorPeriod===k?'chip-active':''}" onclick="vendorPeriod='${k}';router()">${l}</button>`).join(''); }
+function renderVendorsPage(el){
+  setCrumbs(['Подрядчики']);
+  ensureDefaultVendors();
+  const s = getSettings(), since = vendorSince();
+  const vendors = dbList('vendors').slice().sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  const rows = vendors.map(v=>({v, m:vendorSummary(v, since)}));
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Подрядчики</h1><div class="page-sub">Качество переводов и проверок подрядчиков · шкала MQM, порог ${esc(String(s.vendorPass))}%</div></div>
+      <div class="row"><button class="btn secondary" onclick="openVendorScale()">${icon('settings',15)}Шкала оценки</button><button class="btn secondary" onclick="document.getElementById('vendorImport').click()">${icon('upload',15)}Загрузить из таблицы</button><button class="btn" onclick="editVendor()">${icon('plus',15)}Подрядчик</button></div></div>
+    <input type="file" id="vendorImport" accept=".xlsx,.xls,.csv" style="display:none;" onchange="importVendorsFromFile(this.files[0]);this.value=''">
+    <div class="row" style="gap:6px;margin-bottom:14px;">${periodChipsHtml()}</div>
+    ${rows.length ? `<div class="card"><div class="table-wrap"><table><thead><tr><th>Подрядчик</th><th>Языки</th><th>Поставок</th><th>Слов</th><th>Ошибок</th><th>На 1000 слов</th><th>Оценка перевода</th><th>Проверки: нашли</th><th>Последняя выборка</th></tr></thead><tbody>
+      ${rows.map(({v,m})=>{ const last = m.samples[0]; const ls = last ? sampleStats(last) : null;
+        return `<tr class="clickable" onclick="location.hash='#/vendors/${v.id}'"><td style="font-weight:600;">${esc(v.name)}</td><td>${(v.languages||[]).map(c=>`<span class="lang-chip" title="${esc(languageLabel(c))}">${languageFlag(c)} ${esc(c)}</span>`).join(' ')||'<span class="hint" style="margin:0;">—</span>'}</td>
+          <td>${m.tr.length}${m.rv.length?` <span class="hint" style="margin:0;">+ ${m.rv.length} ${plural(m.rv.length,'проверка','проверки','проверок')}</span>`:''}</td><td>${m.words.toLocaleString('ru-RU')}</td>
+          <td>${m.confirmed}${m.open?` <span class="hint" style="margin:0;" title="ещё не разобраны">+${m.open}</span>`:''}</td><td>${m.per1000==null?'—':(Math.round(m.per1000*10)/10).toLocaleString('ru-RU')}</td><td>${scoreHtml(m.score)}</td>
+          <td>${m.review.foundRate==null?'<span class="hint" style="margin:0;">—</span>':`<b>${Math.round(m.review.foundRate*100)}%</b> <span class="hint" style="margin:0;">ошибок</span>`}</td>
+          <td>${ls ? `${scoreHtml(ls.score)} <span class="hint" style="margin:0;">${ls.finished?(ls.pass?'принято':'на доработку'):ls.done+' из '+ls.total}</span>` : '<span class="hint" style="margin:0;">—</span>'}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      <div class="hint">Чтобы поставка попала сюда, при загрузке файла выбери подрядчика и что он сдал: перевод или проверку. «Ошибок» — подтверждённые, серым — ещё не разобранные. «Проверки: нашли» — какую долю ошибок в чужом переводе подрядчик исправил при проверке.</div></div>`
+    : `<div class="card">${emptyState({icon:'user', title:'Подрядчиков пока нет', text:'Добавь подрядчиков вручную или загрузи таблицу, где они перечислены.', action:`<button class="btn" onclick="editVendor()">${icon('plus',15)}Добавить подрядчика</button>`})}</div>`}`;
+}
+async function editVendor(id){
+  const v = id ? dbGet('vendors', id) : {name:'', languages:[], contact:'', note:''};
+  const langs = LANGUAGE_PRESETS.filter(([c])=>c!=='ru');
+  const res = await uiDialog(`<h3>${id?'Подрядчик '+esc(v.name):'Новый подрядчик'}</h3>
+    <label class="field" style="margin-top:14px;">Название<input type="text" id="vdName" value="${esc(v.name)}" placeholder="например: LogrusIT"></label>
+    <div class="field" style="margin-top:10px;">Языки<div class="lang-group" style="max-height:180px;overflow:auto;margin-top:6px;">${langs.map(([c,n])=>`<label class="lang-check"><input type="checkbox" value="${c}" ${(v.languages||[]).includes(c)?'checked':''}> ${esc(n)}</label>`).join('')}</div></div>
+    <label class="field" style="margin-top:10px;">Контакт<input type="text" id="vdContact" value="${esc(v.contact||'')}" placeholder="менеджер, почта, чат"></label>
+    <label class="field" style="margin-top:10px;">Заметка<input type="text" id="vdNote" value="${esc(v.note||'')}" placeholder="договор, ставка, особенности"></label>
+    <div class="modal-actions">${id?`<button class="btn ghost" data-del style="margin-right:auto;color:var(--crit);">Удалить</button>`:''}<button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+    (root, close)=>{ root.querySelector('.dialog').style.width = '560px';
+      root.querySelector('[data-ok]').onclick = ()=>close({name:root.querySelector('#vdName').value.trim(), languages:[...root.querySelectorAll('.lang-check input:checked')].map(x=>x.value), contact:root.querySelector('#vdContact').value.trim(), note:root.querySelector('#vdNote').value.trim()});
+      const d = root.querySelector('[data-del]'); if(d) d.onclick = ()=>close({del:true});
+      root.querySelector('#vdName').focus(); });
+  if(!res) return;
+  if(res.del){
+    const n = vendorDeliveries(id).length;
+    if(!await uiConfirm({title:'Удалить подрядчика «'+v.name+'»?', text: n ? `Его ${n} ${plural(n,'поставка останется','поставки останутся','поставок останутся')} в файлах, но без подрядчика.` : 'Поставок у него нет.', okText:'Удалить'})) return;
+    const snap = snapshotTables(['vendors','files']);
+    dbRemove('vendors', id);
+    dbSave('files', dbList('files').map(f=>f.vendorId===id ? Object.assign({}, f, {vendorId:undefined, delivery:undefined}) : f));
+    toastUndo('Подрядчик удалён', snap); location.hash = '#/vendors'; return;
+  }
+  if(!res.name){ toast('Впиши название'); return; }
+  if(dbList('vendors').some(x=>x.id!==id && x.name.toLowerCase()===res.name.toLowerCase())){ toast('Такой подрядчик уже есть'); return; }
+  dbUpsert('vendors', Object.assign({}, v, res, {id: id || vendorIdFor(res.name), createdAt: v.createdAt || nowISO()}));
+  toast('Сохранено'); router();
+}
+function vendorIdFor(name){ const slug = String(name).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'').slice(0,30); return 'v_'+(slug || uid()); }
+async function openVendorScale(){
+  const s = getSettings(), w = s.vendorWeights || {};
+  const res = await uiDialog(`<h3>Шкала оценки</h3>
+    <div class="dialog-text">Как в MQM: у каждой ошибки штраф по важности. Оценка = 100 − штраф × 100 / число слов. Например, 2 ошибки «Высокая» на 1000 слов → 99%.</div>
+    <div class="grid grid-2" style="margin-top:12px;">${['Критическая','Высокая','Средняя','Низкая'].map(k=>`<label class="field">${k}<input type="number" min="0" step="0.5" data-w="${k}" value="${esc(String(w[k]??1))}"></label>`).join('')}</div>
+    <label class="field" style="margin-top:10px;">Порог «принято», %<input type="number" min="0" max="100" step="0.5" id="vsPass" value="${esc(String(s.vendorPass))}"></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>{ const nw = {}; root.querySelectorAll('[data-w]').forEach(x=>nw[x.dataset.w] = Math.max(0, parseFloat(x.value)||0)); close({w:nw, pass:Math.min(100, Math.max(0, parseFloat(root.querySelector('#vsPass').value)||98))}); }; });
+  if(!res) return;
+  saveSettings({vendorWeights:res.w, vendorPass:res.pass}); toast('Шкала сохранена'); router();
+}
+// Any table that has a "Подрядчик" / "Компания" column: names are taken from it; if the same sheet has
+// a "Языки" column, the languages of each vendor's rows are collected too (e.g. a task tracker).
+function langCodeByName(name){
+  const n = String(name||'').toLowerCase().replace(/^штат\s+/,'').replace(/ё/g,'е').trim(); if(!n) return null;
+  const alias = {'кыргызский':'ky','киргизский':'ky','амхарский':'am','азербайджанский':'az','английский':'en'};
+  if(alias[n]) return alias[n];
+  const hit = LANGUAGE_PRESETS.find(([c,l])=>l.toLowerCase().replace(/ё/g,'е')===n || c===n);
+  return hit ? hit[0] : null;
+}
+async function importVendorsFromFile(file){
+  if(!file) return;
+  if(!await ensureXlsx()){ toast('Не загрузилась библиотека таблиц'); return; }
+  const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+  const found = new Map();
+  wb.SheetNames.forEach(sn=>{
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:''});
+    for(let h=0; h<Math.min(6, rows.length); h++){
+      const head = rows[h].map(c=>String(c).trim().toLowerCase());
+      const vi = head.findIndex(c=>/^(подрядчик|подрядчики|vendor|компания|агентство|исполнитель)$/.test(c)); if(vi<0) continue;
+      let li = head.findIndex(c=>/^(языки|язык|languages?)$/.test(c));
+      // a sheet of independent lists (vendors in one column, all languages in another) says nothing about who
+      // translates what — take languages only where most rows carry both a vendor and languages (a task log)
+      if(li>=0){ const body = rows.slice(h+1); const withV = body.filter(r=>String(r[vi]||'').trim()).length, withL = body.filter(r=>String(r[li]||'').trim()).length, both = body.filter(r=>String(r[vi]||'').trim() && String(r[li]||'').trim()).length;
+        if(!withV || both < 0.6*Math.max(withV, withL)) li = -1; }
+      rows.slice(h+1).forEach(r=>{
+        const name = String(r[vi]||'').trim(); if(!name || name.length>60) return;
+        const e = found.get(name.toLowerCase()) || {name, languages:new Set()};
+        if(li>=0) String(r[li]||'').split(/[,;\n]+/).map(langCodeByName).filter(Boolean).forEach(c=>e.languages.add(c));
+        found.set(name.toLowerCase(), e);
+      });
+      break;
+    }
+  });
+  if(!found.size){ toast('В таблице не нашлось колонки «Подрядчик»'); return; }
+  let added = 0, updated = 0;
+  const list = dbList('vendors').slice();
+  found.forEach(e=>{
+    const ex = list.find(v=>v.name.toLowerCase()===e.name.toLowerCase());
+    if(ex){ const langs = new Set([...(ex.languages||[]), ...e.languages]); if(langs.size!==(ex.languages||[]).length){ Object.assign(ex, {languages:[...langs]}); updated++; } }
+    else { list.push({id:vendorIdFor(e.name), name:e.name, languages:[...e.languages], createdAt:nowISO()}); added++; }
+  });
+  dbSave('vendors', list); saveSettings({vendorsSeeded:true});
+  toast(`Из таблицы: новых подрядчиков ${added}, дополнено языков ${updated}`); router();
+}
+
+/* ---- vendor detail ---- */
+function renderVendorDetail(el, id){
+  const v = dbGet('vendors', id);
+  if(!v){ setCrumbs([{label:'Подрядчики', hash:'#/vendors'}, 'Не найден']); el.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Подрядчик не найден', action:'<a class="btn secondary" href="#/vendors">Все подрядчики</a>'}); return; }
+  setCrumbs([{label:'Подрядчики', hash:'#/vendors'}, v.name]);
+  const m = vendorSummary(v, vendorSince());
+  const bar = (list, total, label)=> list.length ? list.slice(0,8).map(([k,n])=>`<div class="rbar"><span class="rbar-l">${label(k)}</span><span class="rbar-t"><i style="width:${Math.max(3, n/total*100)}%"></i></span><b>${n}</b></div>`).join('') : '<div class="hint">Ошибок пока нет</div>';
+  const types = Object.entries(m.types).sort((a,b)=>b[1]-a[1]), typesTotal = types.reduce((a,[,n])=>a+n,0);
+  const sampleCell = f=>{ const smp = latestSample(f.id); if(!smp) return f.supersededBy ? '<span class="hint" style="margin:0;">—</span>' : `<button class="btn ghost sm" onclick="event.stopPropagation();startSample('${f.id}')">${icon('check',14)}Проверить выборку</button>`;
+    const st = sampleStats(smp); return `<a href="#/sample/${smp.id}" onclick="event.stopPropagation()">${scoreHtml(st.score)}</a> <span class="hint" style="margin:0;">${st.finished?(st.pass?'принято':'на доработку'):st.done+' из '+st.total}</span>`; };
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">${esc(v.name)}</h1><div class="page-sub">${(v.languages||[]).map(c=>languageFlag(c)+' '+esc(languageLabel(c))).join(' · ')||'языки не указаны'}${v.contact?' · '+esc(v.contact):''}</div></div>
+      <div class="row"><button class="btn secondary" onclick="editVendor('${v.id}')">${icon('edit',15)}Изменить</button><button class="btn" onclick="exportVendorReport('${v.id}')">${icon('download',15)}Отчёт для подрядчика</button></div></div>
+    <div class="row" style="gap:6px;margin-bottom:14px;">${periodChipsHtml()}</div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num" style="color:${m.score==null?'inherit':m.score>=(+getSettings().vendorPass||98)?'var(--ok)':'var(--crit)'}">${fmtScore(m.score)}</div><div class="lbl">Оценка перевода (MQM)${m.open?' · с неразобранными '+fmtScore(m.scoreAll):''}</div></div>
+      <div class="kpi"><div class="num">${m.per1000==null?'—':(Math.round(m.per1000*10)/10).toLocaleString('ru-RU')}</div><div class="lbl">Ошибок на 1000 слов</div></div>
+      <div class="kpi"><div class="num">${m.words.toLocaleString('ru-RU')}</div><div class="lbl">Слов в ${m.tr.length} ${plural(m.tr.length,'поставке','поставках','поставках')}</div></div>
+      <div class="kpi"><div class="num">${m.review.foundRate==null?'—':Math.round(m.review.foundRate*100)+'%'}</div><div class="lbl">Нашли ошибок при проверке${m.rv.length?' · '+m.rv.length+' '+plural(m.rv.length,'проверка','проверки','проверок'):''}</div></div>
+    </div>
+    <div class="card" style="margin-top:16px;"><h3>Переводы</h3>${m.tr.length ? `<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Файл</th><th>Язык</th><th>Слов</th><th>Ошибок</th><th>Оценка</th><th>Выборочная проверка</th></tr></thead><tbody>
+      ${m.tr.map(f=>{ const q = deliveryQuality(f); const c = dbGet('components', f.componentId); return `<tr class="clickable" onclick="location.hash='#/project/${f.projectId}/folder/${f.componentId}/files'"><td class="nowrap">${fmtDate(f.uploadedAt)}</td><td>${esc(fileLabel(f))}<div class="hint" style="margin:0;">${esc(c?compPath(c):'')}${f.supersededBy?' · прежняя версия':''}</div></td><td>${languageFlag(f.languageCode)} ${esc(f.languageCode)}</td><td>${q.words.toLocaleString('ru-RU')}</td><td>${q.confirmed}${q.open?` <span class="hint" style="margin:0;">+${q.open}</span>`:''}</td><td>${scoreHtml(q.scoreConfirmed)}</td><td>${sampleCell(f)}</td></tr>`; }).join('')}
+      </tbody></table></div>` : '<div class="hint">Переводов этого подрядчика ещё не загружали. При загрузке файла выбери подрядчика и «Что сдали: Перевод».</div>'}</div>
+    ${m.rv.length ? `<div class="card"><h3>Проверки (LQA) чужих переводов</h3><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Файл</th><th>Язык</th><th>Правок</th><th>Исправил ошибок</th><th>Пропустил</th><th>Внёс новых</th><th>Выборка правок</th></tr></thead><tbody>
+      ${m.rv.map(f=>{ const r = reviewStats(f); return `<tr><td class="nowrap">${fmtDate(f.uploadedAt)}</td><td>${esc(fileLabel(f))}</td><td>${languageFlag(f.languageCode)} ${esc(f.languageCode)}</td><td>${r.changed}</td><td>${r.fixed}${r.foundRate!=null?` <span class="hint" style="margin:0;">(${Math.round(r.foundRate*100)}%)</span>`:''}</td><td>${r.left?`<b style="color:var(--high)">${r.left}</b>`:'0'}</td><td>${r.added?`<b style="color:var(--crit)">${r.added}</b>`:'0'}</td><td>${sampleCell(f)}</td></tr>`; }).join('')}
+      </tbody></table></div><div class="hint">Сравнение с версией до проверки: сколько найденных ошибок подрядчик исправил, сколько оставил и сколько новых появилось после его правок. «Выборка правок» — наш редактор смотрит часть правок и отмечает, верные ли они.</div></div>` : ''}
+    <div class="grid grid-2">
+      <div class="card"><h3>Частые ошибки</h3>${bar(types, typesTotal, k=>esc(k))}</div>
+      <div class="card"><h3>По языкам</h3>${Object.keys(m.byLang).length ? `<div class="table-wrap"><table><thead><tr><th>Язык</th><th>Слов</th><th>Ошибок</th><th>Оценка</th></tr></thead><tbody>${Object.entries(m.byLang).map(([c,L])=>`<tr><td>${languageFlag(c)} ${esc(languageLabel(c))}</td><td>${L.words.toLocaleString('ru-RU')}</td><td>${L.errors}</td><td>${scoreHtml(mqmScore(L.pen, L.words))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint">Нет данных</div>'}</div>
+    </div>`;
+}
+function exportVendorReport(id){
+  const v = dbGet('vendors', id); if(!v) return;
+  const m = vendorSummary(v, vendorSince());
+  ensureXlsx().then(ok=>{
+    if(!ok){ toast('Библиотека Excel не загрузилась'); return; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Подрядчик', v.name], ['Период', {30:'30 дней',90:'квартал',365:'год'}[vendorPeriod] || 'всё время'], [],
+      ['Оценка перевода (MQM), %', m.score==null?'':Math.round(m.score*10)/10], ['Порог', +getSettings().vendorPass], ['Слов', m.words], ['Подтверждённых ошибок', m.confirmed], ['Ошибок на 1000 слов', m.per1000==null?'':Math.round(m.per1000*10)/10],
+      ['Проверок (LQA)', m.rv.length], ['Исправлено ошибок при проверке', m.review.fixed], ['Пропущено', m.review.left], ['Внесено новых', m.review.added]]), 'Сводка');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(m.all.map(f=>{ const q = deliveryQuality(f), smp = latestSample(f.id), st = smp ? sampleStats(smp) : null;
+      return {Дата:fmtDate(f.uploadedAt), Файл:fileLabel(f), Язык:f.languageCode, Что_сдали:f.delivery==='review'?'Проверка':'Перевод', Слов:q.words, Ошибок:q.confirmed, Оценка:q.scoreConfirmed==null?'':Math.round(q.scoreConfirmed*10)/10, Выборка:st?Math.round((st.score||0)*10)/10:'', Вердикт:st&&st.finished?(st.pass?'принято':'на доработку'):''}; })), 'Поставки');
+    const fileIds = new Set(m.tr.filter(f=>!f.supersededBy).map(f=>f.id));
+    const errs = dbList('issues').filter(i=>{ const r = i.rowId ? dbGet('rows', i.rowId) : null; return r && fileIds.has(r.fileId) && (CONFIRMED_STATUSES.has(i.status) || isOpenIssue(i)); }).map(i=>{ const r = dbGet('rows', i.rowId);
+      return {Язык:i.languageCode, Ключ:r.key||'', Исходный_текст:r.source, Перевод:r.target, Тип:i.type, Важность:i.severity, Что_не_так:i.text, Как_правильно:i.expectedText||i.aiSuggestion||'', Статус:i.status}; });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(errs.length ? errs : [{Ошибок:'нет'}]), 'Ошибки');
+    XLSX.writeFile(wb, 'LQA_'+v.name.replace(/[^\p{L}\p{N}]+/gu,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  });
+}
+
+/* ---- sampling: a random part of a delivery checked by our editor ---- */
+function sampleSizeFor(n){ return Math.min(n, Math.max(Math.min(20, n), Math.min(200, Math.ceil(n*0.1)))); }
+async function startSample(fileId){
+  const f = dbGet('files', fileId); if(!f) return;
+  const existing = latestSample(fileId);
+  if(existing){ location.hash = '#/sample/'+existing.id; return; }
+  const review = f.delivery==='review';
+  let pool = dbList('rows').filter(r=>r.fileId===fileId && (r.target||'').trim());
+  if(review) pool = pool.filter(r=>(r.targetHistory||[]).some(h=>h.how==='upload' && (h.fileId===f.id || (!h.fileId && h.file===f.filename))));
+  if(!pool.length){ toast(review ? 'В этой проверке подрядчик ничего не менял — проверять нечего' : 'В файле нет переведённых строк'); return; }
+  const def = sampleSizeFor(pool.length);
+  const res = await uiDialog(`<h3>Выборочная проверка</h3>
+    <div class="dialog-text">${review ? `Подрядчик изменил ${pool.length} ${plural(pool.length,'строку','строки','строк')}. Платформа возьмёт случайные правки — отметь, верная ли каждая.` : `В поставке ${pool.length} ${plural(pool.length,'строка','строки','строк')}. Платформа возьмёт случайные строки — отметь в каждой «верно» или ошибку. По ним посчитается оценка и вердикт.`}</div>
+    <label class="field" style="margin-top:12px;">Сколько строк проверить<select id="smpN">${[...new Set([def, 20, 50, 100, 200, pool.length])].filter(n=>n<=pool.length && n>0).sort((a,b)=>a-b).map(n=>`<option value="${n}" ${n===def?'selected':''}>${n}${n===pool.length?' — все':n===def?' — рекомендуем (10%)':''}</option>`).join('')}</select></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Начать</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close(+root.querySelector('#smpN').value); });
+  if(!res) return;
+  const arr = pool.slice(); for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]]; }
+  const pick = arr.slice(0, res);
+  const smp = {id:uid(), fileId, vendorId:f.vendorId||null, kind: review?'review':'translation', rowIds:pick.map(r=>r.id), words:pick.reduce((a,r)=>a+wordCount(r.source),0), results:{}, createdAt:nowISO(), by:getMe()||null};
+  dbUpsert('samples', smp);
+  location.hash = '#/sample/'+smp.id;
+}
+const samplePos = {};
+function renderSamplePage(el, id){
+  const smp = dbGet('samples', id);
+  if(!smp){ setCrumbs(['Выборочная проверка']); el.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Выборка не найдена', action:'<a class="btn secondary" href="#/vendors">К подрядчикам</a>'}); return; }
+  const f = dbGet('files', smp.fileId), v = smp.vendorId ? dbGet('vendors', smp.vendorId) : null;
+  setCrumbs([{label:'Подрядчики', hash:'#/vendors'}].concat(v?[{label:v.name, hash:'#/vendors/'+v.id}]:[]).concat(['Выборка']));
+  const st = sampleStats(smp), review = smp.kind==='review';
+  let pos = samplePos[id]; if(pos==null){ pos = smp.rowIds.findIndex(r=>!smp.results[r]); if(pos<0) pos = 0; samplePos[id] = pos; }
+  const rowId = smp.rowIds[pos], r = dbGet('rows', rowId), res = smp.results[rowId];
+  const hist = r ? (r.targetHistory||[]).slice().reverse().find(h=>h.how==='upload' && f && (h.fileId===f.id || (!h.fileId && h.file===f.filename))) : null;
+  const passTxt = st.score==null ? '' : st.pass ? 'принято' : 'на доработку';
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Выборочная проверка</h1><div class="page-sub">${v?esc(v.name)+' · ':''}${review?'правки при проверке':'перевод'} · ${f?esc(fileLabel(f))+' · '+languageFlag(f.languageCode)+' '+esc(languageLabel(f.languageCode)):'файл удалён'}</div></div>
+      <div class="row">${v?`<a class="btn secondary" href="#/vendors/${v.id}">К подрядчику</a>`:''}<button class="btn ghost" style="color:var(--crit);" onclick="deleteSample('${smp.id}')" title="Удалить выборку и найденные в ней ошибки">${icon('trash',15)}</button></div></div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num">${st.done} / ${st.total}</div><div class="lbl">Проверено строк</div></div>
+      <div class="kpi ok"><div class="num">${st.ok}</div><div class="lbl">${review?'Верных правок':'Без ошибок'}</div></div>
+      <div class="kpi crit"><div class="num">${st.err}</div><div class="lbl">${review?'Правок с ошибкой':'С ошибкой'}${review&&st.extra?' · лишних '+st.extra:''}</div></div>
+      <div class="kpi"><div class="num" style="color:${st.score==null?'inherit':st.pass?'var(--ok)':'var(--crit)'}">${fmtScore(st.score)}</div><div class="lbl">Оценка по выборке${st.finished&&passTxt?' · '+passTxt:''}</div></div>
+    </div>
+    <div class="sample-bar">${smp.rowIds.map((rid,n)=>{ const x = smp.results[rid]; return `<button type="button" class="sb ${x?x.verdict:''} ${n===pos?'cur':''}" title="${n+1}" onclick="samplePos['${id}']=${n};router()"></button>`; }).join('')}</div>
+    <div class="card sample-card">
+      ${!r ? `<div class="hint">Этой строки больше нет — файл заменили новой версией или удалили.</div>` : `
+      <div class="row between" style="flex-wrap:wrap;"><div class="hint mono" style="margin:0;">${pos+1} из ${st.total}${r.key?' · '+esc(r.key):''}</div>${res?`<span class="pill ${res.verdict==='ok'?'st-accepted':res.verdict==='error'?'sev-critical':'type'}">${res.verdict==='ok'?(review?'правка верная':'верно'):res.verdict==='error'?(review?'правка с ошибкой':'ошибка'):'лишняя правка'}</span>`:''}</div>
+      <div class="hint" style="margin:12px 0 4px;">Исходный текст</div><div class="sample-text">${highlightTokens(r.source)}</div>
+      ${review && hist ? `<div class="hint" style="margin:12px 0 4px;">Правка подрядчика</div><div class="sample-text rhist-diff">${wordDiffHtml(hist.from, hist.to)}</div>` : `<div class="hint" style="margin:12px 0 4px;">Перевод</div><div class="sample-text">${highlightTokens(r.target)}</div>`}
+      <div class="row" style="margin-top:16px;gap:8px;flex-wrap:wrap;">
+        <button class="btn" style="background:var(--ok);" onclick="setSampleVerdict('${id}','ok')">${icon('check',15)}${review?'Правка верная':'Верно'} <span class="kbd">1</span></button>
+        <button class="btn" style="background:var(--crit);" onclick="toggleSampleErrorForm()">${icon('x',15)}${review?'Правка внесла ошибку':'Ошибка'} <span class="kbd">2</span></button>
+        ${review?`<button class="btn secondary" onclick="setSampleVerdict('${id}','unnecessary')">Лишняя правка <span class="kbd">3</span></button>`:''}
+        <span style="margin-left:auto;"></span>
+        <button class="btn secondary" ${pos>0?'':'disabled'} onclick="samplePos['${id}']=${pos-1};router()">← <span class="kbd">←</span></button>
+        <button class="btn secondary" ${pos<st.total-1?'':'disabled'} onclick="samplePos['${id}']=${pos+1};router()">→ <span class="kbd">→</span></button>
+      </div>
+      <div id="smpErr" class="sample-err" style="display:${res&&res.verdict==='error'?'':'none'};">
+        <div class="grid grid-2"><label class="field">Тип ошибки<select id="smpType">${SAMPLE_ERROR_TYPES.map(t=>`<option ${res&&res.type===t?'selected':''}>${t}</option>`).join('')}</select></label>
+          <label class="field">Важность<select id="smpSev">${['Критическая','Высокая','Средняя','Низкая'].map(t=>`<option ${(res&&res.severity||'Средняя')===t?'selected':''}>${t}</option>`).join('')}</select></label></div>
+        <label class="field" style="margin-top:10px;">Что не так<input type="text" id="smpComment" value="${esc(res&&res.comment||'')}" placeholder="коротко, для отчёта подрядчику"></label>
+        <label class="field" style="margin-top:10px;">Как правильно <span style="font-weight:400;color:var(--text-faint);">— необязательно</span><input type="text" id="smpFix" value="${esc(res&&res.fix||'')}" placeholder="исправленный вариант"></label>
+        <div class="row" style="margin-top:12px;"><button class="btn" onclick="saveSampleError('${id}')">Сохранить ошибку <span class="kbd">Enter</span></button></div>
+      </div>`}
+    </div>
+    <div class="hint">Ошибки из выборки сразу становятся подтверждёнными проблемами у этих строк и попадают в оценку подрядчика и в «Отчёт для подрядчика». Клавиши: 1 — ${review?'правка верная':'верно'}, 2 — ошибка${review?', 3 — лишняя правка':''}, ← → — листать.</div>`;
+}
+function toggleSampleErrorForm(){ const e = document.getElementById('smpErr'); if(!e) return; e.style.display = ''; const c = document.getElementById('smpComment'); if(c) c.focus(); }
+function saveSampleError(id){
+  setSampleVerdict(id, 'error', {type:document.getElementById('smpType').value, severity:document.getElementById('smpSev').value, comment:document.getElementById('smpComment').value.trim(), fix:document.getElementById('smpFix').value.trim()});
+}
+function setSampleVerdict(id, verdict, extra){
+  const smp = dbGet('samples', id); if(!smp) return;
+  const pos = samplePos[id] || 0, rowId = smp.rowIds[pos], r = dbGet('rows', rowId); if(!r) return;
+  const prev = smp.results[rowId];
+  // a sample error is a confirmed problem on the string; changing the verdict removes it
+  let issueId = prev && prev.issueId;
+  if(issueId && verdict!=='error'){ dbRemove('issues', issueId); issueId = null; }
+  if(verdict==='error'){
+    const review = smp.kind==='review';
+    const rec = {id: issueId || uid(), rowId, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode, manual:true, sampleId:id,
+      type:extra.type, severity:extra.severity, text:(review?'Правка при проверке внесла ошибку: ':'')+(extra.comment || extra.type), expectedText:extra.fix||null, highlightField:null, highlightText:null,
+      status:'Принята', createdAt: (issueId && dbGet('issues', issueId)?.createdAt) || nowISO(), history:[{ts:nowISO(), action:'Найдена при выборочной проверке подрядчика', by:getMe()||null}]};
+    dbUpsert('issues', rec); issueId = rec.id;
+  }
+  smp.results = Object.assign({}, smp.results, {[rowId]: Object.assign({verdict, by:getMe()||null, ts:nowISO()}, extra||{}, issueId?{issueId}:{})});
+  if(sampleStats(smp).finished && !smp.finishedAt) smp.finishedAt = nowISO();
+  dbUpsert('samples', smp);
+  const next = smp.rowIds.findIndex((rid,n)=>n>pos && !smp.results[rid]);
+  const any = smp.rowIds.findIndex(rid=>!smp.results[rid]);
+  samplePos[id] = next>=0 ? next : any>=0 ? any : pos;
+  if(any<0 && !(prev)){ const st = sampleStats(smp); toast(`Выборка проверена: оценка ${fmtScore(st.score)} — ${st.pass?'принято':'на доработку'}`, {duration:7000}); }
+  router();
+}
+async function deleteSample(id){
+  const smp = dbGet('samples', id); if(!smp) return;
+  if(!await uiConfirm({title:'Удалить выборку?', text:'Удалятся и ошибки, найденные в ней.', okText:'Удалить'})) return;
+  const snap = snapshotTables(['samples','issues']);
+  const ids = new Set(Object.values(smp.results||{}).map(x=>x.issueId).filter(Boolean));
+  dbSave('issues', dbList('issues').filter(i=>!ids.has(i.id)));
+  dbRemove('samples', id);
+  toastUndo('Выборка удалена', snap);
+  location.hash = smp.vendorId ? '#/vendors/'+smp.vendorId : '#/vendors';
+}
+document.addEventListener('keydown', e=>{
+  const m = (location.hash||'').match(/^#\/sample\/([^/]+)/); if(!m) return;
+  if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ if(e.key==='Enter' && e.target.closest('#smpErr')){ e.preventDefault(); saveSampleError(m[1]); } return; }
+  if(e.metaKey || e.ctrlKey || e.altKey || document.getElementById('dialogRoot')?.innerHTML) return;
+  const smp = dbGet('samples', m[1]); if(!smp) return;
+  if(e.key==='1'){ e.preventDefault(); setSampleVerdict(m[1], 'ok'); }
+  else if(e.key==='2'){ e.preventDefault(); toggleSampleErrorForm(); }
+  else if(e.key==='3' && smp.kind==='review'){ e.preventDefault(); setSampleVerdict(m[1], 'unnecessary'); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); samplePos[m[1]] = Math.min(smp.rowIds.length-1, (samplePos[m[1]]||0)+1); router(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); samplePos[m[1]] = Math.max(0, (samplePos[m[1]]||0)-1); router(); }
+});
+
+/* ---------- extension page: download, install steps, version check ----------
+   The extension's files are published with the site (extension/ next to index.html), so the page
+   zips them in the browser — the download always matches the version on the site. */
+const EXT_FILES = ['manifest.json', 'background.js', 'bridge.js', 'icon.png', 'README.md'];
+let extLatest = null;
+function extensionPageUrl(){ return /^https?:$/.test(location.protocol) ? location.origin + location.pathname + '#/extension' : 'https://wblocalization.github.io/lqa-hub/#/extension'; }
+async function fetchLatestExtVersion(){
+  try{ const r = await fetch('extension/manifest.json', {cache:'no-store'}); if(r.ok){ extLatest = (await r.json()).version; } }catch(e){}
+  return extLatest;
+}
+async function downloadExtensionZip(){
+  const btn = document.getElementById('extDlBtn'); if(btn){ btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.textContent = 'Собираю архив…'; }
+  try{
+    if(!await ensureJSZip()) throw new Error('не загрузилась библиотека архивов');
+    const zip = new JSZip(), dir = zip.folder('lqa-hub-extension');
+    for(const f of EXT_FILES){
+      const r = await fetch('extension/'+f, {cache:'no-store'}); if(!r.ok) throw new Error('нет файла '+f);
+      dir.file(f, await r.arrayBuffer());
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lqa-hub-extension.zip'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    toast('Скачан lqa-hub-extension.zip — распакуй его и выбери папку lqa-hub-extension в Chrome');
+  }catch(e){
+    toast('Не получилось собрать архив ('+e.message+'). Скачай всю платформу архивом с GitHub и возьми из него папку extension.', {duration:10000, action:{label:'Скачать с GitHub', fn:()=>window.open('https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip','_blank')}});
+  }finally{ if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.label; } }
+}
+function copyText(text, msg){
+  const done = ()=>toast(msg||'Скопировано');
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, ()=>fallback()); else fallback();
+  function fallback(){ const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Не получилось скопировать: '+text); } t.remove(); }
+}
+async function renderExtensionPage(el){
+  setCrumbs(['Расширение']);
+  if(!crawlExt){ lqaPost({lqaHub:'ping'}); }
+  const draw = ()=>{
+    const installed = crawlExt, latest = extLatest;
+    const outdated = installed && latest && !versionAtLeast(installed, latest);
+    const onSite = /^https?:$/.test(location.protocol);
+    const status = !onSite ? `<div class="ext-status warn">${icon('alertTriangle',18)}<div><b>Страница открыта из файла на диске.</b> Расширение работает на сайте платформы — <a class="link" href="https://wblocalization.github.io/lqa-hub/#/extension">открыть на сайте</a>.</div></div>`
+      : installed && !outdated ? `<div class="ext-status ok">${icon('check',18)}<div><b>Расширение установлено</b> · версия ${esc(installed)}${latest?' — последняя':''}. Можно обходить страницы в «Визуальной проверке».</div></div>`
+      : outdated ? `<div class="ext-status warn">${icon('alertTriangle',18)}<div><b>Есть новая версия: ${esc(latest)}</b> (у тебя ${esc(installed)}). Скачай архив заново, замени папку и нажми ↻ на карточке расширения в <span class="mono">chrome://extensions</span>.</div></div>`
+      : `<div class="ext-status">${icon('globe',18)}<div><b>Расширение пока не установлено в этом браузере.</b> Установка — 2 минуты, один раз.</div></div>`;
+    el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Расширение для обхода страниц</h1><div class="page-sub">Снимает страницы WB в твоём Chrome и складывает скриншоты в «Визуальную проверку»${latest?' · последняя версия '+esc(latest):''}</div></div></div>
+      ${status}
+      <div class="card">
+        <div class="row between" style="flex-wrap:wrap;gap:12px;"><h3 style="margin:0;">Установка</h3>
+          <div class="row"><button class="btn secondary" onclick="copyText(extensionPageUrl(), 'Ссылка на эту страницу скопирована — отправь её команде')">${icon('upload',15)}Скопировать ссылку для команды</button><button class="btn" id="extDlBtn" onclick="downloadExtensionZip()">${icon('download',15)}Скачать расширение</button></div></div>
+        <ol class="ext-steps">
+          <li><b>Скачай расширение</b> кнопкой справа вверху и распакуй архив — появится папка <span class="mono">lqa-hub-extension</span>. Положи её туда, где она будет жить (например, в «Документы»): если папку удалить, расширение пропадёт.</li>
+          <li>Открой в Chrome адрес <span class="mono">chrome://extensions</span> <button class="btn ghost sm" onclick="copyText('chrome://extensions', 'Адрес скопирован — вставь его в адресную строку Chrome')">скопировать</button><div class="hint" style="margin:2px 0 0;">Chrome не даёт открыть его по ссылке — вставь в адресную строку сам.</div></li>
+          <li>Справа вверху включи <b>Режим разработчика</b>.</li>
+          <li>Нажми <b>Загрузить распакованное расширение</b> и выбери папку <span class="mono">lqa-hub-extension</span>.</li>
+          <li>Вернись сюда и обнови страницу — вверху появится «Расширение установлено».</li>
+        </ol>
+      </div>
+      <div class="grid grid-2">
+        <div class="card"><h3>Как пользоваться</h3><ol class="ext-steps" style="margin-top:0;"><li>Открой сессию в «Визуальной проверке» → <b>Обойти страницы</b>.</li><li>Впиши страницы: <span class="mono">Название | ссылка</span>, по одной в строке. Можно любой сайт WB и шаги вроде <span class="mono">нажать: Қазақша</span> для смены языка.</li><li>Робот откроет отдельное окно, снимет страницы на компьютере и телефоне и сразу найдёт на скриншотах текст и ошибки.</li></ol></div>
+        <div class="card"><h3>Обновление и вопросы</h3><ul class="ext-steps" style="margin-top:0;list-style:disc;"><li>Когда выйдет новая версия, здесь и в окне обхода появится подсказка. Скачай архив заново, замени содержимое папки и нажми ↻ на карточке расширения.</li><li>Пока идёт обход, Chrome показывает полоску «начало отлаживать этот браузер» — это нормально.</li><li>Расширение работает только на этом сайте и снимает только сайты WB. Никуда, кроме LQA Hub, скриншоты не отправляет.</li></ul></div>
+      </div>`;
+  };
+  draw();
+  const before = [crawlExt, extLatest].join();
+  await Promise.all([fetchLatestExtVersion(), new Promise(r=>setTimeout(r, 300))]);
+  if([crawlExt, extLatest].join()!==before && (location.hash||'')==='#/extension') draw();
 }
 async function openCrawlModal(sessionId){
   const sess = dbGet('visualSessions', sessionId); if(!sess) return;
   if(!crawlExt){ lqaPost({lqaHub:'ping'}); await new Promise(r=>setTimeout(r, 250)); }
   if(!crawlExt){
-    const onSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
-    uiDialog(`<h3>Нужно расширение для Chrome</h3>
-      <div class="dialog-text" style="line-height:1.6;">Страницы WB обходит небольшое расширение: оно работает в твоём браузере, поэтому сайт видит обычного посетителя и не блокирует. Поставить — 2 минуты, один раз.</div>
-      <ol style="margin:12px 0 0;padding-left:20px;line-height:1.9;font-size:14px;">
-        <li>Скачай <a class="link" href="https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip" target="_blank" rel="noopener">архив с платформой</a> и распакуй его.</li>
-        <li>Открой в Chrome адрес <span class="mono">chrome://extensions</span> и справа вверху включи <b>Режим разработчика</b>.</li>
-        <li><b>Загрузить распакованное расширение</b> → выбери папку <span class="mono">extension</span> из архива.</li>
-        <li>Обнови эту страницу.</li>
-      </ol>
-      ${onSite ? '' : `<div class="hint" style="margin-top:10px;">Расширение работает на сайте <a class="link" href="https://wblocalization.github.io/lqa-hub/" target="_blank" rel="noopener">wblocalization.github.io/lqa-hub</a>, а не в файле, открытом с диска.</div>`}
-      <div class="modal-actions"><a class="btn secondary" href="https://github.com/wblocalization/lqa-hub/tree/main/extension" target="_blank" rel="noopener">Подробнее</a><button class="btn" data-cancel>Понятно</button></div>`);
+    const ok = await uiConfirm({title:'Нужно расширение для Chrome', text:'Страницы WB обходит небольшое расширение: оно работает в твоём браузере, поэтому сайт видит обычного посетителя и не блокирует. Поставить — 2 минуты, один раз.', okText:'Как установить'});
+    if(ok) location.hash = '#/extension';
     return;
   }
+  if(extLatest && !versionAtLeast(crawlExt, extLatest)) toast('Вышла новая версия расширения ('+extLatest+'), у тебя '+crawlExt+'. Обновить — в разделе «Расширение».', {duration:9000, action:{label:'Открыть', fn:()=>{ location.hash = '#/extension'; }}});
   const r = crawlRouteFor(sess.projectId);
   const res = await uiDialog(`<h3>Обойти страницы</h3>
     <div class="dialog-text">Расширение откроет страницы в отдельном окне, прокрутит и снимет их целиком. Скриншоты добавятся в сессию «${esc(sess.name)}».</div>
-    <label class="field" style="margin-top:14px;">Страницы <span style="font-weight:400;color:var(--text-faint);">— по одной в строке: Название | ссылка. Список общий для проекта</span>
+    <label class="field" style="margin-top:14px;">Страницы <span style="font-weight:400;color:var(--text-faint);">— по одной в строке: Название | ссылка | шаги. Список общий для проекта</span>
       <textarea id="crPages" class="mono" style="min-height:130px;font-size:12.5px;">${esc(r.pages)}</textarea></label>
+    <details class="hint" style="margin-top:6px;"><summary style="cursor:pointer;">Другие сайты WB и язык страницы</summary>
+      <div style="margin-top:6px;line-height:1.7;">Можно вписать любой сайт WB: <span class="mono">wildberries.kz</span>, <span class="mono">.uz</span>, <span class="mono">.am</span>, <span class="mono">.ge</span>, <span class="mono">.kg</span>, <span class="mono">.by</span>, <span class="mono">seller.wildberries.ru</span>. После ссылки можно добавить шаги — робот выполнит их перед снимком:
+      <ul style="margin:4px 0;padding-left:18px;"><li><b>нажать: текст</b> — нажать на кнопку или пункт меню с этим текстом, например на переключатель языка. Можно несколько подряд</li><li><b>ждать: 3</b> — подождать секунды</li><li><b>cookie: имя=значение</b> или <b>storage: ключ=значение</b> — если сайт хранит язык в настройках браузера</li></ul>
+      <div class="mono" style="font-size:12px;background:var(--bg);border-radius:7px;padding:8px 10px;white-space:pre;overflow:auto;">Главная KZ | https://www.wildberries.kz/
+Главная KZ, қазақша | https://www.wildberries.kz/ | нажать: Русский | нажать: Қазақша
+Каталог UZ | https://www.wildberries.uz/catalog/0/search.aspx?search=kiyim | нажать: Oʻzbekcha</div>
+      Проще всего с языком так: переключи его на сайте WB один раз в обычном Chrome — окно робота открывается в том же браузере и видит тот же выбор языка.</div></details>
     <div class="row" style="gap:18px;margin-top:12px;flex-wrap:wrap;">
       <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crDesk" ${r.viewports.includes('desktop')?'checked':''}> Компьютер 1440×900</label>
       <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crMob" ${r.viewports.includes('mobile')?'checked':''}> Телефон 390×844</label>
       <label class="checkrow" style="border:none;padding:0;">Высота снимка <select id="crScreens" style="height:30px;margin-left:6px;">${[1,2,3,5,8].map(n=>`<option value="${n}" ${+r.screens===n?'selected':''}>${n} ${plural(n,'экран','экрана','экранов')}</option>`).join('')}</select></label>
-      <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crOcr" ${r.ocr!==false?'checked':''}> Сразу распознать текст</label>
+      <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crOcr" ${r.ocr!==false?'checked':''}> Сразу найти текст и ошибки на скриншотах</label>
     </div>
     <div class="hint" style="margin-top:10px;">Пока идёт обход, не закрывай окно робота. Chrome покажет полоску «начало отлаживать этот браузер» — так расширение изображает телефон и снимает страницу целиком.</div>
     <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>${icon('globe',15)}Начать обход</button></div>`,
-    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({pages:root.querySelector('#crPages').value, viewports:[root.querySelector('#crDesk').checked?'desktop':'', root.querySelector('#crMob').checked?'mobile':''].filter(Boolean), screens:+root.querySelector('#crScreens').value, ocr:root.querySelector('#crOcr').checked}); });
+    (root, close)=>{ root.querySelector('.dialog').style.width = '620px'; root.querySelector('[data-ok]').onclick = ()=>close({pages:root.querySelector('#crPages').value, viewports:[root.querySelector('#crDesk').checked?'desktop':'', root.querySelector('#crMob').checked?'mobile':''].filter(Boolean), screens:+root.querySelector('#crScreens').value, ocr:root.querySelector('#crOcr').checked}); });
   if(!res) return;
   const pages = parseCrawlPages(res.pages);
   if(!pages.length){ toast('Впиши хотя бы одну ссылку'); return; }
+  const badSteps = pages.flatMap(p=>p.bad);
+  if(badSteps.length){ toast('Не понял шаг: «'+badSteps[0]+'». Шаги: нажать: текст, ждать: 2, cookie: имя=значение, storage: ключ=значение', {duration:9000}); return; }
+  if(pages.some(p=>p.steps.length) && !versionAtLeast(crawlExt, '1.1.0')){ toast('Для шагов (нажать, cookie…) обнови расширение: скачай архив заново, замени папку extension и нажми ↻ в chrome://extensions', {duration:10000}); return; }
   if(!res.viewports.length){ toast('Выбери компьютер, телефон или оба'); return; }
   dbUpsert('crawlRoutes', Object.assign({id:sess.projectId}, res));
   startCrawl(sessionId, {pages, viewports:res.viewports, screens:res.screens}, res.ocr);
@@ -5266,7 +5735,7 @@ async function crawlQueueShot(m){
     try{
       const blob = await (await fetch(item.dataUrl)).blob();
       const file = new File([blob], item.name+'.jpg', {type:'image/jpeg'});
-      file._lqa = {name:item.name, url:item.url, viewport:item.viewport};
+      file._lqa = {name:item.name, url:item.url, viewport:item.viewport, title:item.title||''};
       while(visualState.busy) await new Promise(r=>setTimeout(r, 150));
       st.ids.push(...(await addShotFiles(st.sessionId, [file], 'crawl') || []));
     }catch(e){ st.errors.push(item.name+': '+e.message); }
@@ -5484,7 +5953,7 @@ async function runSessionOcr(sessionId, shotIds){
   if(!shots.length) return;
   const status = t=>{ setShotStatus(t); const b = document.getElementById('ocrViewerStatus'); if(b) b.textContent = t; };
   let done = 0, created = 0, linked = 0, total = 0;
-  ocrProgress = m=>{ if(m.status && m.status!=='recognizing text') status(done===0 && /load|initial/i.test(m.status) ? 'Загружаю распознавание ('+ocrLangsFor(sess.languageCode).join(', ')+')… '+Math.round((m.progress||0)*100)+'%' : ''); else if(m.status==='recognizing text') status('Распознаю текст: '+(done+1)+' из '+shots.length+' · '+Math.round((m.progress||0)*100)+'%'); };
+  ocrProgress = m=>{ if(m.status && m.status!=='recognizing text') status(done===0 && /load|initial/i.test(m.status) ? 'Готовлю поиск текста ('+ocrLangsFor(sess.languageCode).join(', ')+')… '+Math.round((m.progress||0)*100)+'%' : ''); else if(m.status==='recognizing text') status('Ищу текст на скриншоте: '+(done+1)+' из '+shots.length+' · '+Math.round((m.progress||0)*100)+'%'); };
   try{
     const idx = ocrRowIndex(sess.projectId, sess.languageCode);
     for(const sh of shots){
@@ -5496,8 +5965,8 @@ async function runSessionOcr(sessionId, shotIds){
       done++;
       if(viewerState && viewerState.shotId===cur.id){ viewerOcr = true; renderShotViewer(); }
     }
-    toast(`Текст распознан: ${done} ${plural(done,'скриншот','скриншота','скриншотов')} · строк ${total}, связано с переводом ${linked}${created?' · новых проблем '+created:''}`, {duration:6000});
-  }catch(e){ console.error(e); toast('Распознавание не получилось: '+e.message); }
+    toast(`Текст найден на ${done} ${plural(done,'скриншоте','скриншотах','скриншотах')}: строк ${total}, из них в переводе ${linked}${created?' · новых проблем '+created:''}`, {duration:6000});
+  }catch(e){ console.error(e); toast('Не получилось найти текст: '+e.message); }
   finally{ ocrProgress = null; status(''); if(!viewerState) router(); }
 }
 function runShotOcr(shotId){ const sh = dbGet('visualShots', shotId); if(sh) runSessionOcr(sh.sessionId, [shotId]); }
@@ -5537,7 +6006,7 @@ function renderShotViewer(){
   const draftBox = d ? `<div class="vbox draft" style="left:${d.box.x*100}%;top:${d.box.y*100}%;width:${d.box.w*100}%;height:${d.box.h*100}%;"></div>` : '';
   const side = d ? visualDraftFormHtml(sess) : `
     <div class="hint" style="margin:0 0 12px;display:flex;gap:8px;align-items:flex-start;"><span style="color:var(--primary);flex-shrink:0;">${icon('edit',16)}</span><span>Выдели проблемное место мышью прямо на скриншоте — появится форма.</span></div>
-    ${sh.ocr ? `<div class="ocr-sum">Распознано ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')} текста · связано с переводом ${sh.ocr.lines.filter(l=>l.rowId).length}${viewerOcr?'':' · <a href="javascript:void(0)" onclick="viewerOcr=true;renderShotViewer()">показать</a>'} · <a href="javascript:void(0)" onclick="runShotOcr(\'${sh.id}\')">заново</a></div>` : ''}
+    ${sh.ocr ? `<div class="ocr-sum">На скриншоте найдено ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')} текста, из них в переводе — ${sh.ocr.lines.filter(l=>l.rowId).length}. ${viewerOcr?'<span class="ocr-legend"><span><i class="ok"></i>есть в переводе</span><span><i class="src"></i>русский исходник</span><span><i></i>нет в файлах</span></span>':'<a href="javascript:void(0)" onclick="viewerOcr=true;renderShotViewer()">Показать на скриншоте</a> ·'} <a href="javascript:void(0)" onclick="runShotOcr(\'${sh.id}\')">найти заново</a></div>` : ''}
     ${issues.length ? issues.map((i,n)=>`<div class="v-issue ${viewerState.focus===i.id?'focus':''}" onclick="focusViewerIssue('${i.id}')">
         <div class="row" style="gap:6px;flex-wrap:nowrap;"><span class="v-num sev-${severityClass(i.severity)}">${n+1}</span><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span><span class="pill type" style="overflow:hidden;text-overflow:ellipsis;">${esc(i.type)}</span></div>
         <div style="font-size:13px;margin-top:6px;">${esc(i.text)}</div>
@@ -5549,7 +6018,7 @@ function renderShotViewer(){
     <div class="viewer-top">
       <button class="top-ic" title="Закрыть (Esc)" onclick="closeShotViewer()" style="color:#fff;">${icon('x',20)}</button>
       <div style="min-width:0;flex:1;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sh.name)}</div><div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sess?sess.name:'')} · ${esc(sess?languageLabel(sess.languageCode):'')} · ${idx+1} из ${siblings.length}</div></div>
-      ${sh.ocr ? `<button class="btn on-dark sm ${viewerOcr?'is-on':''}" onclick="viewerOcr=!viewerOcr;renderShotViewer()" title="Показать распознанный текст (T)">Aa Текст</button>` : `<button class="btn on-dark sm" onclick="runShotOcr('${sh.id}')" title="Прочитать текст со скриншота и связать со строками">Aa Распознать</button>`}
+      ${sh.ocr ? `<button class="btn on-dark sm ${viewerOcr?'is-on':''}" onclick="viewerOcr=!viewerOcr;renderShotViewer()" title="Рамки вокруг найденного текста: зелёная — есть в переводе, красная — русский исходник, серая — нет в файлах (клавиша T)">${icon('search',14)}${viewerOcr?'Скрыть найденный текст':'Показать найденный текст'}</button>` : `<button class="btn on-dark sm" onclick="runShotOcr('${sh.id}')" title="Прочитать весь текст на скриншоте, найти его в строках перевода и отметить ошибки">${icon('search',14)}Найти текст</button>`}
       ${refInfo ? `<button class="btn on-dark sm ${comparing?'is-on':''}" onclick="toggleViewerCompare()" title="Показать оригинал рядом (C)">${icon('columns',14)}Сравнить</button>` : ''}
       <button class="btn on-dark sm" ${idx>0?'':'disabled'} onclick="openShotViewer('${idx>0?siblings[idx-1].id:''}')" title="Предыдущий (←)">←</button>
       <button class="btn on-dark sm" ${idx<siblings.length-1?'':'disabled'} onclick="openShotViewer('${idx<siblings.length-1?siblings[idx+1].id:''}')" title="Следующий (→)">→</button>
@@ -6201,6 +6670,7 @@ function reconcileVersions(pairs){
     const prevByFp = {}; prevAuto.forEach(i=>{ prevByFp[issueFingerprint(i, rowsById[i.rowId])] = i; });
     const seen = new Set();
     const st = {fixed:0, added:0, kept:0, carriedDecisions:0, regressions:0, old:0};
+    const prevQuality = deliveryQuality(prev);   // rows of the old version are removed below — keep its score
     issues.forEach(i=>{
       if(!nextRowIds.has(i.rowId) || i.visual || i.manual) return;
       const fp = issueFingerprint(i, rowsById[i.rowId]);
@@ -6229,15 +6699,18 @@ function reconcileVersions(pairs){
     });
     // string history: the new row inherits the old row's history, plus an entry when the text changed
     const prevByIdentity = {}; prevRows.forEach(r=>prevByIdentity[rowIdentity(r)] = r);
+    let changedRows = 0;
     nextRows.forEach(nr=>{
       const pr = prevByIdentity[rowIdentity(nr)]; if(!pr) return;
       let hist = (pr.targetHistory||[]).slice();
-      if(pr.target!==nr.target || pr.source!==nr.source) hist.push({ts:next.uploadedAt||nowISO(), how:'upload', from:pr.target, to:nr.target, sourceFrom: pr.source!==nr.source ? pr.source : undefined, file:next.filename, prevFile:prev.filename, by:next.uploadedBy||null});
+      if(pr.target!==nr.target) changedRows++;
+      if(pr.target!==nr.target || pr.source!==nr.source) hist.push({ts:next.uploadedAt||nowISO(), how:'upload', from:pr.target, to:nr.target, sourceFrom: pr.source!==nr.source ? pr.source : undefined, file:next.filename, fileId:next.id, prevFile:prev.filename, by:next.uploadedBy||null, vendorId:next.vendorId||undefined});
       if(hist.length){ rowUpdates[nr.id] = Object.assign({}, rowsById[nr.id]||nr, {targetHistory: hist.slice(-ROW_HISTORY_MAX), firstSeenAt: pr.firstSeenAt||prev.uploadedAt||null}); }
       else if(pr.firstSeenAt || prev.uploadedAt) rowUpdates[nr.id] = Object.assign({}, rowsById[nr.id]||nr, {firstSeenAt: pr.firstSeenAt||prev.uploadedAt});
     });
     prevRowIds.forEach(id=>dropRows.add(id));
-    dbUpsert('files', Object.assign({}, prev, {supersededBy: next.id}));
+    dbUpsert('files', Object.assign({}, prev, {supersededBy: next.id, quality: prevQuality}));
+    dbUpsert('files', Object.assign(next, {versionDiff: Object.assign({}, st), changedRows, previousWords: prev.words || prevQuality.words}));
     if((!next.title && prev.title) || (!next.description && prev.description)) dbUpsert('files', Object.assign(next, {title: next.title || prev.title || undefined, description: next.description || prev.description || undefined}));
     const key = next.componentId+'|'+next.languageCode;
     const acc = out[key] = out[key] || {fixed:0, added:0, kept:0, carriedDecisions:0, regressions:0, old:0, files:[]};
@@ -6882,6 +7355,7 @@ function paletteCommands(){
     {group:'Действия', icon:'user', label:'Кто я — выбрать себя', run:()=>openWhoAmI()},
     {group:'Действия', icon:'download', label:'Скачать резервную копию', run:()=>downloadBackup()},
     {group:'Действия', icon:'check', label:'Мои задачи', run:()=>{ location.hash='#/my'; }},
+    {group:'Действия', icon:'download', label:'Скачать расширение для обхода страниц', run:()=>{ location.hash='#/extension'; }},
   ];
   if(typeof openPeriodReport==='function') cmds.push({group:'Действия', icon:'barChart', label:'Отчёт за период', run:()=>openPeriodReport()});
   if(syncEnabled()) cmds.push({group:'Действия', icon:'upload', label:'Синхронизировать сейчас', run:()=>syncNow(true)});
@@ -7036,6 +7510,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';
   maybeStartTour();
   initGoogleSignIn();
+  if(/^https?:$/.test(location.protocol)) fetchLatestExtVersion();
 })();
 </script>
 </body>

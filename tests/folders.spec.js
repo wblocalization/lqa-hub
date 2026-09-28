@@ -82,7 +82,7 @@ test('название и описание файла: при загрузке, 
 
   await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
   await expect(page.locator('#content')).toContainText('Корзина, релиз 5.2');
-  await page.click('button[title="Название и описание"]');
+  await page.click('button[title="Название, описание, подрядчик"]');
   await page.fill('#fmTitle', 'Корзина 5.3');
   await page.click('.dialog [data-ok]');
   await expect(page.locator('#content')).toContainText('Корзина 5.3');

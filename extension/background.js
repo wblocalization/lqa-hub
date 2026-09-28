@@ -3,7 +3,7 @@
 // ждёт, пока пройдёт проверка «вы не робот», и снимает страницу целиком.
 
 const ALLOWED_HOSTS = [
-  /(^|\.)wildberries\.(ru|kz|uz|am|ge|kg|by|tj|az)$/, /(^|\.)wb\.ru$/, /(^|\.)rwb\.ru$/,
+  /(^|\.)wildberries\.(ru|kz|uz|am|ge|kg|by|tj|az|il|ae|com|net|eu)$/, /(^|\.)wb\.ru$/, /(^|\.)rwb\.ru$/, /(^|\.)wbbank\.ru$/,
   /^localhost$/, /^127\.0\.0\.1$/,
 ];
 const VIEWPORTS = {
@@ -15,6 +15,20 @@ const CHALLENGE_RE = /Подозрительная активность|Почт
 const MAX_SHOT_HEIGHT = 7800;   // LQA Hub хранит скриншоты до 8000 px в высоту
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// выполняется на странице: нажать на видимый элемент с таким текстом (сначала точное совпадение, потом «содержит»)
+function clickByText(text) {
+  const want = text.trim().toLowerCase();
+  const visible = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+  const all = [...document.querySelectorAll('button, a, [role=button], [role=menuitem], [role=option], li, label, span, div')].filter(visible);
+  const txt = el => (el.innerText || el.getAttribute('aria-label') || el.title || '').trim().toLowerCase();
+  const pick = list => list.sort((a, b) => txt(a).length - txt(b).length || (a.contains(b) ? 1 : b.contains(a) ? -1 : 0))[0];
+  const el = pick(all.filter(e => txt(e) === want)) || pick(all.filter(e => txt(e).includes(want)));
+  if (!el) return false;
+  el.scrollIntoView({ block: 'center' });
+  const target = el.closest('button, a, [role=button], [role=menuitem], [role=option], label') || el;
+  target.click();
+  return true;
+}
 function allowed(url) {
   try { const u = new URL(url); return /^https?:$/.test(u.protocol) && ALLOWED_HOSTS.some(re => re.test(u.hostname)); }
   catch (e) { return false; }
@@ -55,6 +69,7 @@ async function crawl(job, port, state) {
     await chrome.debugger.attach(target, '1.3');
     const send = (method, params) => chrome.debugger.sendCommand(target, method, params || {});
     await send('Page.enable');
+    await send('Network.enable');
     await send('Runtime.enable');
     await send('Emulation.setFocusEmulationEnabled', { enabled: true });   // вкладка рисуется, даже если окно перекрыто
     for (const vpKey of vps) {
@@ -67,17 +82,38 @@ async function crawl(job, port, state) {
         const name = (page.name || page.url) + ' · ' + vp.label;
         safePost(port, { type: 'progress', done, total, name, stage: 'открываю' });
         try {
+          const steps = page.steps || [];
+          // cookie: и storage: ставятся до загрузки страницы — так сайт сразу откроется с нужным языком
+          const origin = new URL(page.url).origin;
+          for (const st of steps.filter(x => x.type === 'cookie')) {
+            const [k, ...v] = st.value.split('='); await send('Network.setCookie', { name: k.trim(), value: v.join('=').trim(), url: origin + '/' });
+          }
+          const storage = steps.filter(x => x.type === 'storage');
+          if (storage.length) {
+            const pre = waitEvent(tabId, 'Page.loadEventFired', 45000);
+            await send('Page.navigate', { url: origin + '/' }); await pre;
+            await send('Runtime.evaluate', { expression: `(${JSON.stringify(storage.map(x => { const [k, ...v] = x.value.split('='); return [k.trim(), v.join('=').trim()]; }))}).forEach(([k, v]) => localStorage.setItem(k, v))` });
+          }
           const loaded = waitEvent(tabId, 'Page.loadEventFired', 45000);
           await send('Page.navigate', { url: page.url });
           await loaded;
           // проверка «вы не робот»: в обычном браузере она проходит сама за несколько секунд
           for (let i = 0; i < 45; i++) {
             const txt = (await send('Runtime.evaluate', { expression: 'document.body ? document.body.innerText.slice(0, 2000) : ""', returnByValue: true })).result.value || '';
-            if (!CHALLENGE_RE.test(txt) && txt.trim().length > 40) break;
+            if (!CHALLENGE_RE.test(txt) && (txt.trim().length > 40 || i >= 5)) break;   // пустую страницу ждём до 10 с, проверку сайта — до 90 с
             if (i === 0) safePost(port, { type: 'progress', done, total, name, stage: 'жду проверку сайта' });
             await sleep(2000);
           }
           await sleep(2000);
+          for (const st of steps.filter(x => x.type === 'click' || x.type === 'wait')) {
+            if (st.type === 'wait') { await sleep(Math.min(30, Math.max(0, parseFloat(st.value) || 1)) * 1000); continue; }
+            safePost(port, { type: 'progress', done, total, name, stage: 'нажимаю «' + st.value + '»' });
+            const nav = waitEvent(tabId, 'Page.loadEventFired', 6000);
+            const hit = (await send('Runtime.evaluate', { expression: `(${clickByText.toString()})(${JSON.stringify(st.value)})`, returnByValue: true })).result.value;
+            if (!hit) { safePost(port, { type: 'pageError', name, url: page.url, message: 'не нашёл на странице «' + st.value + '» — снимаю как есть' }); continue; }
+            await nav;            // если нажатие перезагрузило страницу, ждём загрузки (или 6 секунд)
+            await sleep(1500);
+          }
           safePost(port, { type: 'progress', done, total, name, stage: 'прокручиваю' });
           const h = (await send('Runtime.evaluate', {
             expression: `(async () => { const H = innerHeight, max = ${screens} * H;
