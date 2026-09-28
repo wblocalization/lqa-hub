@@ -2,8 +2,8 @@
 // The page is served from cache immediately and refreshed in the background, so a new version
 // shows up on the next launch. Requests to other origins (fonts, the AI/storage backend) are
 // never cached here.
-const CACHE = 'lqa-hub-v1';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'lqa-hub-v2';
+const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './fonts/TwemojiCountryFlags.woff2'];
 
 self.addEventListener('install', e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));
