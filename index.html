@@ -341,6 +341,9 @@ input[type=file].hidden-input{display:none;}
 
 .pager{display:flex;gap:6px;align-items:center;justify-content:flex-end;padding:12px 4px;font-size:13px;color:var(--text-soft);}
 .pager span{margin-right:6px;}
+.lazy-more{text-align:center;padding:14px;font-size:12.5px;color:var(--text-faint);}
+.pager-size{display:flex;align-items:center;gap:6px;margin-right:auto;font-size:13px;color:var(--text-soft);}
+.pager-size select{height:30px;padding:0 8px;font-size:13px;}
 .pager button{background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:var(--r-sm);width:32px;height:30px;cursor:pointer;font-size:13px;transition:background .15s ease;}
 .pager button:hover:not(:disabled){background:var(--bg-2);}
 .pager button:disabled{opacity:.4;cursor:not-allowed;}
@@ -3785,6 +3788,33 @@ function paginateArray(arr, key, pageSize){
   const page = runsPageState[key];
   return { slice: arr.slice((page-1)*pageSize, page*pageSize), page, totalPages };
 }
+// «все»: the first rows at once, the rest in chunks as the table is scrolled — 20 000 rows laid out
+// in one go freeze the tab for ~10 s, a chunk of 500 takes a fraction of a second
+const LAZY_CHUNK = 500;
+function lazyRows(tw, all, rowHtml){
+  if(tw._lazyObs){ tw._lazyObs.disconnect(); tw._lazyObs = null; }
+  if(all.length <= LAZY_CHUNK) return;
+  const tbody = tw.querySelector('tbody'), sentinel = document.createElement('div');
+  sentinel.className = 'lazy-more'; sentinel.textContent = 'Показано '+LAZY_CHUNK.toLocaleString('ru-RU')+' из '+all.length.toLocaleString('ru-RU')+' — прокрути ниже';
+  tw.querySelector('.table-wrap').after(sentinel);
+  let shown = LAZY_CHUNK;
+  const obs = new IntersectionObserver(es=>{
+    if(!es.some(e=>e.isIntersecting) || !tbody.isConnected){ if(!tbody.isConnected) obs.disconnect(); return; }
+    tbody.insertAdjacentHTML('beforeend', all.slice(shown, shown+LAZY_CHUNK).map(rowHtml).join(''));
+    shown += LAZY_CHUNK;
+    if(shown >= all.length){ obs.disconnect(); sentinel.remove(); }
+    else sentinel.textContent = 'Показано '+shown.toLocaleString('ru-RU')+' из '+all.length.toLocaleString('ru-RU')+' — прокрути ниже';
+  }, {rootMargin:'1200px 0px'});
+  obs.observe(sentinel); tw._lazyObs = obs;
+}
+// how many rows the problems/strings tables show at once — a per-browser preference; 0 = all
+const PAGE_SIZES = [25, 50, 100, 500, 0];
+function getPageSize(){ try{ const v = +localStorage.getItem('lqa_page_size'); return PAGE_SIZES.includes(v) && localStorage.getItem('lqa_page_size')!==null ? v : 25; }catch(e){ return 25; } }
+function setPageSize(v){ try{ localStorage.setItem('lqa_page_size', String(+v)); }catch(e){} }
+function pageSizeSelectHtml(key, total, renderCallExpr){
+  const cur = getPageSize();
+  return `<label class="pager-size">Показывать <select onchange="setPageSize(this.value);issuesPageState['${key}'].page=1;${renderCallExpr.replace(/"/g,'&quot;')}">${PAGE_SIZES.map(n=>`<option value="${n}" ${n===cur?'selected':''}>${n || 'все'}</option>`).join('')}</select></label>`;
+}
 function pagerHtml(key, page, totalPages, total, renderCallExpr){
   return `<div class="pager"><span>${total} шт., стр. ${page} из ${totalPages}</span>
     <button onclick="runsPageState['${key}']=Math.max(1,${page}-1);${renderCallExpr}" ${page<=1?'disabled':''}>←</button>
@@ -3928,14 +3958,13 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   if(fixedFilter.byDeadline) issues.sort((a,b)=>deadlineTs(a.deadline)-deadlineTs(b.deadline) || new Date(b.createdAt)-new Date(a.createdAt));
   else issues.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
 
-  const pageSize = 25;
+  const pageSize = getPageSize() || Math.max(1, issues.length);
   const totalPages = Math.max(1, Math.ceil(issues.length/pageSize));
   if(st.page>totalPages) st.page = totalPages;
   const pageIssues = issues.slice((st.page-1)*pageSize, st.page*pageSize);
   const tw = document.getElementById(key+'_tablewrap');
   if(!tw) return;
-  tw.innerHTML = pageIssues.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Важность</th><th>Ключ</th><th>Исходный текст</th><th>Перевод</th><th>Тип</th><th>Проект</th><th>Язык</th><th>Папка</th><th>Статус</th><th>Дедлайн</th><th></th></tr></thead><tbody>
-    ${pageIssues.map(i=>{
+  const rowHtml = i=>{
       const r = dbGet('rows', i.rowId); const proj = dbGet('projects', i.projectId); const comp = dbGet('components', i.componentId);
       return `<tr class="clickable ${st.selected.has(i.id)?'row-selected':''} ${kbFocusId===i.id?'kb-focus':''}" data-id="${i.id}" data-kind="issue" onclick="if(!event.target.closest('input,button,a')){kbFocusId='${i.id}';kbApplyFocus(false);openIssueDetail('${i.id}');}">
         <td><input type="checkbox" class="${key}_chk" value="${i.id}" ${st.selected.has(i.id)?'checked':''} onchange="toggleOneIssue('${key}', '${i.id}', this.checked, this)"></td>
@@ -3949,13 +3978,16 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
         <td class="nowrap">${formatDeadline(i.deadline)}</td>
         <td class="cell-go">${icon('chevronRight',16)}</td>
       </tr>`;
-    }).join('')}
+  };
+  tw.innerHTML = pageIssues.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Важность</th><th>Ключ</th><th>Исходный текст</th><th>Перевод</th><th>Тип</th><th>Проект</th><th>Язык</th><th>Папка</th><th>Статус</th><th>Дедлайн</th><th></th></tr></thead><tbody>
+    ${pageIssues.slice(0, LAZY_CHUNK).map(rowHtml).join('')}
   </tbody></table></div>
-  <div class="pager"><span>${issues.length} проблем, стр. ${st.page} из ${totalPages}</span>
+  <div class="pager">${pageSizeSelectHtml(key, issues.length, `renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')`)}<span>${issues.length} ${plural(issues.length,'проблема','проблемы','проблем')}${totalPages>1?`, стр. ${st.page} из ${totalPages}`:''}</span>
     <button onclick="issuesPageState['${key}'].page=Math.max(1,${st.page}-1);renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page<=1?'disabled':''}>←</button>
     <button onclick="issuesPageState['${key}'].page=Math.min(${totalPages},${st.page}+1);renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page>=totalPages?'disabled':''}>→</button>
   </div>${kbHintHtml()}` : emptyState({img:IMG.SUCCESS, compact:true, title:'Всё чисто', text:'Для текущего фильтра проблем не найдено.'});
 
+  lazyRows(tw, pageIssues, rowHtml);
   const masterCb = document.getElementById(key+'_all');
   if(masterCb) masterCb.checked = pageIssues.length>0 && pageIssues.every(i=>st.selected.has(i.id));
   updateSelectionCount(key);
@@ -4050,14 +4082,13 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
   const rankOf = r => { const arr=issuesByRow[r.id]; if(!arr||!arr.length) return 99; return Math.min(...arr.map(i=>sevRank[i.severity]??9)); };
   finalRows = finalRows.slice().sort((a,b)=> rankOf(a)-rankOf(b) || ((issuesByRow[b.id]||[]).length-(issuesByRow[a.id]||[]).length));
 
-  const pageSize = 25;
+  const pageSize = getPageSize() || Math.max(1, finalRows.length);
   const totalPages = Math.max(1, Math.ceil(finalRows.length/pageSize));
   if(st.page>totalPages) st.page = totalPages;
   const pageRows = finalRows.slice((st.page-1)*pageSize, st.page*pageSize);
   const tw = document.getElementById(key+'_tablewrap');
   if(!tw) return;
-  tw.innerHTML = pageRows.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Ключ</th><th>Язык</th><th>Папка</th><th>Исходный текст</th><th>Перевод</th><th>Проблемы</th><th>Дедлайн</th><th></th></tr></thead><tbody>
-    ${pageRows.map(r=>{
+  const rowHtml = r=>{
       const comp = dbGet('components', r.componentId);
       const rowIssues = issuesByRow[r.id]||[];
       const primary = rowIssues[0];
@@ -4076,13 +4107,16 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
         <td class="nowrap">${nearestDeadline?formatDeadline(nearestDeadline):'<span class="hint">—</span>'}</td>
         <td class="cell-go">${icon('chevronRight',16)}</td>
       </tr>`;
-    }).join('')}
+  };
+  tw.innerHTML = pageRows.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Ключ</th><th>Язык</th><th>Папка</th><th>Исходный текст</th><th>Перевод</th><th>Проблемы</th><th>Дедлайн</th><th></th></tr></thead><tbody>
+    ${pageRows.slice(0, LAZY_CHUNK).map(rowHtml).join('')}
   </tbody></table></div>
-  <div class="pager"><span>${finalRows.length} строк, стр. ${st.page} из ${totalPages}</span>
+  <div class="pager">${pageSizeSelectHtml(key, finalRows.length, `renderRowsIssuesGeneric(issuesFixedFilters['${mountId}'],'${mountId}')`)}<span>${finalRows.length} ${plural(finalRows.length,'строка','строки','строк')}${totalPages>1?`, стр. ${st.page} из ${totalPages}`:''}</span>
     <button onclick="issuesPageState['${key}'].page=Math.max(1,${st.page}-1);renderRowsIssuesGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page<=1?'disabled':''}>←</button>
     <button onclick="issuesPageState['${key}'].page=Math.min(${totalPages},${st.page}+1);renderRowsIssuesGeneric(issuesFixedFilters['${mountId}'],'${mountId}')" ${st.page>=totalPages?'disabled':''}>→</button>
   </div>` : emptyState({icon:'search', compact:true, title:'Ничего не найдено', text:'Попробуй изменить фильтр или поиск.'});
 
+  lazyRows(tw, pageRows, rowHtml);
   const masterCb = document.getElementById(key+'_all');
   if(masterCb) masterCb.checked = pageRows.length>0 && pageRows.every(r=>st.selected.has(r.id));
   updateSelectionCount(key);
