@@ -194,6 +194,16 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-soft);font-size:13px;font-weight:500;height:32px;padding:0 12px;border-radius:99px;cursor:pointer;margin-right:6px;transition:background .15s ease,border-color .15s ease,color .15s ease;}
 .chip:hover{border-color:var(--primary);color:var(--text);}
+.rbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr 34px;gap:10px;align-items:center;margin-bottom:8px;font-size:13px;}
+.rbar-l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rbar-t{height:8px;border-radius:99px;background:var(--bg-2);overflow:hidden;}
+.rbar-t i{display:block;height:100%;border-radius:99px;background:var(--brand-grad);}
+.rbar b{text-align:right;}
+@media print{
+  .sidebar,.topbar,.no-print,.toasts,.tour,.detail-panel,.detail-panel-overlay{display:none !important;}
+  .main{margin:0 !important;padding:0 !important;} .content{padding:0 !important;max-width:none !important;}
+  body{background:#fff !important;} .card,.kpi{break-inside:avoid;box-shadow:none !important;}
+}
 .chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
 .chip-view{padding:0 4px 0 0;gap:0;}
 .chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
@@ -300,8 +310,8 @@ input[type=file].hidden-input{display:none;}
 @keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
 .modal h3{margin:0 0 4px;font-size:18px;font-weight:600;letter-spacing:-.01em;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--surface);box-shadow:var(--shadow-lg);z-index:300;transform:translateX(100%);transition:transform .28s var(--ease);overflow-y:auto;border-left:1px solid var(--border);}
-.detail-panel.open{transform:translateX(0);}
+.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--surface);box-shadow:none;z-index:300;transform:translateX(100%);transition:transform .28s var(--ease),box-shadow .28s ease;overflow-y:auto;border-left:1px solid var(--border);}
+.detail-panel.open{transform:translateX(0);box-shadow:var(--shadow-lg);}
 .detail-panel-inner{padding:24px;}
 .detail-panel-overlay{position:fixed;inset:0;background:var(--overlay);z-index:299;opacity:0;pointer-events:none;transition:opacity .2s ease;}
 .detail-panel-overlay.open{opacity:1;pointer-events:auto;}
@@ -2164,6 +2174,7 @@ const NAV = [
   {icon:'image', label:'Визуальная проверка', route:'#/visual', group:'Основное'},
   {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Основное'},
   {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
+  {icon:'file', label:'Отчёт за период', route:'#/report', group:'Отчёты'},
   {icon:'download', label:'Экспорт', route:'#/export', group:'Отчёты'},
   {icon:'settings', label:'Настройки', route:'#/settings', group:'Система'},
 ];
@@ -2241,6 +2252,7 @@ function router(){
     if(parts[0]==='glossary' && parts[1]) return renderGlossaryDetail(content, parts[1]);
     if(parts[0]==='analytics') return renderAnalytics(content);
     if(parts[0]==='export') return renderExportPage(content);
+    if(parts[0]==='report') return renderPeriodReport(content);
     if(parts[0]==='settings') return renderSettingsPage(content);
     setCrumbs(['Страница не найдена']);
     content.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Страница не найдена', text:'Такой страницы нет — возможно, ссылка устарела.', action:'<a class="btn secondary" href="#/">На главную</a>'});
@@ -5699,6 +5711,156 @@ function downloadPseudoPo(){
   downloadPoFile(generatePoFromRows(rows), 'pseudo_'+((p?p.name:'project')+(c?'_'+c.name:'')).replace(/[^\p{L}\p{N}]+/gu,'_')+'.po');
   toast('Псевдолокализация: '+rows.length+' строк');
 }
+/* =========================================================
+   PERIOD REPORT — what was found and fixed between two dates, by language, type and folder.
+   "Resolved at" = time of the last history entry of a closed problem.
+   ========================================================= */
+let reportState = null;
+function openPeriodReport(){ location.hash = '#/report'; }
+function dayStart(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function isoDay(d){ const x = new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+function reportPresetRange(p){
+  const now = new Date(), today = dayStart(now);
+  if(p==='7') return [new Date(+today-6*864e5), today];
+  if(p==='30') return [new Date(+today-29*864e5), today];
+  if(p==='month') return [new Date(now.getFullYear(), now.getMonth(), 1), today];
+  if(p==='prevmonth') return [new Date(now.getFullYear(), now.getMonth()-1, 1), new Date(now.getFullYear(), now.getMonth(), 0)];
+  if(p==='quarter'){ const q = Math.floor(now.getMonth()/3)*3; return [new Date(now.getFullYear(), q, 1), today]; }
+  return null;
+}
+function issueResolvedAt(i){
+  if(isOpenIssue(i)) return null;
+  const h = (i.history||[]).filter(x=>x && x.ts); return h.length ? h[h.length-1].ts : (i.updatedAt || i.createdAt);
+}
+function issueResolvedBy(i){
+  const h = (i.history||[]).slice().reverse().find(x=>x && (x.reviewer || x.by)); return (h && (h.reviewer||h.by)) || i.assignedTo || null;
+}
+// quality of a language at moment t: latest run per folder (≤ t), weighted by row count
+function qualityAt(runs, lang, t){
+  const byComp = {};
+  runs.forEach(r=>{ if(r.languageCode!==lang || typeof r.quality!=='number' || +new Date(r.createdAt) > t) return; const k = r.componentId||'-'; if(!byComp[k] || new Date(byComp[k].createdAt) < new Date(r.createdAt)) byComp[k] = r; });
+  const list = Object.values(byComp); if(!list.length) return null;
+  const w = list.reduce((a,r)=>a+(r.rowCount||1),0);
+  return list.reduce((a,r)=>a+r.quality*(r.rowCount||1),0)/w;
+}
+function computePeriodReport(st){
+  const from = +dayStart(st.from), to = +dayStart(st.to) + 864e5 - 1;
+  const inRange = ts=>{ const t = +new Date(ts); return t>=from && t<=to; };
+  let issues = dbList('issues');
+  if(st.projectId) issues = issues.filter(i=>i.projectId===st.projectId);
+  if(st.lang) issues = issues.filter(i=>i.languageCode===st.lang);
+  let runs = dbList('runs'); if(st.projectId) runs = runs.filter(r=>r.projectId===st.projectId); if(st.lang) runs = runs.filter(r=>r.languageCode===st.lang);
+  let files = dbList('files').filter(f=>inRange(f.uploadedAt)); if(st.projectId) files = files.filter(f=>f.projectId===st.projectId); if(st.lang) files = files.filter(f=>f.languageCode===st.lang);
+  let sessions = dbList('visualSessions').filter(v=>inRange(v.createdAt)); if(st.projectId) sessions = sessions.filter(v=>v.projectId===st.projectId); if(st.lang) sessions = sessions.filter(v=>v.languageCode===st.lang);
+  const found = issues.filter(i=>inRange(i.createdAt));
+  const resolved = issues.filter(i=>{ const r = issueResolvedAt(i); return r && inRange(r); });
+  const openAtEnd = issues.filter(i=>{ if(+new Date(i.createdAt) > to) return false; const r = issueResolvedAt(i); return !r || +new Date(r) > to; });
+  const fixedInPlatform = resolved.filter(i=>i.status==='Принята после исправления').length;
+  const fp = resolved.filter(i=>i.status==='Ложное срабатывание').length;
+  const langs = [...new Set(issues.map(i=>i.languageCode).concat(runs.map(r=>r.languageCode)).filter(Boolean))].sort();
+  const byLang = langs.map(l=>({code:l,
+    found: found.filter(i=>i.languageCode===l).length,
+    crit: found.filter(i=>i.languageCode===l && i.severity==='Критическая').length,
+    resolved: resolved.filter(i=>i.languageCode===l).length,
+    open: openAtEnd.filter(i=>i.languageCode===l).length,
+    q0: qualityAt(runs, l, from), q1: qualityAt(runs, l, to)})).filter(x=>x.found||x.resolved||x.open||x.q1!=null);
+  const count = (arr, f)=>{ const m = {}; arr.forEach(i=>{ const k = f(i); if(k) m[k] = (m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+  const types = count(found, i=>i.type);
+  const folders = count(found, i=>i.componentId);
+  const people = count(resolved, i=>issueResolvedBy(i));
+  // per-day (or per-week for long ranges)
+  const days = Math.round((to-from)/864e5);
+  const step = days > 92 ? 7 : 1;
+  const buckets = [];
+  for(let t=from; t<=to; t+=step*864e5) buckets.push({t, found:0, resolved:0});
+  const bi = ts=>Math.min(buckets.length-1, Math.floor((+new Date(ts)-from)/(step*864e5)));
+  found.forEach(i=>buckets[bi(i.createdAt)].found++);
+  resolved.forEach(i=>buckets[bi(issueResolvedAt(i))].resolved++);
+  return {from, to, found, resolved, openAtEnd, fixedInPlatform, fp, byLang, types, folders, people, buckets, step, files, sessions,
+    rowsChecked: runs.filter(r=>inRange(r.createdAt)).reduce((a,r)=>a+(r.rowCount||0),0),
+    crit: found.filter(i=>i.severity==='Критическая').length};
+}
+function reportChartSvg(rep){
+  const B = rep.buckets; if(!B.length) return '';
+  const max = Math.max(1, ...B.map(b=>Math.max(b.found, b.resolved)));
+  const W = 1000, H = 190, pl = 30, pb = 22, pt = 8, bw = (W-pl)/B.length, y = v=>pt+(1-v/max)*(H-pt-pb);
+  const grid = [0,.5,1].map(k=>`<line x1="${pl}" x2="${W}" y1="${y(max*k)}" y2="${y(max*k)}" stroke="var(--border)"/><text x="${pl-6}" y="${y(max*k)+4}" text-anchor="end" font-size="10" fill="var(--text-faint)">${Math.round(max*k)}</text>`).join('');
+  const every = Math.ceil(B.length/10);
+  const bars = B.map((b,n)=>{ const x = pl+n*bw, w = Math.max(1.5, bw*0.36), d = new Date(b.t);
+    return `<rect x="${(x+bw*0.12).toFixed(1)}" y="${y(b.found).toFixed(1)}" width="${w.toFixed(1)}" height="${(H-pb-y(b.found)).toFixed(1)}" rx="2" fill="var(--primary)"><title>${d.toLocaleDateString('ru-RU')}: найдено ${b.found}</title></rect>
+      <rect x="${(x+bw*0.12+w+1).toFixed(1)}" y="${y(b.resolved).toFixed(1)}" width="${w.toFixed(1)}" height="${(H-pb-y(b.resolved)).toFixed(1)}" rx="2" fill="var(--ok)"><title>${d.toLocaleDateString('ru-RU')}: решено ${b.resolved}</title></rect>
+      ${n%every===0?`<text x="${(x+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text-faint)">${d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</text>`:''}`; }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">${grid}${bars}</svg>
+    <div class="trend-legend"><span><i style="background:var(--primary)"></i>Найдено</span><span><i style="background:var(--ok)"></i>Решено</span>${rep.step>1?'<span class="hint" style="margin:0;">по неделям</span>':''}</div>`;
+}
+function qualityCell(q0, q1){
+  if(q1==null) return '<span class="hint" style="margin:0;">—</span>';
+  const d = q0==null ? null : Math.round((q1-q0)*100);
+  return `<b style="color:${qualityColor(q1)}">${Math.round(q1*100)}%</b>${d?` <span class="delta ${d>0?'down':'up'}">${d>0?'+':''}${d}</span>`:''}`;
+}
+function renderPeriodReport(el){
+  setCrumbs(['Отчёт за период']);
+  if(!reportState){ const r = reportPresetRange('30'); reportState = {preset:'30', from:isoDay(r[0]), to:isoDay(r[1]), projectId:'', lang:''}; }
+  const st = reportState, projects = dbList('projects');
+  const rep = computePeriodReport(st);
+  const allLangs = [...new Set(dbList('issues').map(i=>i.languageCode).filter(Boolean))].sort();
+  const presets = [['7','7 дней'],['30','30 дней'],['month','Этот месяц'],['prevmonth','Прошлый месяц'],['quarter','Квартал']];
+  const bar = (list, total, label)=> list.length ? list.slice(0,8).map(([k,v])=>`<div class="rbar"><span class="rbar-l">${label(k)}</span><span class="rbar-t"><i style="width:${Math.max(3, v/total*100)}%"></i></span><b>${v}</b></div>`).join('') : '<div class="hint">Нет данных за период</div>';
+  const period = new Date(rep.from).toLocaleDateString('ru-RU')+' — '+new Date(rep.to).toLocaleDateString('ru-RU');
+  const proj = st.projectId ? dbGet('projects', st.projectId) : null;
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Отчёт за период</h1><div class="page-sub">${period}${proj?' · '+esc(proj.name):' · все проекты'}${st.lang?' · '+esc(languageLabel(st.lang)):''}</div></div>
+      <div class="row no-print"><button class="btn secondary" onclick="window.print()">${icon('file',15)}Печать / PDF</button><button class="btn" onclick="exportPeriodReportXlsx()">${icon('download',15)}Excel</button></div></div>
+    <div class="card no-print">
+      <div class="row" style="flex-wrap:wrap;gap:6px;">${presets.map(([k,l])=>`<button type="button" class="chip ${st.preset===k?'chip-active':''}" onclick="setReportPreset('${k}')">${l}</button>`).join('')}</div>
+      <div class="grid grid-4" style="margin-top:14px;">
+        <label class="field">С<input type="date" id="repFrom" value="${st.from}" onchange="setReportField('from', this.value)"></label>
+        <label class="field">По<input type="date" id="repTo" value="${st.to}" onchange="setReportField('to', this.value)"></label>
+        <label class="field">Проект<select onchange="setReportField('projectId', this.value)"><option value="">Все проекты</option>${projects.map(p=>`<option value="${p.id}" ${p.id===st.projectId?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+        <label class="field">Язык<select onchange="setReportField('lang', this.value)"><option value="">Все языки</option>${allLangs.map(l=>`<option value="${l}" ${l===st.lang?'selected':''}>${esc(languageLabel(l))} (${l})</option>`).join('')}</select></label>
+      </div>
+    </div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num">${rep.found.length}</div><div class="lbl">Найдено проблем</div></div>
+      <div class="kpi ok"><div class="num">${rep.resolved.length}</div><div class="lbl">Решено${rep.fixedInPlatform?' · '+rep.fixedInPlatform+' исправлено здесь':''}</div></div>
+      <div class="kpi crit"><div class="num">${rep.crit}</div><div class="lbl">Критических найдено</div></div>
+      <div class="kpi high"><div class="num">${rep.openAtEnd.length}</div><div class="lbl">Открыто на конец периода</div></div>
+    </div>
+    <div class="hint" style="margin:8px 0 18px;">Проверено строк: ${rep.rowsChecked.toLocaleString('ru-RU')} · загружено файлов: ${rep.files.length} · сессий визуальной проверки: ${rep.sessions.length}${rep.fp?' · ложных срабатываний: '+rep.fp:''}</div>
+    <div class="card"><h3>Найдено и решено по дням</h3>${reportChartSvg(rep)}</div>
+    <div class="card"><h3>По языкам</h3>${rep.byLang.length ? `<div class="table-wrap"><table><thead><tr><th>Язык</th><th>Найдено</th><th>Критических</th><th>Решено</th><th>Открыто на конец</th><th>Качество</th></tr></thead><tbody>
+      ${rep.byLang.map(l=>`<tr><td>${languageFlag(l.code)} ${esc(languageLabel(l.code))} <span class="hint" style="margin:0;">${esc(l.code)}</span></td><td>${l.found}</td><td>${l.crit?`<b style="color:var(--crit)">${l.crit}</b>`:'0'}</td><td>${l.resolved}</td><td>${l.open}</td><td>${qualityCell(l.q0, l.q1)}</td></tr>`).join('')}
+      </tbody></table></div><div class="hint">Качество — доля строк без открытых проблем на конец периода; цифра рядом — изменение с начала периода.</div>` : '<div class="hint">За этот период ничего не проверялось.</div>'}</div>
+    <div class="grid grid-2">
+      <div class="card"><h3>Частые типы проблем</h3>${bar(rep.types, rep.found.length, k=>esc(k))}</div>
+      <div class="card"><h3>Папки с проблемами</h3>${bar(rep.folders, rep.found.length, k=>{ const c = dbGet('components', k); return c ? esc(compPath(c)) : 'без папки'; })}</div>
+    </div>
+    ${rep.people.length ? `<div class="card"><h3>Кто решал</h3>${bar(rep.people, rep.resolved.length, k=>esc(k))}</div>` : ''}`;
+}
+function setReportPreset(p){ const r = reportPresetRange(p); if(!r) return; Object.assign(reportState, {preset:p, from:isoDay(r[0]), to:isoDay(r[1])}); router(); }
+function setReportField(k, v){ if((k==='from'||k==='to') && !v) return; reportState[k] = v; if(k==='from'||k==='to'){ reportState.preset = ''; if(reportState.from > reportState.to){ const t = reportState.from; reportState.from = reportState.to; reportState.to = t; } } router(); }
+function exportPeriodReportXlsx(){
+  const st = reportState; if(!st) return;
+  const rep = computePeriodReport(st);
+  ensureXlsx().then(ok=>{
+    if(!ok){ toast('Библиотека Excel не загрузилась — попробуй «Печать / PDF».'); return; }
+    const wb = XLSX.utils.book_new();
+    const period = new Date(rep.from).toLocaleDateString('ru-RU')+' — '+new Date(rep.to).toLocaleDateString('ru-RU');
+    const proj = st.projectId ? dbGet('projects', st.projectId) : null;
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Отчёт LQA Hub за период', period], ['Проект', proj?proj.name:'Все проекты'], ['Язык', st.lang ? languageLabel(st.lang)+' ('+st.lang+')' : 'Все языки'], [],
+      ['Найдено проблем', rep.found.length], ['Критических найдено', rep.crit], ['Решено', rep.resolved.length], ['Из них исправлено в платформе', rep.fixedInPlatform], ['Ложных срабатываний', rep.fp], ['Открыто на конец периода', rep.openAtEnd.length],
+      ['Проверено строк', rep.rowsChecked], ['Загружено файлов', rep.files.length], ['Сессий визуальной проверки', rep.sessions.length]]), 'Сводка');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.byLang.map(l=>({Язык:languageLabel(l.code), Код:l.code, Найдено:l.found, Критических:l.crit, Решено:l.resolved, Открыто_на_конец:l.open, Качество_в_начале:l.q0==null?'':Math.round(l.q0*100)+'%', Качество_в_конце:l.q1==null?'':Math.round(l.q1*100)+'%'}))), 'По языкам');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.types.map(([k,v])=>({Тип:k, Найдено:v}))), 'Типы');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.buckets.map(b=>({Дата:new Date(b.t).toLocaleDateString('ru-RU'), Найдено:b.found, Решено:b.resolved}))), 'По дням');
+    const rowOf = i=>{ const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId);
+      return {Проект:p?p.name:'', Папка:c?compPath(c):'', Язык:i.languageCode, Ключ:r?r.key||'':'', Исходный_текст:r?r.source:'', Перевод:r?r.target:'', Тип:i.type, Важность:i.severity, Описание:i.text, Статус:i.status, Найдена:fmtDate(i.createdAt), Решена:fmtDate(issueResolvedAt(i)), Кто:issueResolvedBy(i)||''}; };
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.found.map(rowOf)), 'Найдено');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.resolved.map(rowOf)), 'Решено');
+    XLSX.writeFile(wb, 'lqa_report_'+st.from+'_'+st.to+'.xlsx');
+  });
+}
+
 function renderExportPage(el){
   setCrumbs(['Экспорт']);
   const projects = dbList('projects');
