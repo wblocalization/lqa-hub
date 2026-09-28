@@ -68,3 +68,27 @@ test('история перевода: изменение между верси�
   expect(await page.evaluate(() => wordDiffHtml('Купить сейчас', 'Купить сегодня'))).toBe('Купить <del>сейчас</del><ins>сегодня</ins>');
   expectNoErrors(errors);
 });
+
+test('название и описание файла: при загрузке, правка и новая версия', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page);
+  await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
+  await page.click('.file-meta summary');
+  await page.fill('#folderUploadTitle', 'Корзина, релиз 5.2');
+  await page.fill('#folderUploadDesc', 'Тексты новой корзины');
+  await uploadPo(page, { text: v1 });
+  let f = await page.evaluate(() => dbList('files')[0]);
+  expect([f.title, f.description, f.filename]).toEqual(['Корзина, релиз 5.2', 'Тексты новой корзины', 'kk.po']);
+
+  await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
+  await expect(page.locator('#content')).toContainText('Корзина, релиз 5.2');
+  await page.click('button[title="Название и описание"]');
+  await page.fill('#fmTitle', 'Корзина 5.3');
+  await page.click('.dialog [data-ok]');
+  await expect(page.locator('#content')).toContainText('Корзина 5.3');
+
+  await uploadPo(page, { text: v2 });                                  // новая версия без названия — название остаётся
+  f = await page.evaluate(() => dbList('files').find(x => !x.supersededBy));
+  expect([f.title, f.description]).toEqual(['Корзина 5.3', 'Тексты новой корзины']);
+  expectNoErrors(errors);
+});
