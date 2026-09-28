@@ -72,6 +72,19 @@ test('расширение обходит страницы на компьюте
   const img = await page.evaluate(() => { const s = dbList('visualShots').find(x => x.name === 'Каталог · компьютер'); return s.id; });
   expect(img).toBeTruthy();
   expect(await page.evaluate(() => dbGet('crawlRoutes', 'p0').viewports)).toEqual(['desktop', 'mobile']);
+
+  // страница «Расширение»: видно, что оно установлено, и архив собирается из файлов сайта
+  const version = require('../extension/manifest.json').version;
+  await page.route(/jszip(\.min)?\.js/, r => r.fulfill({ path: require.resolve('jszip/dist/jszip.min.js'), contentType: 'text/javascript' }));
+  await page.evaluate(() => { location.hash = '#/extension'; });
+  await expect(page.locator('.ext-status')).toContainText('Расширение установлено');
+  await expect(page.locator('.ext-status')).toContainText(version);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#extDlBtn')]);
+  expect(dl.suggestedFilename()).toBe('lqa-hub-extension.zip');
+  const JSZip = require('jszip');
+  const zip = await JSZip.loadAsync(fs.readFileSync(await dl.path()));
+  expect(Object.keys(zip.files).filter(n => !n.endsWith('/')).sort()).toEqual(['background.js', 'bridge.js', 'icon.png', 'manifest.json', 'README.md'].map(f => 'lqa-hub-extension/' + f).sort());
+  expect(JSON.parse(await zip.file('lqa-hub-extension/manifest.json').async('string')).version).toBe(version);
   expect(errors).toEqual([]);
   await ctx.close();
 });

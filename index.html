@@ -209,6 +209,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 .obox.src{border-color:rgba(217,45,32,.9);background:rgba(217,45,32,.12);cursor:pointer;}
 .obox:hover{border-style:solid;}
 .shot-ocr{position:absolute;left:8px;bottom:8px;display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
+.ext-status{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border);margin-bottom:16px;line-height:1.55;}
+.ext-status svg{flex-shrink:0;margin-top:2px;color:var(--primary);}
+.ext-status.ok{background:var(--ok-bg);border-color:transparent;} .ext-status.ok svg{color:var(--ok);}
+.ext-status.warn{background:var(--high-bg);border-color:transparent;} .ext-status.warn svg{color:var(--high);}
+.ext-steps{margin:14px 0 0;padding-left:22px;line-height:1.7;display:flex;flex-direction:column;gap:8px;}
 .ocr-legend{display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center;margin:6px 0;}
 .ocr-legend>span{white-space:nowrap;}
 .ocr-legend i{display:inline-block;width:12px;height:9px;border:1.5px dashed rgba(120,120,140,.8);border-radius:2px;margin-right:3px;vertical-align:-1px;}
@@ -2285,6 +2290,7 @@ const NAV = [
   {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
   {icon:'file', label:'Отчёт за период', route:'#/report', group:'Отчёты'},
   {icon:'download', label:'Экспорт', route:'#/export', group:'Отчёты'},
+  {icon:'globe', label:'Расширение', route:'#/extension', group:'Система'},
   {icon:'settings', label:'Настройки', route:'#/settings', group:'Система'},
 ];
 // UI theme is a per-browser display preference, not app data, so it's kept outside the
@@ -2363,6 +2369,7 @@ function router(){
     if(parts[0]==='export') return renderExportPage(content);
     if(parts[0]==='report') return renderPeriodReport(content);
     if(parts[0]==='settings') return renderSettingsPage(content);
+    if(parts[0]==='extension') return renderExtensionPage(content);
     setCrumbs(['Страница не найдена']);
     content.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Страница не найдена', text:'Такой страницы нет — возможно, ссылка устарела.', action:'<a class="btn secondary" href="#/">На главную</a>'});
   }catch(err){
@@ -5198,7 +5205,7 @@ let crawlState = null;
 window.addEventListener('message', e=>{
   if(e.source!==window || !e.data || typeof e.data.lqaExt!=='string') return;
   const m = e.data;
-  if(m.lqaExt==='ready'){ crawlExt = m.version; return; }
+  if(m.lqaExt==='ready'){ const changed = crawlExt!==m.version; crawlExt = m.version; if(changed && (location.hash||'')==='#/extension') router(); return; }
   if(!crawlState) return;
   if(m.lqaExt==='progress') crawlStatus(`Обход ${m.done+1} из ${m.total}: ${m.name} — ${m.stage}`);
   else if(m.lqaExt==='shot') crawlQueueShot(m);
@@ -5230,23 +5237,81 @@ function parseCrawlPages(text){
   }).filter(Boolean);
 }
 function versionAtLeast(v, need){ const a = String(v||'0').split('.').map(Number), b = need.split('.').map(Number); for(let i=0;i<3;i++){ if((a[i]||0)!==(b[i]||0)) return (a[i]||0) > (b[i]||0); } return true; }
+/* ---------- extension page: download, install steps, version check ----------
+   The extension's files are published with the site (extension/ next to index.html), so the page
+   zips them in the browser — the download always matches the version on the site. */
+const EXT_FILES = ['manifest.json', 'background.js', 'bridge.js', 'icon.png', 'README.md'];
+let extLatest = null;
+function extensionPageUrl(){ return /^https?:$/.test(location.protocol) ? location.origin + location.pathname + '#/extension' : 'https://wblocalization.github.io/lqa-hub/#/extension'; }
+async function fetchLatestExtVersion(){
+  try{ const r = await fetch('extension/manifest.json', {cache:'no-store'}); if(r.ok){ extLatest = (await r.json()).version; } }catch(e){}
+  return extLatest;
+}
+async function downloadExtensionZip(){
+  const btn = document.getElementById('extDlBtn'); if(btn){ btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.textContent = 'Собираю архив…'; }
+  try{
+    if(!await ensureJSZip()) throw new Error('не загрузилась библиотека архивов');
+    const zip = new JSZip(), dir = zip.folder('lqa-hub-extension');
+    for(const f of EXT_FILES){
+      const r = await fetch('extension/'+f, {cache:'no-store'}); if(!r.ok) throw new Error('нет файла '+f);
+      dir.file(f, await r.arrayBuffer());
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lqa-hub-extension.zip'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    toast('Скачан lqa-hub-extension.zip — распакуй его и выбери папку lqa-hub-extension в Chrome');
+  }catch(e){
+    toast('Не получилось собрать архив ('+e.message+'). Скачай всю платформу архивом с GitHub и возьми из него папку extension.', {duration:10000, action:{label:'Скачать с GitHub', fn:()=>window.open('https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip','_blank')}});
+  }finally{ if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.label; } }
+}
+function copyText(text, msg){
+  const done = ()=>toast(msg||'Скопировано');
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, ()=>fallback()); else fallback();
+  function fallback(){ const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Не получилось скопировать: '+text); } t.remove(); }
+}
+async function renderExtensionPage(el){
+  setCrumbs(['Расширение']);
+  if(!crawlExt){ lqaPost({lqaHub:'ping'}); }
+  const draw = ()=>{
+    const installed = crawlExt, latest = extLatest;
+    const outdated = installed && latest && !versionAtLeast(installed, latest);
+    const onSite = /^https?:$/.test(location.protocol);
+    const status = !onSite ? `<div class="ext-status warn">${icon('alertTriangle',18)}<div><b>Страница открыта из файла на диске.</b> Расширение работает на сайте платформы — <a class="link" href="https://wblocalization.github.io/lqa-hub/#/extension">открыть на сайте</a>.</div></div>`
+      : installed && !outdated ? `<div class="ext-status ok">${icon('check',18)}<div><b>Расширение установлено</b> · версия ${esc(installed)}${latest?' — последняя':''}. Можно обходить страницы в «Визуальной проверке».</div></div>`
+      : outdated ? `<div class="ext-status warn">${icon('alertTriangle',18)}<div><b>Есть новая версия: ${esc(latest)}</b> (у тебя ${esc(installed)}). Скачай архив заново, замени папку и нажми ↻ на карточке расширения в <span class="mono">chrome://extensions</span>.</div></div>`
+      : `<div class="ext-status">${icon('globe',18)}<div><b>Расширение пока не установлено в этом браузере.</b> Установка — 2 минуты, один раз.</div></div>`;
+    el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Расширение для обхода страниц</h1><div class="page-sub">Снимает страницы WB в твоём Chrome и складывает скриншоты в «Визуальную проверку»${latest?' · последняя версия '+esc(latest):''}</div></div></div>
+      ${status}
+      <div class="card">
+        <div class="row between" style="flex-wrap:wrap;gap:12px;"><h3 style="margin:0;">Установка</h3>
+          <div class="row"><button class="btn secondary" onclick="copyText(extensionPageUrl(), 'Ссылка на эту страницу скопирована — отправь её команде')">${icon('upload',15)}Скопировать ссылку для команды</button><button class="btn" id="extDlBtn" onclick="downloadExtensionZip()">${icon('download',15)}Скачать расширение</button></div></div>
+        <ol class="ext-steps">
+          <li><b>Скачай расширение</b> кнопкой справа вверху и распакуй архив — появится папка <span class="mono">lqa-hub-extension</span>. Положи её туда, где она будет жить (например, в «Документы»): если папку удалить, расширение пропадёт.</li>
+          <li>Открой в Chrome адрес <span class="mono">chrome://extensions</span> <button class="btn ghost sm" onclick="copyText('chrome://extensions', 'Адрес скопирован — вставь его в адресную строку Chrome')">скопировать</button><div class="hint" style="margin:2px 0 0;">Chrome не даёт открыть его по ссылке — вставь в адресную строку сам.</div></li>
+          <li>Справа вверху включи <b>Режим разработчика</b>.</li>
+          <li>Нажми <b>Загрузить распакованное расширение</b> и выбери папку <span class="mono">lqa-hub-extension</span>.</li>
+          <li>Вернись сюда и обнови страницу — вверху появится «Расширение установлено».</li>
+        </ol>
+      </div>
+      <div class="grid grid-2">
+        <div class="card"><h3>Как пользоваться</h3><ol class="ext-steps" style="margin-top:0;"><li>Открой сессию в «Визуальной проверке» → <b>Обойти страницы</b>.</li><li>Впиши страницы: <span class="mono">Название | ссылка</span>, по одной в строке. Можно любой сайт WB и шаги вроде <span class="mono">нажать: Қазақша</span> для смены языка.</li><li>Робот откроет отдельное окно, снимет страницы на компьютере и телефоне и сразу найдёт на скриншотах текст и ошибки.</li></ol></div>
+        <div class="card"><h3>Обновление и вопросы</h3><ul class="ext-steps" style="margin-top:0;list-style:disc;"><li>Когда выйдет новая версия, здесь и в окне обхода появится подсказка. Скачай архив заново, замени содержимое папки и нажми ↻ на карточке расширения.</li><li>Пока идёт обход, Chrome показывает полоску «начало отлаживать этот браузер» — это нормально.</li><li>Расширение работает только на этом сайте и снимает только сайты WB. Никуда, кроме LQA Hub, скриншоты не отправляет.</li></ul></div>
+      </div>`;
+  };
+  draw();
+  const before = [crawlExt, extLatest].join();
+  await Promise.all([fetchLatestExtVersion(), new Promise(r=>setTimeout(r, 300))]);
+  if([crawlExt, extLatest].join()!==before && (location.hash||'')==='#/extension') draw();
+}
 async function openCrawlModal(sessionId){
   const sess = dbGet('visualSessions', sessionId); if(!sess) return;
   if(!crawlExt){ lqaPost({lqaHub:'ping'}); await new Promise(r=>setTimeout(r, 250)); }
   if(!crawlExt){
-    const onSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
-    uiDialog(`<h3>Нужно расширение для Chrome</h3>
-      <div class="dialog-text" style="line-height:1.6;">Страницы WB обходит небольшое расширение: оно работает в твоём браузере, поэтому сайт видит обычного посетителя и не блокирует. Поставить — 2 минуты, один раз.</div>
-      <ol style="margin:12px 0 0;padding-left:20px;line-height:1.9;font-size:14px;">
-        <li>Скачай <a class="link" href="https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip" target="_blank" rel="noopener">архив с платформой</a> и распакуй его.</li>
-        <li>Открой в Chrome адрес <span class="mono">chrome://extensions</span> и справа вверху включи <b>Режим разработчика</b>.</li>
-        <li><b>Загрузить распакованное расширение</b> → выбери папку <span class="mono">extension</span> из архива.</li>
-        <li>Обнови эту страницу.</li>
-      </ol>
-      ${onSite ? '' : `<div class="hint" style="margin-top:10px;">Расширение работает на сайте <a class="link" href="https://wblocalization.github.io/lqa-hub/" target="_blank" rel="noopener">wblocalization.github.io/lqa-hub</a>, а не в файле, открытом с диска.</div>`}
-      <div class="modal-actions"><a class="btn secondary" href="https://github.com/wblocalization/lqa-hub/tree/main/extension" target="_blank" rel="noopener">Подробнее</a><button class="btn" data-cancel>Понятно</button></div>`);
+    const ok = await uiConfirm({title:'Нужно расширение для Chrome', text:'Страницы WB обходит небольшое расширение: оно работает в твоём браузере, поэтому сайт видит обычного посетителя и не блокирует. Поставить — 2 минуты, один раз.', okText:'Как установить'});
+    if(ok) location.hash = '#/extension';
     return;
   }
+  if(extLatest && !versionAtLeast(crawlExt, extLatest)) toast('Вышла новая версия расширения ('+extLatest+'), у тебя '+crawlExt+'. Обновить — в разделе «Расширение».', {duration:9000, action:{label:'Открыть', fn:()=>{ location.hash = '#/extension'; }}});
   const r = crawlRouteFor(sess.projectId);
   const res = await uiDialog(`<h3>Обойти страницы</h3>
     <div class="dialog-text">Расширение откроет страницы в отдельном окне, прокрутит и снимет их целиком. Скриншоты добавятся в сессию «${esc(sess.name)}».</div>
@@ -6912,6 +6977,7 @@ function paletteCommands(){
     {group:'Действия', icon:'user', label:'Кто я — выбрать себя', run:()=>openWhoAmI()},
     {group:'Действия', icon:'download', label:'Скачать резервную копию', run:()=>downloadBackup()},
     {group:'Действия', icon:'check', label:'Мои задачи', run:()=>{ location.hash='#/my'; }},
+    {group:'Действия', icon:'download', label:'Скачать расширение для обхода страниц', run:()=>{ location.hash='#/extension'; }},
   ];
   if(typeof openPeriodReport==='function') cmds.push({group:'Действия', icon:'barChart', label:'Отчёт за период', run:()=>openPeriodReport()});
   if(syncEnabled()) cmds.push({group:'Действия', icon:'upload', label:'Синхронизировать сейчас', run:()=>syncNow(true)});
@@ -7066,6 +7132,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';
   maybeStartTour();
   initGoogleSignIn();
+  if(/^https?:$/.test(location.protocol)) fetchLatestExtVersion();
 })();
 </script>
 </body>
