@@ -7352,7 +7352,11 @@ async function testAiBackend(){
     const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({mode:'ping', model:s.aiModel||'', token:s.aiToken||''})});
     const data = await res.json();
     if(data.error) throw new Error(data.error);
-    out.style.color = 'var(--ok)'; out.textContent = '✓ Работает: ' + (data.provider==='anthropic'?'Claude':data.provider==='openai'?'OpenAI':data.provider) + ', модель ' + data.model;
+    out.style.color = 'var(--ok)';
+    // aiKey comes from newer scripts only; older ones don't report it, so keep the old wording there
+    out.textContent = data.aiKey===false
+      ? '✓ Подключено · ИИ не настроен: в скрипте нет ключа API. Командное хранилище работает и без него'
+      : '✓ Работает: ' + (data.provider==='anthropic'?'Claude':data.provider==='openai'?'OpenAI':data.provider) + ', модель ' + data.model;
   }catch(err){
     out.style.color = 'var(--crit)';
     out.textContent = '✕ ' + (err.message && err.message.includes('Failed to fetch') ? 'Не удалось достучаться — проверь адрес и что доступ к Web App открыт для «Все»' : err.message);
