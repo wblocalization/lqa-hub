@@ -1353,7 +1353,8 @@ function closeDetailPanel(){
 /* =========================================================
    PLACEHOLDER / VARIABLE / TAG DETECTION
    ========================================================= */
-const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|%(\d+\$)?[-+0 #]*\d*(\.\d+)?[sdxXofc@]|\{\d+\}/g;
+// a % right after a number is a percent sign, not printf: «7%-dək», «50% dən» (Azerbaijani suffixes)
+const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|(?<!\d)%(\d+\$)?(?:[-+0 #]+\d*(\.\d+)?[sdxXofc@](?![A-Za-zÀ-ʯЀ-ӿ])|\d*(\.\d+)?[sdxXofc@])|\{\d+\}/g;
 // Distinguishes real translatable copy from strings that are legitimately identical
 // between source and target because there's nothing to translate: pure placeholder
 // strings ("%@ · %@ · %@"), locale codes ("RU"), brand/campaign names ("FUN&SUN").
@@ -5869,27 +5870,38 @@ function dice(a, b){
 function ocrRowIndex(projectId, languageCode){
   const lc = String(languageCode||'').toLowerCase();
   const rows = dbList('rows').filter(r=>r.projectId===projectId && String(r.languageCode||'').toLowerCase()===lc);
-  const byTarget = new Map(), bySource = new Map(), byToken = new Map(), norm = new Map();
+  const byTarget = new Map(), bySource = new Map(), byToken = new Map(), norm = new Map(), byTri = new Map();
   rows.forEach(r=>{
     const t = normScreen(stripForScreen(r.target)), so = normScreen(stripForScreen(r.source));
     norm.set(r.id, t);
     if(t.length>=2 && !byTarget.has(t)) byTarget.set(t, r);
+    // OCR drops spaces and misreads letters, so whole words may not match — 3-letter pieces still do
+    const ns = t.replace(/ /g,'');
+    if(ns.length>=4 && !byTarget.has(ns)) byTarget.set(ns, r);
+    for(let i=0; i+3<=ns.length; i++){ const g = ns.substr(i,3), a = byTri.get(g); if(a){ if(a.length<300 && a[a.length-1]!==r) a.push(r); } else byTri.set(g, [r]); }
     if(so.length>=4 && !bySource.has(so)) bySource.set(so, r);
     new Set(t.split(' ').filter(w=>w.length>=3)).forEach(w=>{ const a = byToken.get(w); if(a){ if(a.length<400) a.push(r); } else byToken.set(w, [r]); });
   });
-  return {rows, byTarget, bySource, byToken, norm};
+  return {rows, byTarget, bySource, byToken, norm, byTri};
 }
 function stripForScreen(t){ return String(t||'').replace(TAG_RE,' ').replace(VAR_RE,' ').replace(/\\n/g,' '); }
 function ocrMatchLine(idx, text){
   const n = normScreen(text); if(n.length<2) return null;
   if(idx.byTarget.has(n)) return {row:idx.byTarget.get(n), kind:'target', score:1};
   if(idx.bySource.has(n)) return {row:idx.bySource.get(n), kind:'source', score:1};
+  const nn = n.replace(/ /g,'');
+  if(nn.length>=4 && idx.byTarget.has(nn)) return {row:idx.byTarget.get(nn), kind:'target', score:1};
   const cand = new Map();
   n.split(' ').filter(w=>w.length>=3).forEach(w=>(idx.byToken.get(w)||[]).forEach(r=>cand.set(r.id, r)));
+  if(idx.byTri && nn.length>=4){   // strings sharing the most 3-letter pieces with the line
+    const hits = new Map();
+    for(let i=0; i+3<=nn.length; i++) (idx.byTri.get(nn.substr(i,3))||[]).forEach(r=>{ const h = hits.get(r.id); if(h) h.n++; else hits.set(r.id, {r, n:1}); });
+    [...hits.values()].sort((a,b)=>b.n-a.n).slice(0,40).forEach(h=>cand.set(h.r.id, h.r));
+  }
   let best = null;
   cand.forEach(r=>{
     const t = idx.norm.get(r.id); if(!t) return;
-    let sc = dice(n, t);
+    let sc = Math.max(dice(n, t), dice(nn, t.replace(/ /g,'')));
     if(sc < .8 && t.length>=6 && n.includes(t)) sc = Math.max(sc, .78);   // the string is part of a longer line
     if(sc < .8 && n.length>=6 && t.includes(n)) sc = Math.max(sc, .72);   // a line of a wrapped string
     if(!best || sc > best.score) best = {row:r, kind:'target', score:sc};
@@ -5913,25 +5925,69 @@ function ocrFindingsForLine(line, lang, match){
   }
   return out;
 }
+// Tesseract reads a row of menu items, buttons or product cards as one long line; a gap between words
+// much wider than a space means a different piece of UI, so the line is cut there
+function ocrSplitLine(ln){
+  const words = (ln.words||[]).filter(w=>String(w.text||'').trim());
+  const whole = {t:String(ln.text||'').replace(/\s+/g,' ').trim(), c:ln.confidence, bbox:ln.bbox};
+  if(words.length < 2) return [whole];
+  const h = Math.max(1, ln.bbox.y1 - ln.bbox.y0), segs = [];
+  let cur = [words[0]];
+  for(let i=1; i<words.length; i++){
+    const gap = words[i].bbox.x0 - words[i-1].bbox.x1;
+    if(gap > h*.8){ segs.push(cur); cur = []; }
+    cur.push(words[i]);
+  }
+  segs.push(cur);
+  if(segs.length===1) return [whole];
+  return segs.map(ws=>({t:ws.map(w=>String(w.text).trim()).join(' '), c:ws.reduce((s,w)=>s+w.confidence,0)/ws.length,
+    bbox:{x0:Math.min(...ws.map(w=>w.bbox.x0)), y0:Math.min(...ws.map(w=>w.bbox.y0)), x1:Math.max(...ws.map(w=>w.bbox.x1)), y1:Math.max(...ws.map(w=>w.bbox.y1))}}));
+}
+// a line that is several strings side by side (menu items set close together): find the known strings
+// inside it, longest first, and give each its own part of the box
+function ocrSplitByKnown(idx, ln){
+  const words = ln.t.split(' '); if(words.length < 2) return null;
+  const nw = words.map(w=>normScreen(w)), used = new Array(words.length).fill(false), found = [];
+  for(let len=words.length-1; len>=1; len--) for(let i=0; i+len<=words.length; i++){
+    if(used.slice(i, i+len).some(Boolean)) continue;
+    const n = nw.slice(i, i+len).filter(Boolean).join(' '); if(n.length<3) continue;
+    const row = idx.byTarget.get(n) || idx.bySource.get(n); if(!row) continue;
+    for(let k=i; k<i+len; k++) used[k] = true;
+    found.push({i, len, row, kind: idx.byTarget.get(n) ? 'target' : 'source'});
+  }
+  if(found.length < 2) return null;
+  const pos = []; let at = 0; words.forEach(w=>{ pos.push(at); at += w.length + 1; });
+  const total = ln.t.length;
+  return found.sort((a,b)=>a.i-b.i).map(f=>{
+    const t = words.slice(f.i, f.i+f.len).join(' '), x = pos[f.i]/total, w = t.length/total;
+    return {t, c:ln.c, b:{x:ln.b.x + ln.b.w*x, y:ln.b.y, w:ln.b.w*w, h:ln.b.h}, rowId:f.row.id, kind:f.kind};
+  });
+}
 async function ocrShot(sh, sess, idx){
   const langs = ocrLangsFor(sess.languageCode);
   const worker = await getOcrWorker(langs);
   const prep = await ocrPrepareImage(shotImage(sh.id));
   const lines = [];
   const overlaps = (a, b)=>{ const ix = Math.max(0, Math.min(a.x+a.w, b.x+b.w)-Math.max(a.x, b.x)), iy = Math.max(0, Math.min(a.y+a.h, b.y+b.h)-Math.max(a.y, b.y)); return ix*iy > .3*Math.min(a.w*a.h, b.w*b.h); };
-  const collect = data=>(data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(ln=>{
-    const t = String(ln.text||'').replace(/\s+/g,' ').trim();
-    if(!t || ln.confidence < 45 || !/\p{L}{2}/u.test(t)) return;
-    const bb = ln.bbox, k = prep.k;
+  const collect = data=>(data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(ln=>ocrSplitLine(ln).forEach(seg=>{
+    const t = seg.t;
+    if(!t || seg.c < 45 || !/\p{L}{2}/u.test(t)) return;
+    const bb = seg.bbox, k = prep.k;
     const box = {x:bb.x0/k/prep.w, y:bb.y0/k/prep.h, w:(bb.x1-bb.x0)/k/prep.w, h:(bb.y1-bb.y0)/k/prep.h};
     if(lines.some(l=>overlaps(l.b, box))) return;
-    lines.push({t, c:Math.round(ln.confidence), b:box});
-  })));
+    lines.push({t, c:Math.round(seg.c), b:box});
+  }))));
   collect((await worker.recognize(prep.src, {}, {blocks:true, text:false})).data);
   if(prep.inv) collect((await worker.recognize(prep.inv, {}, {blocks:true, text:false})).data);
   lines.sort((a,b)=>a.b.y-b.b.y || a.b.x-b.b.x);
-  lines.forEach(ln=>{ const m = ocrMatchLine(idx, ln.t); if(m){ ln.rowId = m.row.id; ln.kind = m.kind; } });
-  return {at:nowISO(), langs, lines};
+  const out = [];
+  lines.forEach(ln=>{
+    const m = ocrMatchLine(idx, ln.t);
+    if(!(m && m.score>=.9)){ const parts = ocrSplitByKnown(idx, ln); if(parts){ out.push(...parts); return; } }
+    if(m){ ln.rowId = m.row.id; ln.kind = m.kind; }
+    out.push(ln);
+  });
+  return {at:nowISO(), langs, lines:out};
 }
 // A string that does not fit: the screen shows its beginning and then "…", or only its beginning with
 // nothing continuing it on the next line (a wrapped string continues below and is fine).
@@ -6011,7 +6067,7 @@ async function runSessionOcr(sessionId, shotIds){
 function runShotOcr(shotId){ const sh = dbGet('visualShots', shotId); if(sh) runSessionOcr(sh.sessionId, [shotId]); }
 function ocrOverlayHtml(sh){
   return (sh.ocr.lines||[]).map(l=>{ const r = l.rowId ? dbGet('rows', l.rowId) : null;
-    return `<div class="obox ${r?(l.kind==='source'?'src':'ok'):''}" style="left:${l.b.x*100}%;top:${l.b.y*100}%;width:${l.b.w*100}%;height:${l.b.h*100}%;" title="${esc(l.t)}${r?' — строка '+esc(r.key||'')+(l.kind==='source'?' (совпадает с исходником!)':''):' — не найдено в строках перевода'}" ${r?`onclick="event.stopPropagation();openRowDetail('${r.id}')"`:''}></div>`; }).join('');
+    return `<div class="obox ${r?(l.kind==='source'?'src':'ok'):''}" style="left:${l.b.x*100}%;top:${l.b.y*100}%;width:${l.b.w*100}%;height:${l.b.h*100}%;" title="${r ? esc((l.kind==='source' ? 'Русский исходник: ' : 'В переводе: ')+stripForScreen(l.kind==='source'?r.source:r.target).trim()+' · строка '+(r.key||'')+(normScreen(l.t)!==normScreen(stripForScreen(l.kind==='source'?r.source:r.target))?'\nРаспознано: '+l.t:'')) : 'Распознано: '+esc(l.t)+' — не найдено в строках перевода'}" ${r?`onclick="event.stopPropagation();openRowDetail('${r.id}')"`:''}></div>`; }).join('');
 }
 function toggleViewerCompare(){ viewerCompare = !viewerCompare; renderShotViewer(); }
 function openShotViewer(shotId, focusIssueId){
