@@ -389,6 +389,10 @@ input[type=file].hidden-input{display:none;}
 .found-expected b{color:var(--crit);font-weight:600;}
 .found-expected .arrow{color:var(--text-faint);}
 .found-expected .to{color:var(--ok);font-weight:600;}
+.chk-group{border:1px solid var(--border);border-radius:var(--r-md);padding:4px 14px 6px;margin-top:10px;}
+.chk-group-head{display:flex;align-items:center;gap:8px;padding:10px 0 8px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;flex-wrap:wrap;}
+.chk-count{margin-left:auto;font-size:12px;color:var(--text-faint);}
+.chk-group .checklist .checkrow:last-child{border-bottom:none;}
 .checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;}
 .checkrow{display:flex;align-items:center;gap:10px;font-size:14px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
 .lang-group{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:4px;}
@@ -2132,29 +2136,30 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
   const ig = applyIgnoreRules(newRowIds);
   if(ig.skipped || ig.closed) toast('Правила «игнорировать»: закрыто '+ig.closed+', убрано '+ig.skipped);
 }
+// checks grouped by how much a miss costs, so a whole level can be switched on at once
+const CHECK_GROUPS = [
+  {title:'Критичные', hint:'ломают приложение или экран', items:[['Vars','checkVars',"Переменные ({{name}}, %s, {0}, ${var})"],['Tags','checkTags','HTML/XML разметка'],['Breaks','checkBreaks','Переносы строк (\\n)'],['Plurals','checkPlurals','Формы множественного числа'],['Limits','checkLimits','Лимиты длины по ключам']]},
+  {title:'Важные', hint:'смысл, бренд, термины, формат', items:[['Rebranding','checkRebranding','WB→N11 (только AZ)'],['Glossary','checkGlossary','Соответствие глоссарию'],['Dnt','checkDnt','Бренды «Не переводить»'],['Numbers','checkNumbers','Числа'],['Locale','checkLocale','Формат под страну (валюта, кавычки)'],['Script','checkScript','Алфавит языка'],['LangRules','checkLangRules','Правила языка'],['Consistency','checkConsistency','Согласованность между папками']]},
+  {title:'Оформление и стиль', hint:'пробелы, знаки, длина, опечатки', items:[['Spaces','checkSpaces','Пробелы'],['Punct','checkPunct','Пунктуация'],['Length','checkLength','Подозрительная длина'],['Spelling','checkSpelling','Орфография (словари)'],['Untranslated','checkUntranslated','Перевод совпадает с исходным текстом']]},
+];
 function checkSettingsFieldsHtml(prefix, collapsed){
   const s = getSettings();
-  const body = `<div class="checklist" style="margin-top:10px;">
-    <label class="checkrow"><input type="checkbox" id="${prefix}Untranslated" ${s.checkUntranslated?'checked':''}> Перевод совпадает с исходным текстом (пустой перевод отмечается всегда)</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Vars" ${s.checkVars?'checked':''}> Переменные ({{name}}, %s, {0}, ${'${var}'})</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Tags" ${s.checkTags?'checked':''}> HTML/XML разметка</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Breaks" ${s.checkBreaks?'checked':''}> Переносы строк (\\n)</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Spaces" ${s.checkSpaces?'checked':''}> Пробелы</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Punct" ${s.checkPunct?'checked':''}> Пунктуация</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Length" ${s.checkLength?'checked':''}> Подозрительная длина</label>
-    <label class="checkrow">Порог длины (×)<input type="number" id="${prefix}LengthRatio" value="${s.lengthRatio}" step="0.1" style="width:70px;margin-left:auto;"></label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Consistency" ${s.checkConsistency?'checked':''}> Согласованность между папками</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Glossary" ${s.checkGlossary?'checked':''}> Соответствие глоссарию</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Rebranding" ${s.checkRebranding?'checked':''}> WB→N11 (только AZ)</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Plurals" ${s.checkPlurals?'checked':''}> Формы множественного числа</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Locale" ${s.checkLocale?'checked':''}> Формат под страну (валюта, кавычки)</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Dnt" ${s.checkDnt?'checked':''}> Бренды «Не переводить»</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Script" ${s.checkScript?'checked':''}> Алфавит языка</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Limits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Numbers" ${s.checkNumbers?'checked':''}> Числа</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}LangRules" ${s.checkLangRules?'checked':''}> Правила языка</label>
-    <label class="checkrow"><input type="checkbox" id="${prefix}Spelling" ${s.checkSpelling?'checked':''}> Орфография (словари)</label>
+  const body = `<div class="chk-groups" style="margin-top:10px;">
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+      <span class="hint" style="margin:0 4px 0 0;">Быстро:</span>
+      <button type="button" class="btn secondary sm" onclick="chkPreset(this,1)">Только критичные</button>
+      <button type="button" class="btn secondary sm" onclick="chkPreset(this,2)">Критичные и важные</button>
+      <button type="button" class="btn secondary sm" onclick="chkPreset(this,3)">Все</button>
+      <button type="button" class="btn ghost sm" onclick="chkPreset(this,0)">Снять все</button>
+    </div>
+    ${CHECK_GROUPS.map(g=>{ const on = g.items.filter(([,k])=>s[k]).length;
+      return `<div class="chk-group">
+        <label class="chk-group-head"><input type="checkbox" onchange="chkGroupToggle(this)" ${on===g.items.length?'checked':''}> <b>${esc(g.title)}</b> <span class="hint" style="margin:0;">— ${esc(g.hint)}</span><span class="chk-count">${on} из ${g.items.length}</span></label>
+        <div class="checklist">${g.items.map(([id,k,label])=>`<label class="checkrow"><input type="checkbox" data-chk id="${prefix}${id}" ${s[k]?'checked':''} onchange="chkGroupSync(this)"> ${esc(label)}</label>`
+          + (id==='Length' ? `<label class="checkrow">Порог длины (×)<input type="number" id="${prefix}LengthRatio" value="${s.lengthRatio}" step="0.1" style="width:70px;margin-left:auto;"></label>` : '')).join('')}</div>
+      </div>`; }).join('')}
   </div>
+  <div class="hint" style="margin:6px 0 0;">Пустой перевод отмечается всегда, как «Не переведено».</div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
     <summary style="cursor:pointer;font-size:12.5px;color:var(--primary-dark);font-weight:600;">Настройки проверки для этой загрузки</summary>
@@ -2180,6 +2185,17 @@ function presetStringsTypeFilterFromOverride(mountKey, override){
   issuesPageState[mountKey] = {page:1, selected:new Set(), openPanel:null, mode:'rows',
     filters:{proj:new Set(), comp:new Set(), file:new Set(), lang:new Set(), sev:new Set(), status:new Set(), type:new Set(enabledTypes)}};
 }
+function chkGroupSync(el){
+  el.closest('.chk-groups').querySelectorAll('.chk-group').forEach(g=>{
+    const items = [...g.querySelectorAll('input[data-chk]')], on = items.filter(c=>c.checked).length, head = g.querySelector('.chk-group-head input');
+    head.checked = on===items.length; head.indeterminate = on>0 && on<items.length;
+    g.querySelector('.chk-count').textContent = on+' из '+items.length;
+  });
+}
+// a partly-on group shows a dash in its checkbox — that state can't be written in HTML, so set it when the form appears
+new MutationObserver(()=>document.querySelectorAll('.chk-groups:not([data-synced])').forEach(r=>{ r.dataset.synced = '1'; const c = r.querySelector('input[data-chk]'); if(c) chkGroupSync(c); })).observe(document.documentElement, {childList:true, subtree:true});
+function chkGroupToggle(el){ el.closest('.chk-group').querySelectorAll('input[data-chk]').forEach(c=>c.checked = el.checked); chkGroupSync(el); }
+function chkPreset(btn, level){ btn.closest('.chk-groups').querySelectorAll('.chk-group').forEach((g,n)=>g.querySelectorAll('input[data-chk]').forEach(c=>c.checked = n<level)); chkGroupSync(btn); }
 function readCheckSettingsOverride(prefix){
   const get = id => document.getElementById(prefix+id);
   const override = {
