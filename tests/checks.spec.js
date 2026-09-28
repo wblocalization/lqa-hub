@@ -1,0 +1,54 @@
+// Техническая проверка строк: переменные, числа, пробелы, правила языков, «игнорировать».
+const { test, expect } = require('@playwright/test');
+const { openApp, seedProject, po, uploadPo, issuesByKey, expectNoErrors } = require('./helpers');
+
+test('находит типичные ошибки перевода', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['kk'] });
+  await uploadPo(page, { lang: 'kk', text: po('kk', [
+    ['ok', 'Корзина', 'Себет'],
+    ['var', 'Привет, {{name}}!', 'Сәлем!'],
+    ['num', 'Цена 12 990 ₽', 'Бағасы 12 900 ₸'],
+    ['space', 'Оформить заказ', 'Тапсырыс  беру'],
+    ['empty', 'Доставка', ''],
+    ['homoglyph', 'Товар', 'Тауaр'],
+  ]) });
+  const issues = await issuesByKey(page);
+  const types = key => issues.filter(i => i.key === key).map(i => i.type);
+  expect(types('ok')).toEqual([]);
+  expect(types('var')).toContain('Переменные');
+  expect(types('num')).toContain('Числа');
+  expect(types('space')).toContain('Пробелы');
+  expect(types('homoglyph')).toContain('Правила языка');
+  expectNoErrors(errors);
+});
+
+test('правила конкретных языков: апостроф в узбекском и свои правила', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => saveSettings({ customLangRules: 'uz ; /\\bsum\\b/i ; Пишем «soʻm»' }));
+  await seedProject(page, { langs: ['uz'] });
+  await uploadPo(page, { lang: 'uz', text: po('uz', [
+    ['apos', 'Заказ оформлен', "Buyurtma qabul qilindi, o'zgartirish mumkin"],
+    ['custom', 'Цена 100 сум', 'Narxi 100 sum'],
+    ['good', 'Заказ', 'Buyurtma'],
+  ]) });
+  const issues = await issuesByKey(page);
+  expect(issues.filter(i => i.key === 'apos').map(i => i.type)).toContain('Правила языка');
+  expect(issues.find(i => i.key === 'custom' && i.type === 'Правила языка').text).toContain('soʻm');
+  expect(issues.filter(i => i.key === 'good')).toEqual([]);
+  expectNoErrors(errors);
+});
+
+test('правила «игнорировать» убирают проблемы при следующей загрузке', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['kk'] });
+  await page.evaluate(() => saveSettings({ ignoreRules: [{ id: 'r1', keyPattern: 'debug.*', type: '', text: '', action: 'skip' }] }));
+  await uploadPo(page, { lang: 'kk', text: po('kk', [
+    ['debug.one', 'Тест  тест', 'Тест  тест'],
+    ['real', 'Оформить заказ', 'Тапсырыс  беру'],
+  ]) });
+  const issues = await issuesByKey(page);
+  expect(issues.filter(i => i.key === 'debug.one')).toEqual([]);
+  expect(issues.filter(i => i.key === 'real').length).toBeGreaterThan(0);
+  expectNoErrors(errors);
+});
