@@ -107,6 +107,7 @@ button{font-family:inherit;}
 .crumbs b{color:var(--text);font-weight:600;}
 .crumbs .sep{margin:0 6px;opacity:.5;}
 .top-search{position:relative;width:300px;}
+.top-ic.mob-search{display:none;}
 .top-search .s-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;display:flex;}
 .top-search input[type=text]{width:100%;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);padding:0 52px 0 34px;font-size:13px;background:var(--surface-2);color:var(--text);transition:box-shadow .15s ease,border-color .15s ease,background .15s ease;}
 .top-search input[type=text]:hover{border-color:var(--border-strong);}
@@ -193,6 +194,47 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-soft);font-size:13px;font-weight:500;height:32px;padding:0 12px;border-radius:99px;cursor:pointer;margin-right:6px;transition:background .15s ease,border-color .15s ease,color .15s ease;}
 .chip:hover{border-color:var(--primary);color:var(--text);}
+.rbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr 34px;gap:10px;align-items:center;margin-bottom:8px;font-size:13px;}
+.rbar-l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rbar-t{height:8px;border-radius:99px;background:var(--bg-2);overflow:hidden;}
+.rbar-t i{display:block;height:100%;border-radius:99px;background:var(--brand-grad);}
+.rbar b{text-align:right;}
+@media print{
+  .sidebar,.topbar,.no-print,.toasts,.tour,.detail-panel,.detail-panel-overlay{display:none !important;}
+  .main{margin:0 !important;padding:0 !important;} .content{padding:0 !important;max-width:none !important;}
+  body{background:#fff !important;} .card,.kpi{break-inside:avoid;box-shadow:none !important;}
+}
+.obox{position:absolute;border:1.5px dashed rgba(120,120,140,.75);border-radius:3px;background:rgba(120,120,140,.08);z-index:1;}
+.obox.ok{border-color:rgba(21,128,61,.85);background:rgba(21,128,61,.10);cursor:pointer;}
+.obox.src{border-color:rgba(217,45,32,.9);background:rgba(217,45,32,.12);cursor:pointer;}
+.obox:hover{border-style:solid;}
+.shot-ocr{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
+.ocr-sum{font-size:12.5px;color:var(--text-soft);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;}
+.chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
+.chip-view{padding:0 4px 0 0;gap:0;}
+.chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
+.chip-view .chip-x{padding:0 6px;opacity:.5;}
+.chip-view .chip-x:hover{opacity:1;color:var(--crit);}
+.chip-view svg{flex-shrink:0;}
+.chip-save{border-style:dashed;color:var(--text-faint);}
+.cmdk-bg{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(3px);z-index:500;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px;animation:fadeIn .12s ease;}
+.cmdk{width:100%;max-width:620px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;max-height:70vh;animation:cmdkIn .16s cubic-bezier(.2,.8,.3,1);}
+@keyframes cmdkIn{from{opacity:0;transform:translateY(-8px) scale(.985);}to{opacity:1;transform:none;}}
+.cmdk-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);color:var(--text-faint);}
+.cmdk-in input{flex:1;border:none;outline:none;background:none;font-size:16px;color:var(--text);padding:0;box-shadow:none;min-width:0;}
+.cmdk-list{overflow-y:auto;padding:6px;}
+.cmdk-group{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);padding:10px 10px 4px;}
+.cmdk-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;min-width:0;}
+.cmdk-item.sel{background:var(--primary-bg);}
+.cmdk-item.sel .cmdk-ic{color:var(--primary);}
+.cmdk-ic{color:var(--text-faint);display:flex;flex-shrink:0;}
+.cmdk-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:14px;}
+.cmdk-hint{margin-left:auto;padding-left:10px;font-size:12px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%;flex-shrink:1;}
+.cmdk-esc{font-size:11px;font-weight:600;border:1px solid var(--border-strong);border-radius:6px;padding:2px 6px;color:var(--text-faint);}
+.cmdk-empty{padding:26px;text-align:center;color:var(--text-faint);}
+.cmdk-foot{display:flex;gap:16px;padding:9px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-faint);}
+.cmdk-foot b{font-weight:600;color:var(--text-soft);}
+@media (max-width:640px){ .cmdk-bg{padding-top:10px;} .cmdk-foot{display:none;} }
 .chip-active{background:var(--primary-bg);border-color:var(--primary);color:var(--primary-dark);font-weight:600;}
 .chip-count{background:var(--bg-2);color:var(--text-soft);border-radius:99px;padding:0 7px;font-size:12px;font-weight:600;line-height:18px;}
 .chip-active .chip-count{background:color-mix(in srgb,var(--primary) 18%,transparent);color:var(--primary-dark);}
@@ -274,8 +316,8 @@ input[type=file].hidden-input{display:none;}
 @keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
 .modal h3{margin:0 0 4px;font-size:18px;font-weight:600;letter-spacing:-.01em;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--surface);box-shadow:var(--shadow-lg);z-index:300;transform:translateX(100%);transition:transform .28s var(--ease);overflow-y:auto;border-left:1px solid var(--border);}
-.detail-panel.open{transform:translateX(0);}
+.detail-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--surface);box-shadow:none;z-index:300;transform:translateX(100%);transition:transform .28s var(--ease),box-shadow .28s ease;overflow-y:auto;border-left:1px solid var(--border);}
+.detail-panel.open{transform:translateX(0);box-shadow:var(--shadow-lg);}
 .detail-panel-inner{padding:24px;}
 .detail-panel-overlay{position:fixed;inset:0;background:var(--overlay);z-index:299;opacity:0;pointer-events:none;transition:opacity .2s ease;}
 .detail-panel-overlay.open{opacity:1;pointer-events:auto;}
@@ -529,6 +571,30 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 .tour-count{font-size:12px;font-weight:600;color:var(--primary);}
 .install-btn{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;margin-bottom:10px;border-radius:var(--r-sm);color:var(--side-text);cursor:pointer;font-size:14px;width:100%;}
 .install-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;}
+.person{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;transition:border-color .15s ease,background .15s ease;}
+.person:hover{border-color:var(--primary);background:var(--primary-bg);}
+.person.on{border-color:var(--primary);background:var(--primary-bg);font-weight:600;}
+.dialog:has(#peopleList){width:620px;}
+.rhist{position:relative;padding-left:16px;border-left:2px solid var(--border);display:flex;flex-direction:column;gap:10px;}
+.rhist-item{position:relative;}
+.rhist-item::before{content:'';position:absolute;left:-23px;z-index:1;top:4px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--primary);}
+.rhist-item.fix::before{background:var(--primary);}
+.rhist-item.first::before{border-color:var(--text-faint);}
+.rhist-meta{font-size:12px;color:var(--text-muted);margin-bottom:4px;}
+.rhist-diff{padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+.rhist-diff del,.rhist del{background:var(--crit-bg);color:var(--crit);text-decoration:line-through;border-radius:3px;padding:0 2px;}
+.rhist-diff ins,.rhist ins{background:var(--ok-bg);color:inherit;text-decoration:none;border-radius:3px;padding:0 2px;}
+.subfolders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:8px;}
+.subfolder{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),box-shadow .2s ease,border-color .2s ease;}
+.subfolder:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.subfolder-ic{width:38px;height:38px;border-radius:10px;background:var(--bg-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.subfolder-name{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.subfolder-new{justify-content:center;border-style:dashed;box-shadow:none;color:var(--text-soft);font-weight:500;gap:8px;}
+.subfolder-new:hover{color:var(--primary);background:var(--primary-bg);border-color:var(--primary);}
+.tree-tg{border:none;background:none;width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;padding:0;transition:transform .15s ease,background .15s ease;}
+.tree-tg:hover{background:var(--bg-2);color:var(--text);}
+.tree-tg.open{transform:rotate(90deg);}
 /* ---- responsive ---- */
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;transform:translateX(-100%);transition:transform .25s var(--ease);box-shadow:var(--shadow-lg);width:264px;}
@@ -538,6 +604,7 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
   .top-ic.menu-btn{display:flex;}
   .topbar{padding:0 12px 0 8px;}
   .top-search{display:none;}
+  .top-ic.mob-search{display:flex;}
   .content{padding:20px 16px 48px;}
   .page-title{font-size:22px;}
   .checklist,.grid-4,.grid-3,.grid-2{grid-template-columns:minmax(0,1fr);}
@@ -579,9 +646,10 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
       <div class="crumbs" id="crumbs"></div>
       <div class="top-search">
         <span class="s-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
-        <input type="text" id="globalSearch" placeholder="Поиск строк и проблем" onkeydown="if(event.key==='Enter')doGlobalSearch()">
-        <span class="kbd-hint">⌘K</span>
+        <input type="text" id="globalSearch" placeholder="Поиск и команды" readonly onfocus="this.blur();openPalette()" onclick="openPalette()">
+        <span class="kbd-hint" id="kbdHint">Ctrl K</span>
       </div>
+      <button type="button" class="top-ic mob-search" title="Поиск и команды" onclick="openPalette()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
       <button type="button" class="top-ic sync-badge" id="syncBadge" style="display:none;" onclick="syncNow(true)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="sync-dot"></span></button>
       <button type="button" class="top-ic" title="Уведомления" onclick="toggleNotifCenter()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="dot" id="notifDot"></span></button>
       <button type="button" class="avatar" id="meAvatar" onclick="openWhoAmI()" style="border:none;cursor:pointer;">?</button>
@@ -629,15 +697,28 @@ function idbOpen(){
   });
   return idbConnPromise;
 }
+// Writes are coalesced: one upload calls dbSave on the same 50k-row table many times, and each
+// IndexedDB put clones the whole table. Pending tables are written together 250 ms after the last
+// change, and immediately when the tab is hidden or closed.
+const idbPending = new Map(); let idbTimer = null;
 function idbPersist(table, data){
+  idbPending.set(table, data);
+  if(!idbTimer) idbTimer = setTimeout(idbFlush, 250);
+}
+function idbFlush(){
+  if(idbTimer){ clearTimeout(idbTimer); idbTimer = null; }
+  if(!idbPending.size) return;
+  const batch = [...idbPending]; idbPending.clear();
   idbOpen().then(db=>{
     try{
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put({table, data});
-      tx.onerror = ()=>console.warn('IndexedDB write failed for', table, tx.error);
-    }catch(e){ console.warn('IndexedDB write failed for', table, e); }
+      const tx = db.transaction(IDB_STORE, 'readwrite'), st = tx.objectStore(IDB_STORE);
+      batch.forEach(([table, data])=>st.put({table, data}));
+      tx.onerror = ()=>console.warn('IndexedDB write failed for', batch.map(x=>x[0]).join(', '), tx.error);
+    }catch(e){ console.warn('IndexedDB write failed', e); }
   }).catch(e=>console.warn('IndexedDB unavailable, changes will not persist across reloads', e));
 }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') idbFlush(); });
+window.addEventListener('pagehide', idbFlush);
 async function idbLoadAll(){
   try{
     const db = await idbOpen();
@@ -830,7 +911,8 @@ function folderColor(id){
 }
 function folderBadge(comp){
   if(!comp) return '—';
-  return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:${folderColor(comp.id)};flex-shrink:0;"></span>${esc(comp.name)}</span>`;
+  const parents = comp.parentId ? compAncestors(comp).map(a=>a.name) : [];
+  return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:${folderColor(comp.id)};flex-shrink:0;"></span>${parents.length?`<span style="color:var(--text-faint)">${esc(parents.join(' / '))} /</span>`:''}${esc(comp.name)}</span>`;
 }
 // One look for every "nothing here yet" screen: illustration (or a small icon), title, text, optional action.
 function emptyState(o){
@@ -845,7 +927,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15 };
   let s = dbGet('settings','global');
   if(!s){
@@ -1262,6 +1344,140 @@ function parseLengthRules(text){
     return {pattern, max:+m[2], re:new RegExp('^'+pattern.split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$', 'i')};
   }).filter(Boolean);
 }
+/* ---------- numbers ----------
+   "12 990", "12,990", "12.990" and "12990" are the same number; "4,5" and "4.5" too. Only the
+   numbers themselves are compared (as a multiset), so reordering in the sentence is fine. */
+function extractNumbers(str){
+  const vis = visibleText(str).replace(/\{[^{}]*\}/g,' ');
+  const out = [];
+  (vis.match(/\d(?:[\d    .,']*\d)?/g)||[]).forEach(raw=>{
+    let t = raw.replace(/[    ']/g,'');
+    const lastSep = Math.max(t.lastIndexOf('.'), t.lastIndexOf(','));
+    if(lastSep>=0){
+      const tail = t.slice(lastSep+1), head = t.slice(0,lastSep).replace(/[.,]/g,'');
+      // "12.990"/"12,990" (exactly three digits after the only separator, several before) reads as thousands
+      const onlyOne = (t.match(/[.,]/g)||[]).length===1;
+      t = (onlyOne && tail.length===3) ? head+tail : head+'.'+tail;
+    }
+    t = t.replace(/^0+(?=\d)/,'');
+    out.push({raw:raw.trim(), norm:t});
+  });
+  return out;
+}
+function numbersIssue(src, tgt){
+  const a = extractNumbers(src), b = extractNumbers(tgt);
+  if(!a.length) return null;
+  const {missing, extra} = diffMultiset(a.map(x=>x.norm), b.map(x=>x.norm));
+  if(!missing.length) return null;
+  const rawOf = (list, n)=> (list.find(x=>x.norm===n)||{}).raw || n;
+  return {missing: missing.map(n=>rawOf(a,n)), extra: extra.map(n=>rawOf(b,n))};
+}
+
+/* ---------- language rules ----------
+   Built-in, per language; each returns {text, highlight, expected, severity}. Custom rules come
+   from Settings: one per line «язык ; что искать ; подсказка», where «что искать» is text or
+   /регулярка/. */
+const CYR = '\\u0400-\\u04FF', LAT = 'A-Za-z';
+const LANGUAGE_RULES = {
+  uz: [t=>{ const m = t.match(/[oOgG]['’`‘]/); return m && {text:'Узбекский апостроф: в «oʻ» и «gʻ» ставится знак ʻ (U+02BB), а не '+m[0].slice(1), highlight:m[0], expected:m[0][0]+'ʻ', severity:'Низкая'}; }],
+  hy: [t=>{ const m = /[Ա-և][^Ա-և]*$/.test(t) && t.trim().match(/[Ա-և]+([.:])\s*$/); return m && {text:'Армянская точка — «։» (վերջակետ), а не «'+m[1]+'»', highlight:m[1], expected:'։', severity:'Низкая'}; }],
+  az: [t=>{ const m = t.match(/[Әә]/); return m && {text:'Кириллическая «'+m[0]+'» вместо латинской «'+(m[0]==='ә'?'ə':'Ə')+'» в азербайджанском', highlight:m[0], expected:m[0]==='ә'?'ə':'Ə', severity:'Высокая'}; }],
+  kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
+  zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
+};
+// letters from the other alphabet hiding inside a word ("Сeбет" with a Latin «e») — invisible to the eye, breaks search and fonts
+function homoglyphIssue(t, lang){
+  const cyrLang = ['ru','kk','ky','tg','be','uk'].includes(lang) || (lang==='uz' && /[Ѐ-ӿ]{3}/.test(t));
+  const re = cyrLang ? new RegExp('(?:['+CYR+']+['+LAT+']+['+CYR+']*|['+LAT+']+['+CYR+']+['+LAT+']*)','u')
+    : ['en','tr','az','uz','fr'].includes(lang) ? new RegExp('['+LAT+']+['+CYR+']+['+LAT+']*|['+CYR+']+['+LAT+']+','u') : null;
+  if(!re) return null;
+  const m = visibleText(t).match(re);
+  if(!m) return null;
+  return {text:'Смешаны алфавиты внутри слова «'+m[0]+'» — вероятно, латинская буква вместо кириллической (или наоборот)', highlight:m[0], severity:'Высокая'};
+}
+function parseCustomLangRules(text){
+  return String(text||'').split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('#')).map(l=>{
+    const parts = l.split(';').map(x=>x.trim());
+    if(parts.length<2 || !parts[1]) return null;
+    let re;
+    const rx = /^\/(.+)\/([a-z]*)$/.exec(parts[1]);
+    try{ re = rx ? new RegExp(rx[1], rx[2].replace(/[gy]/g,'')+(rx[2].includes('u')?'':'u')) : new RegExp(parts[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'u'); }catch(e){ return null; }
+    return {lang:(parts[0]||'*').toLowerCase(), re, hint:parts[2]||('Найдено «'+parts[1]+'»')};
+  }).filter(Boolean);
+}
+
+/* ---------- ignore rules ----------
+   {id, keyPattern, text, type, lang, action:'skip'|'fp', note}. Checked after every check run:
+   a matching new problem is dropped ('skip') or created already closed as a false positive ('fp'). */
+function globToRe(p){ return new RegExp('^'+String(p).split('*').map(x=>x.replace(/[.+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$', 'i'); }
+function ignoreRuleMatches(rule, issue, row){
+  if(rule.type && rule.type!==issue.type) return false;
+  if(rule.lang && baseLang(rule.lang)!==baseLang(issue.languageCode) && rule.lang!==issue.languageCode) return false;
+  if(rule.keyPattern && !(row && row.key && globToRe(rule.keyPattern).test(row.key))) return false;
+  if(rule.text){ const hay = ((row?row.source:'')+'\n'+(row?row.target:'')+'\n'+(issue.text||'')).toLowerCase(); if(!hay.includes(String(rule.text).toLowerCase())) return false; }
+  return !!(rule.type || rule.keyPattern || rule.text);
+}
+function applyIgnoreRules(rowIds){
+  const rules = getSettings().ignoreRules || [];
+  if(!rules.length) return {skipped:0, closed:0};
+  const idSet = rowIds ? new Set(rowIds) : null;
+  const rowsById = {}; dbList('rows').forEach(r=>rowsById[r.id]=r);
+  let skipped = 0, closed = 0;
+  const out = [];
+  dbList('issues').forEach(i=>{
+    const fresh = i.status==='Новая' && !i.manual && !i.visual && (i.history||[]).length<=1 && (!idSet || idSet.has(i.rowId));
+    const rule = fresh && rules.find(r=>ignoreRuleMatches(r, i, rowsById[i.rowId]));
+    if(!rule){ out.push(i); return; }
+    if(rule.action==='skip'){ skipped++; return; }
+    closed++;
+    out.push(Object.assign({}, i, {status:'Ложное срабатывание', history:(i.history||[]).concat([{ts:nowISO(), action:'Ложное срабатывание (правило «игнорировать»'+(rule.note?': '+rule.note:'')+')'}])}));
+  });
+  if(skipped || closed) dbSave('issues', out);
+  return {skipped, closed};
+}
+function ignoreRuleText(r){
+  const parts = [];
+  if(r.type) parts.push('тип «'+r.type+'»');
+  if(r.keyPattern) parts.push('ключ '+r.keyPattern);
+  if(r.lang) parts.push('язык '+r.lang);
+  if(r.text) parts.push('текст содержит «'+r.text+'»');
+  return parts.join(' · ');
+}
+function openIgnoreRuleDialog(issueId){
+  const i = issueId ? dbGet('issues', issueId) : null, r = i ? dbGet('rows', i.rowId) : null;
+  const keyGuess = r && r.key ? r.key.replace(/[^.]+$/, '*') : '';
+  uiDialog(`<div class="dialog-ic">${icon('x',20)}</div><h3>Правило «игнорировать»</h3>
+    <div class="dialog-text">Подходящие проблемы больше не будут мешать — ни сейчас, ни в новых загрузках. Заполни хотя бы одно из полей: тип, ключ или текст.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+      <label class="field">Тип проблемы<select id="irType"><option value="">любой</option>${[...new Set(dbList('issues').map(x=>x.type).concat(Object.values(CHECK_TYPE_LABELS)))].sort().map(t=>`<option ${i&&i.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></label>
+      <label class="field">Ключ строки <span style="font-weight:400;color:var(--text-faint)">— звёздочка = любой текст</span><input type="text" id="irKey" value="${esc(keyGuess)}" placeholder="например: debug.* или *.promo.*"></label>
+      <label class="field">Текст содержит<input type="text" id="irText" placeholder="необязательно"></label>
+      <label class="field">Язык<select id="irLang"><option value="">любой</option>${[...new Set(dbList('rows').map(x=>x.languageCode))].filter(Boolean).sort().map(l=>`<option ${i&&i.languageCode===l?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+      <label class="field">Что делать<select id="irAction"><option value="fp">Сразу помечать как ложное срабатывание (видно в истории)</option><option value="skip">Не создавать проблему вообще</option></select></label>
+      <label class="field">Пояснение<input type="text" id="irNote" placeholder="например: отладочные строки, не видны пользователю"></label>
+      ${i?`<label class="checkrow" style="border:none;"><input type="checkbox" id="irNow" checked> Применить и к уже найденным новым проблемам</label>`:''}
+    </div>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить правило</button></div>`,
+  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>{
+    const rule = {id:uid(), type:root.querySelector('#irType').value, keyPattern:root.querySelector('#irKey').value.trim(), text:root.querySelector('#irText').value.trim(),
+      lang:root.querySelector('#irLang').value, action:root.querySelector('#irAction').value, note:root.querySelector('#irNote').value.trim(), createdAt:nowISO(), by:getMe()||null};
+    if(!rule.type && !rule.keyPattern && !rule.text){ toast('Заполни тип, ключ или текст — иначе правило поймает всё подряд'); return; }
+    saveSettings({ignoreRules:(getSettings().ignoreRules||[]).concat([rule])});
+    const now = root.querySelector('#irNow') && root.querySelector('#irNow').checked;
+    close(true);
+    if(now){ const res = applyIgnoreRules(null); toast('Правило сохранено: закрыто '+res.closed+', убрано '+res.skipped); closeDetailPanel(); }
+    else toast('Правило сохранено');
+    router();
+  }; });
+}
+function deleteIgnoreRule(id){ saveSettings({ignoreRules:(getSettings().ignoreRules||[]).filter(r=>r.id!==id)}); router(); }
+function ignoreRulesCardHtml(){
+  const rules = getSettings().ignoreRules || [];
+  return `<div class="card"><div class="row between" style="align-items:flex-start;"><div><h3 style="margin-bottom:4px;">Игнорировать</h3><div class="hint" style="margin:0;max-width:640px;">Правила для проблем, которые не нужно разбирать каждый раз: отладочные ключи, намеренные исключения. Быстрее всего создавать из карточки проблемы — кнопка «Игнорировать похожие».</div></div><button class="btn secondary sm" onclick="openIgnoreRuleDialog()">${icon('plus',14)}Правило</button></div>
+    ${rules.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Условие</th><th>Действие</th><th>Пояснение</th><th></th></tr></thead><tbody>${rules.map(r=>`<tr><td>${esc(ignoreRuleText(r))}</td><td class="nowrap">${r.action==='skip'?'не создавать':'ложное срабатывание'}</td><td>${esc(r.note||'—')}</td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" onclick="deleteIgnoreRule('${r.id}')">${icon('trash',14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="margin-top:12px;">Правил пока нет.</div>'}
+  </div>`;
+}
+
 const REBRAND_TERMS = ['WB','ВБ','RWB','РВБ','Wildberries','Вайлдберриз'];
 const REBRAND_LANGUAGES = ['az']; // languages currently following the WB→N11 rebrand rule
 function isUrlOrEmailContext(text, matchStart, matchEnd){
@@ -1458,11 +1674,13 @@ function parsePoText(text){
 function yieldToUI(){ return new Promise(resolve=>setTimeout(resolve, 0)); }
 async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const s = Object.assign({}, getSettings(), override||{});
-  const issues = dbList('issues').filter(i=>!rowIds.includes(i.rowId) || i.manual); // keep manual issues, drop old auto issues for these rows
+  const rowIdSet = new Set(rowIds);
+  const issues = dbList('issues').filter(i=>!rowIdSet.has(i.rowId) || i.manual); // keep manual issues, drop old auto issues for these rows
   const allRows = dbList('rows');
   const rowsById = {}; allRows.forEach(r=>{ rowsById[r.id]=r; });
   const dntTerms = parseDntTerms(s.dntTerms);
   const lengthRules = parseLengthRules(s.lengthRules);
+  const customLangRules = parseCustomLangRules(s.customLangRules);
   const CHUNK = 1500;
   for(let start=0; start<rowIds.length; start+=CHUNK){
     const chunk = rowIds.slice(start, start+CHUNK);
@@ -1544,6 +1762,17 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
           push('Формат под страну','Низкая','Прямые кавычки вместо «ёлочек», как в исходном тексте', {highlightField:'target', highlightText:m[0], expectedText:'«'+m[0].slice(1,-1)+'»'});
         if(lang==='en' && (m = tgt.match(/«[^»]*»/)))
           push('Формат под страну','Низкая','«Ёлочки» в английском тексте — принято “…” или "…"', {highlightField:'target', highlightText:m[0]});
+      }
+      if(s.checkNumbers && srcTrim && tgtTrim){
+        const n = numbersIssue(src, tgt);
+        if(n) push('Числа','Высокая','В переводе нет числа '+n.missing.map(x=>'«'+x+'»').join(', ')+(n.extra.length?' — вместо него '+n.extra.map(x=>'«'+x+'»').join(', '):''), {highlightField:n.extra.length?'target':'source', highlightText:n.extra.length?n.extra[0]:n.missing[0], expectedText:n.extra.length?n.missing[0]:null});
+      }
+      if(s.checkLangRules && tgtTrim){
+        const found = [];
+        (LANGUAGE_RULES[lang]||[]).forEach(fn=>{ const x = fn(tgt); if(x) found.push(x); });
+        if(!found.length){ const h = homoglyphIssue(tgt, lang); if(h) found.push(h); } // a specific rule already names the odd letter
+        customLangRules.forEach(cr=>{ if(cr.lang!=='*' && cr.lang!==lang && cr.lang!==String(r.languageCode||'').toLowerCase()) return; const m = tgt.match(cr.re); if(m) found.push({text:cr.hint, highlight:m[0], severity:'Средняя'}); });
+        found.forEach(x=>push('Правила языка', x.severity||'Средняя', x.text, {highlightField:'target', highlightText:x.highlight||null, expectedText:x.expected||null}));
       }
       if(s.checkScript && NON_CYRILLIC_LANGS.includes(lang) && tgtTrim){
         const vis = visibleText(tgt);
@@ -1767,6 +1996,10 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
   await runTechnicalCheckOnRows(newRowIds, override, onProgress);
   runConsistencyCheck(projectId, override); // fast even at scale (project-wide grouping, no per-term work) — no chunking needed
   await runGlossaryCheck(projectId, override, onProgress);
+  const sp = Object.assign({}, getSettings(), override||{});
+  if(sp.checkSpelling) await runSpellCheck(newRowIds, sp, onProgress);
+  const ig = applyIgnoreRules(newRowIds);
+  if(ig.skipped || ig.closed) toast('Правила «игнорировать»: закрыто '+ig.closed+', убрано '+ig.skipped);
 }
 function checkSettingsFieldsHtml(prefix, collapsed){
   const s = getSettings();
@@ -1787,6 +2020,9 @@ function checkSettingsFieldsHtml(prefix, collapsed){
     <label class="checkrow"><input type="checkbox" id="${prefix}Dnt" ${s.checkDnt?'checked':''}> Бренды «Не переводить»</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Script" ${s.checkScript?'checked':''}> Алфавит языка</label>
     <label class="checkrow"><input type="checkbox" id="${prefix}Limits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Numbers" ${s.checkNumbers?'checked':''}> Числа</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}LangRules" ${s.checkLangRules?'checked':''}> Правила языка</label>
+    <label class="checkrow"><input type="checkbox" id="${prefix}Spelling" ${s.checkSpelling?'checked':''}> Орфография (словари)</label>
   </div>
   <label class="checkrow" style="border-bottom:none;margin-top:4px;"><input type="checkbox" id="${prefix}SaveDefault"> Сохранить эти настройки как значения по умолчанию для следующих загрузок</label>`;
   return `<details style="margin-top:12px;" ${collapsed?'':'open'}>
@@ -1799,7 +2035,7 @@ const CHECK_TYPE_LABELS = {
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
   checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
   checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить',
-  checkScript:'Не тот алфавит', checkLimits:'Лимит длины'
+  checkScript:'Не тот алфавит', checkLimits:'Лимит длины', checkNumbers:'Числа', checkLangRules:'Правила языка', checkSpelling:'Орфография'
 };
 // After an upload that ran with only SOME checks enabled (e.g. only "Ребрендинг"), jumping
 // to the unfiltered Строки view would bury the handful of real findings under thousands of
@@ -1832,6 +2068,9 @@ function readCheckSettingsOverride(prefix){
     checkDnt: get('Dnt').checked,
     checkScript: get('Script').checked,
     checkLimits: get('Limits').checked,
+    checkNumbers: get('Numbers').checked,
+    checkLangRules: get('LangRules').checked,
+    checkSpelling: get('Spelling') ? get('Spelling').checked : getSettings().checkSpelling,
   };
   if(get('SaveDefault') && get('SaveDefault').checked) saveSettings(override);
   return override;
@@ -1931,6 +2170,11 @@ const ICONS = {
   search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
   plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  command: '<path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 0 0 0-6z"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   chevronDown: '<polyline points="6 9 12 15 18 9"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -1954,6 +2198,7 @@ const NAV = [
   {icon:'image', label:'Визуальная проверка', route:'#/visual', group:'Основное'},
   {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Основное'},
   {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
+  {icon:'file', label:'Отчёт за период', route:'#/report', group:'Отчёты'},
   {icon:'download', label:'Экспорт', route:'#/export', group:'Отчёты'},
   {icon:'settings', label:'Настройки', route:'#/settings', group:'Система'},
 ];
@@ -2031,6 +2276,7 @@ function router(){
     if(parts[0]==='glossary' && parts[1]) return renderGlossaryDetail(content, parts[1]);
     if(parts[0]==='analytics') return renderAnalytics(content);
     if(parts[0]==='export') return renderExportPage(content);
+    if(parts[0]==='report') return renderPeriodReport(content);
     if(parts[0]==='settings') return renderSettingsPage(content);
     setCrumbs(['Страница не найдена']);
     content.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Страница не найдена', text:'Такой страницы нет — возможно, ссылка устарела.', action:'<a class="btn secondary" href="#/">На главную</a>'});
@@ -2552,27 +2798,38 @@ function removeProjectLanguage(projectId, code){
   toast('Язык «'+languageLabel(code)+'» убран из проекта', {duration:8000, action:{label:'Отменить', fn:()=>{ const q = dbGet('projects', projectId); if(q){ q.languages = before; dbUpsert('projects', q); router(); } }}});
 }
 function renderProjectComponents(p){
-  const comps = dbQuery('components', c=>c.projectId===p.id);
+  const tree = componentTree(p.id);
+  const top = tree.filter(c=>!c._depth);
+  const visible = tree.filter(c=>{ let cur = c; while(cur.parentId){ if(!expandedFolders.has(cur.parentId)) return false; cur = dbGet('components', cur.parentId) || {}; } return true; });
   return `<div class="card">
-    <div class="row between"><h3 style="margin:0;">Папки</h3><button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Папка</button></div>
-    ${comps.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Название</th><th>Строк</th><th>Проблем</th><th></th></tr></thead><tbody>
-      ${comps.map(c=>{
-        const rc = dbQuery('rows', r=>r.componentId===c.id).length;
-        const ic = dbQuery('issues', i=>i.componentId===c.id).length;
-        return `<tr class="clickable" onclick="location.hash='#/project/${p.id}/folder/${c.id}'"><td style="font-weight:500;">${folderBadge(c)}</td><td>${rc}</td><td>${ic}</td><td class="nowrap" style="text-align:right;"><button class="btn ghost sm" title="Переименовать" onclick="event.stopPropagation();renameComponent('${c.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить" style="color:var(--crit);" onclick="event.stopPropagation();deleteComponent('${c.id}')">${icon('trash',14)}</button><span style="color:var(--text-faint);margin-left:4px;">${icon('chevronRight',16)}</span></td></tr>`;
+    <div class="row between"><h3 style="margin:0;">Папки</h3><div class="row">${tree.some(c=>compChildren(c.id).length)?`<button class="btn ghost sm" onclick="${tree.every(c=>!compChildren(c.id).length||expandedFolders.has(c.id))?'expandedFolders=new Set();router()':`expandedFolders=new Set(${esc(JSON.stringify(tree.map(c=>c.id)))});router()`}">${tree.every(c=>!compChildren(c.id).length||expandedFolders.has(c.id))?'Свернуть все':'Развернуть все'}</button>`:''}<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Папка</button></div></div>
+    ${top.length ? `<div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Название</th><th>Строк</th><th>Открыто</th><th>Проблем</th><th></th></tr></thead><tbody>
+      ${visible.map(c=>{
+        const n = folderCounts(c.id), kids = compChildren(c.id).length, open = expandedFolders.has(c.id);
+        return `<tr class="clickable" onclick="location.hash='#/project/${p.id}/folder/${c.id}'"><td style="font-weight:500;padding-left:${12+c._depth*26}px;">
+          <span class="row" style="gap:6px;flex-wrap:nowrap;">${kids?`<button class="tree-tg ${open?'open':''}" title="${open?'Свернуть':'Показать подпапки'}" onclick="toggleFolderExpand('${c.id}', event)">${icon('chevronRight',14)}</button>`:'<span style="width:22px;display:inline-block;"></span>'}
+          <span style="width:8px;height:8px;border-radius:50%;background:${folderColor(c.id)};flex-shrink:0;"></span>${esc(c.name)}${kids?`<span class="hint" style="margin:0;font-weight:400;">· ${kids} ${plural(kids,'подпапка','подпапки','подпапок')}</span>`:''}</span></td>
+          <td>${n.rows.toLocaleString('ru-RU')}</td><td>${n.open?`<span style="color:var(--high);font-weight:600;">${n.open}</span>`:'0'}</td><td>${n.issues}</td>
+          <td class="nowrap" style="text-align:right;"><button class="btn ghost sm" title="Создать подпапку" onclick="event.stopPropagation();addComponent('${p.id}','${c.id}')">${icon('plus',14)}</button><button class="btn ghost sm" title="Переименовать" onclick="event.stopPropagation();renameComponent('${c.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить" style="color:var(--crit);" onclick="event.stopPropagation();deleteComponent('${c.id}')">${icon('trash',14)}</button><span style="color:var(--text-faint);margin-left:4px;">${icon('chevronRight',16)}</span></td></tr>`;
       }).join('')}
-    </tbody></table></div>` : emptyState({icon:'folder', compact:true, title:'Папок ещё нет', text:'Папка — любой модуль, платформа или раздел продукта (Web, iOS, каталог, checkout…), который ты сам называешь.', action:`<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Создать папку</button>`})}
+    </tbody></table></div><div class="hint">Цифры включают подпапки. Стрелка слева раскрывает вложенные папки.</div>` : emptyState({icon:'folder', compact:true, title:'Папок ещё нет', text:'Папка — любой модуль, платформа или раздел продукта (Web, iOS, каталог, checkout…). Внутри папки можно создавать подпапки.', action:`<button class="btn sm" onclick="addComponent('${p.id}')">${icon('plus',14)}Создать папку</button>`})}
   </div>`;
 }
-function addComponent(projectId){
-  openModal(`<h3>Новая папка</h3><div style="margin-top:14px;"><label class="field">Название<input type="text" id="compName" placeholder="например: Web, iOS, каталог, checkout…"></label></div>
+function addComponent(projectId, parentId){
+  const parent = parentId ? dbGet('components', parentId) : null;
+  openModal(`<h3>${parent?'Новая подпапка в «'+esc(parent.name)+'»':'Новая папка'}</h3><div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;"><label class="field">Название<input type="text" id="compName" placeholder="${parent?'например: iOS, Android, web':'например: Web, iOS, каталог, checkout…'}" onkeydown="if(event.key==='Enter')saveComponent('${projectId}')"></label>
+    ${dbList('components').some(c=>c.projectId===projectId) ? `<label class="field">Внутри папки<select id="compParent">${componentOptionsHtml(projectId, parentId||'', true)}</select></label>` : ''}</div>
     <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Отмена</button><button class="btn" onclick="saveComponent('${projectId}')">Создать</button></div>`);
+  setTimeout(()=>{ const n = document.getElementById('compName'); if(n) n.focus(); }, 50);
 }
 function saveComponent(projectId){
   const name = document.getElementById('compName').value.trim();
   if(!name){ toast('Укажи название папки'); return; }
-  dbUpsert('components', {id:uid(), projectId, name, createdAt:nowISO()});
-  closeModal(); toast('Папка создана'); router();
+  const parentEl = document.getElementById('compParent');
+  const parentId = parentEl && parentEl.value ? parentEl.value : null;
+  dbUpsert('components', {id:uid(), projectId, name, parentId, createdAt:nowISO()});
+  if(parentId) expandedFolders.add(parentId);
+  closeModal(); toast(parentId ? 'Подпапка создана' : 'Папка создана'); router();
 }
 async function renameComponent(id){
   const c = dbGet('components', id);
@@ -2581,15 +2838,75 @@ async function renameComponent(id){
 }
 async function deleteComponent(id){
   const c0 = dbGet('components', id);
-  if(!await uiConfirm({title:'Удалить папку «'+(c0?c0.name:'')+'»?', text:'Удалятся её строки, файлы и найденные проблемы.', okText:'Удалить папку'})) return;
+  const all = compWithDescendants(id), kids = all.size-1;
+  if(!await uiConfirm({title:'Удалить папку «'+(c0?c0.name:'')+'»?', text:'Удалятся её строки, файлы и найденные проблемы'+(kids?' — и '+kids+' '+plural(kids,'подпапка','подпапки','подпапок')+' внутри':'')+'.', okText:'Удалить папку'})) return;
   const snap = snapshotTables(['components','rows','issues','files']);
   const projectId = c0?.projectId;
-  dbSave('rows', dbList('rows').filter(r=>r.componentId!==id));
-  dbSave('issues', dbList('issues').filter(i=>i.componentId!==id));
-  dbSave('files', dbList('files').filter(f=>f.componentId!==id));
-  dbRemove('components', id);
+  dbSave('rows', dbList('rows').filter(r=>!all.has(r.componentId)));
+  dbSave('issues', dbList('issues').filter(i=>!all.has(i.componentId)));
+  dbSave('files', dbList('files').filter(f=>!all.has(f.componentId)));
+  dbSave('components', dbList('components').filter(c=>!all.has(c.id)));
   toastUndo('Папка удалена', snap);
   location.hash = projectId ? '#/project/'+projectId+'/folders' : '#/projects';
+  router();
+}
+
+/* ---------- folder tree ----------
+   Folders (components) may sit inside another folder via parentId. Everything that counts rows or
+   problems "for a folder" can include its subfolders through compDescendants(). */
+function compChildren(id){ return dbList('components').filter(c=>c.parentId===id).sort((a,b)=>a.name.localeCompare(b.name,'ru')); }
+function compDescendants(id){
+  const out = new Set(), stack = [id];
+  const byParent = {}; dbList('components').forEach(c=>{ if(c.parentId) (byParent[c.parentId] = byParent[c.parentId]||[]).push(c.id); });
+  while(stack.length){ const cur = stack.pop(); (byParent[cur]||[]).forEach(ch=>{ if(!out.has(ch)){ out.add(ch); stack.push(ch); } }); }
+  return out;
+}
+function compWithDescendants(id){ const s = compDescendants(id); s.add(id); return s; }
+function compAncestors(c){ const out = []; let cur = c, guard = 0; while(cur && cur.parentId && guard++<20){ cur = dbGet('components', cur.parentId); if(cur) out.unshift(cur); } return out; }
+function compPath(c){ return c ? compAncestors(c).map(a=>a.name).concat([c.name]).join(' / ') : ''; }
+// depth-first list for selects and trees
+function componentTree(projectId){
+  const all = dbList('components').filter(c=>c.projectId===projectId);
+  const ids = new Set(all.map(c=>c.id));
+  const out = [];
+  const walk = (parent, depth)=>all.filter(c=>(c.parentId||null)===parent || (!parent && c.parentId && !ids.has(c.parentId)))
+    .filter(c=>parent ? true : !c.parentId || !ids.has(c.parentId))
+    .sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(c=>{ if(out.includes(c)) return; out.push(c); c._depth = depth; walk(c.id, depth+1); });
+  walk(null, 0);
+  return out;
+}
+function componentOptionsHtml(projectId, selected, withNone){
+  return (withNone?`<option value="">— в корне проекта —</option>`:'') + componentTree(projectId).map(c=>`<option value="${c.id}" ${c.id===selected?'selected':''}>${'   '.repeat(c._depth)}${c._depth?'└ ':''}${esc(c.name)}</option>`).join('');
+}
+let expandedFolders = new Set();
+function toggleFolderExpand(id, ev){ if(ev) ev.stopPropagation(); if(expandedFolders.has(id)) expandedFolders.delete(id); else expandedFolders.add(id); router(); }
+function folderCounts(id){
+  const set = compWithDescendants(id);
+  let rows = 0, issues = 0, open = 0;
+  dbList('rows').forEach(r=>{ if(set.has(r.componentId)) rows++; });
+  dbList('issues').forEach(i=>{ if(set.has(i.componentId)){ issues++; if(isOpenIssue(i)) open++; } });
+  return {rows, issues, open};
+}
+function subfolderCardsHtml(projectId, parentId){
+  const kids = compChildren(parentId);
+  return `<div class="section-label" style="margin-top:4px;">Подпапки${kids.length?' · '+kids.length:''}</div>
+    <div class="subfolders">${kids.map(c=>{ const n = folderCounts(c.id), sub = compChildren(c.id).length;
+      return `<a class="subfolder" href="#/project/${projectId}/folder/${c.id}"><span class="subfolder-ic" style="color:${folderColor(c.id)};">${icon('folder',20)}</span>
+        <div style="min-width:0;"><div class="subfolder-name">${esc(c.name)}</div><div class="hint" style="margin:0;">${n.rows.toLocaleString('ru-RU')} ${plural(n.rows,'строка','строки','строк')}${n.open?' · <span style="color:var(--high)">'+n.open+' открыто</span>':''}${sub?' · '+sub+' '+plural(sub,'подпапка','подпапки','подпапок'):''}</div></div></a>`; }).join('')}
+      <button type="button" class="subfolder subfolder-new" onclick="addComponent('${projectId}','${parentId}')">${icon('plus',18)}Подпапка</button></div>`;
+}
+
+/* ---------- deleting a file ---------- */
+async function deleteFile(fileId){
+  const f = dbGet('files', fileId); if(!f) return;
+  const rowIds = new Set(dbList('rows').filter(r=>r.fileId===fileId).map(r=>r.id));
+  const nIssues = dbList('issues').filter(i=>rowIds.has(i.rowId) && !i.visual).length;
+  if(!await uiConfirm({title:'Удалить файл «'+f.filename+'»?', text:f.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues} ${plural(nIssues,'проблема','проблемы','проблем')} из этого файла. Проблемы со скриншотов останутся, но отвяжутся от строк.`, okText:'Удалить файл'})) return;
+  const snap = snapshotTables(['files','rows','issues']);
+  dbSave('issues', dbList('issues').filter(i=>!(rowIds.has(i.rowId) && !i.visual)).map(i=>rowIds.has(i.rowId) ? Object.assign({}, i, {rowId:null}) : i));
+  dbSave('rows', dbList('rows').filter(r=>r.fileId!==fileId));
+  dbRemove('files', fileId);
+  toastUndo('Файл удалён', snap);
   router();
 }
 
@@ -2599,9 +2916,10 @@ function renderFolderDetail(el, projectId, componentId, tab){
   const project = dbGet('projects', projectId);
   const comp = dbGet('components', componentId);
   if(!project || !comp){ el.innerHTML = '<div class="empty"><b>Папка не найдена</b></div>'; return; }
-  setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id}, {label:comp.name, hash:'#/project/'+project.id+'/folder/'+componentId}, FOLDER_TABS.find(t=>t[0]===tab)?.[1]||'']);
-  const rows = dbQuery('rows', r=>r.componentId===componentId);
-  const issues = dbQuery('issues', i=>i.componentId===componentId);
+  setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id+'/folders'}].concat(compAncestors(comp).map(a=>({label:a.name, hash:'#/project/'+project.id+'/folder/'+a.id}))).concat([{label:comp.name, hash:'#/project/'+project.id+'/folder/'+componentId}, FOLDER_TABS.find(t=>t[0]===tab)?.[1]||'']));
+  const withKids = compWithDescendants(componentId);
+  const rows = dbQuery('rows', r=>withKids.has(r.componentId));
+  const issues = dbQuery('issues', i=>withKids.has(i.componentId));
   const files = dbQuery('files', f=>f.componentId===componentId).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
   const crit = issues.filter(i=>i.severity==='Критическая').length;
 
@@ -2609,11 +2927,14 @@ function renderFolderDetail(el, projectId, componentId, tab){
 
   let body = '';
   if(tab==='overview'){
-    body = `<div class="grid grid-4">
-      <div class="kpi"><div class="num">${rows.length}</div><div class="lbl">Строк</div></div>
+    const kids = withKids.size-1;
+    body = `${subfolderCardsHtml(projectId, componentId)}
+    <div class="section-label">Сводка${kids?' · вместе с подпапками':''}</div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num">${rows.length.toLocaleString('ru-RU')}</div><div class="lbl">Строк</div></div>
       <div class="kpi"><div class="num">${issues.length}</div><div class="lbl">Проблем</div></div>
       <div class="kpi crit"><div class="num">${crit}</div><div class="lbl">Критических</div></div>
-      <div class="kpi"><div class="num">${files.length}</div><div class="lbl">Файлов</div></div>
+      <div class="kpi"><div class="num">${files.length}</div><div class="lbl">Файлов в этой папке</div></div>
     </div>`;
   } else if(tab==='files'){
     const langs = project.languages||[];
@@ -2638,7 +2959,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <h3>Загруженные файлы</h3>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td>${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mono">${esc(f.filename)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -2647,7 +2968,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
 
   el.innerHTML = `
     <div class="page-head"><div><h1 class="page-title"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${folderColor(comp.id)};margin-right:8px;"></span>${esc(comp.name)}</h1><div class="page-sub">${esc(project.name)} · папка</div></div>
-      <div class="row"><button class="btn secondary" onclick="renameComponent('${componentId}')">Переименовать</button><button class="btn danger" onclick="deleteComponent('${componentId}')">Удалить папку</button></div>
+      <div class="row"><button class="btn secondary" onclick="addComponent('${projectId}','${componentId}')">${icon('plus',14)}Подпапка</button><button class="btn secondary" onclick="renameComponent('${componentId}')">Переименовать</button><button class="btn danger" onclick="deleteComponent('${componentId}')">Удалить папку</button></div>
     </div>
     <div class="tabbar">${tabsHtml}</div>
     <div id="folderTabBody">${body}</div>
@@ -2799,7 +3120,7 @@ async function handleFolderPoFiles(projectId, componentId, items){
   }
   status.textContent = 'Запускаю проверку…';
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
-    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
+    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : stage==='spell' ? 'Орфография: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
   const diffs = reconcileVersions(versionPairs);
   Object.entries(byLanguage).forEach(([languageCode, rowIds])=>{
@@ -2810,7 +3131,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
     if(d) toast('Новая версия ('+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
   if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
-  const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
+  const newRowSet = new Set(allNewRowIds);
+  const allIssues = dbQuery('issues', i=>newRowSet.has(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
   status.textContent = '';
@@ -2829,7 +3151,7 @@ function renderProjectFiles(p){
   return `<div class="card">
     <h3>Загрузить .po</h3>
     <div class="grid grid-2">
-      <label class="field">Папка<select id="uploadComponent">${comps.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+      <label class="field">Папка<select id="uploadComponent">${componentOptionsHtml(p.id, '')}</select></label>
       <label class="field">Язык<select id="uploadLanguage">${langs.map(l=>`<option value="${l.code}">${esc(l.name)} (${l.code})</option>`).join('')}</select></label>
       <label class="field">Кто загружает (менеджер)<select id="uploadManager">${managerSelectOptions()}</select></label>
     </div>
@@ -2849,7 +3171,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td class="mono">${esc(f.filename)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td>${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}</td></tr>`;
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}<button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -2986,7 +3308,7 @@ async function handlePoFiles(projectId, items){
   }
   status.textContent = 'Запускаю проверку…';
   await runFullCheckForProject(projectId, allNewRowIds, checkOverride, (done,total,stage)=>{
-    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : 'Проверка глоссария: ') + done + ' / ' + total;
+    status.textContent = (stage==='tech' ? 'Техническая проверка: ' : stage==='spell' ? 'Орфография: ' : 'Проверка глоссария: ') + done + ' / ' + total;
   });
   const diffs = reconcileVersions(versionPairs);
   Object.values(byGroup).forEach(({componentId, languageCode, rowIds})=>{
@@ -2997,7 +3319,8 @@ async function handlePoFiles(projectId, items){
     if(d) toast('Новая версия ('+(dbGet('components',componentId)?.name||'')+', '+languageCode+'): '+versionSummaryText(d), {duration:9000});
   });
   if(versionPairs.length) toast('Прежние версии файлов заменены новыми', {duration:9000, action:{label:'Отменить', fn:()=>{ restoreSnapshot(undoSnap); toast('Загрузка отменена'); router(); }}});
-  const allIssues = dbQuery('issues', i=>allNewRowIds.includes(i.rowId));
+  const newRowSet = new Set(allNewRowIds);
+  const allIssues = dbQuery('issues', i=>newRowSet.has(i.rowId));
   toast('Проверка завершена');
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
   status.textContent = '';
@@ -3009,7 +3332,8 @@ async function rerunFileCheck(fileId){
   const rowIds = dbQuery('rows', r=>r.fileId===fileId).map(r=>r.id);
   toast('Перезапускаю проверку…');
   await runFullCheckForProject(file.projectId, rowIds);
-  const issues = dbQuery('issues', i=>rowIds.includes(i.rowId));
+  const rowIdSet = new Set(rowIds);
+  const issues = dbQuery('issues', i=>rowIdSet.has(i.rowId));
   dbUpsert('runs', {id:uid(), projectId:file.projectId, componentId:file.componentId, languageCode:file.languageCode, fileId, rowCount:rowIds.length, issueCount:issues.length, quality:rowsQuality(rowIds), createdAt:nowISO()});
   toast('Проверка перезапущена');
   router();
@@ -3021,6 +3345,201 @@ function pluralFormsHtml(r){
   const need = r.nplurals || PLURAL_COUNTS[baseLang(r.languageCode)];
   return `<div><div class="hint">Формы множественного числа · ${r.targetForms.length}${need?' из '+need:''}${r.sourcePlural?` · исходная мн. форма: <span class="mono">${esc(r.sourcePlural)}</span>`:''}</div>
     <div class="plural-forms">${r.targetForms.map((f,i)=>`<div><span>${i+1}</span><div class="mono">${String(f||'').trim()?highlightTokens(f):'<i style="color:var(--crit);">пусто</i>'}</div></div>`).join('')}</div></div>`;
+}
+/* ---------- spelling ----------
+   Hunspell dictionaries through nspell. Built-in ones come from the npm "dictionary-xx" packages on
+   jsDelivr (downloaded on first use, then from the browser cache); any other language works with an
+   uploaded .aff + .dic pair, kept in this browser only (_dictionaries). The dictionary is compiled in a
+   Web Worker so a big one (ru ≈ 3 s) doesn't freeze the page. Team words to accept live in settings.spellWords. */
+const SPELL_CDN_DICTS = {ru:'dictionary-ru@3', en:'dictionary-en@4', hy:'dictionary-hy@2', ka:'dictionary-ka@2', tr:'dictionary-tr@2', uk:'dictionary-uk@4', be:'dictionary-be@1'};
+const SPELL_SCRIPT = {ru:'Cyrl', uk:'Cyrl', be:'Cyrl', kk:'Cyrl', ky:'Cyrl', tg:'Cyrl', en:'Latn', tr:'Latn', az:'Latn', uz:'Latn', hy:'Armn', ka:'Geor'};
+function cdnBase(){ return (typeof window!=='undefined' && window.LQA_CDN) || 'https://cdn.jsdelivr.net/npm/'; }
+function spellBaseLang(code){ return String(code||'').toLowerCase().split(/[-_]/)[0]; }
+function spellDictSource(code){
+  const l = spellBaseLang(code); const custom = dbGet('_dictionaries', l);
+  if(custom) return {kind:'custom', l, custom};
+  if(SPELL_CDN_DICTS[l]) return {kind:'cdn', l, pkg:SPELL_CDN_DICTS[l]};
+  return null;
+}
+function scriptOfWord(w){ return /\p{Script=Cyrillic}/u.test(w) ? 'Cyrl' : /\p{Script=Latin}/u.test(w) ? 'Latn' : /\p{Script=Armenian}/u.test(w) ? 'Armn' : /\p{Script=Georgian}/u.test(w) ? 'Geor' : 'Other'; }
+function detectDicScript(dic){
+  const counts = {}; String(dic).split('\n').slice(1, 400).forEach(line=>{ const sc = scriptOfWord(line.split('/')[0]); counts[sc] = (counts[sc]||0)+1; });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+}
+const SPELL_WORKER_SRC = `let sp = null;
+self.onmessage = async e=>{ const m = e.data;
+  try{
+    if(m.type==='init'){ const mod = await import(m.url); const nspell = mod.default || mod; sp = nspell(m.aff, m.dic); postMessage({id:m.id, ok:true}); }
+    else if(m.type==='check'){ const out = {}; let n = 0; for(const w of m.words){ if(!sp.correct(w)) out[w] = n++ < (m.maxSuggest||200) ? sp.suggest(w).slice(0,3) : []; } postMessage({id:m.id, ok:true, out}); }
+  }catch(err){ postMessage({id:m.id, ok:false, error:String(err && err.message || err)}); }
+};`;
+const spellers = {};
+function getSpeller(code){
+  const src = spellDictSource(code); if(!src) return null;
+  const key = src.l + (src.kind==='custom' ? ':'+src.custom.uploadedAt : '');
+  if(spellers[key]) return spellers[key];
+  return spellers[key] = (async ()=>{
+    let aff, dic;
+    if(src.kind==='custom'){ aff = src.custom.aff; dic = src.custom.dic; }
+    else {
+      const base = cdnBase()+src.pkg+'/';
+      const [a, d] = await Promise.all([fetch(base+'index.aff'), fetch(base+'index.dic')]);
+      if(!a.ok || !d.ok) throw new Error('словарь '+src.l+' не загрузился');
+      aff = await a.text(); dic = await d.text();
+    }
+    const script = SPELL_SCRIPT[src.l] || detectDicScript(dic);
+    const url = cdnBase()+'nspell@2.1.5/+esm';
+    let worker = null;
+    try{ worker = new Worker(URL.createObjectURL(new Blob([SPELL_WORKER_SRC], {type:'text/javascript'})), {type:'module'}); }catch(e){ worker = null; }
+    if(worker){
+      let seq = 0; const pending = {};
+      worker.onmessage = e=>{ const p = pending[e.data.id]; if(!p) return; delete pending[e.data.id]; e.data.ok ? p.res(e.data) : p.rej(new Error(e.data.error)); };
+      worker.onerror = e=>{ Object.values(pending).forEach(p=>p.rej(new Error(e.message || 'не запустилась проверка орфографии'))); };
+      const call = msg=>new Promise((res, rej)=>{ const id = ++seq; pending[id] = {res, rej}; worker.postMessage(Object.assign({id}, msg)); });
+      try{
+        await call({type:'init', url, aff, dic});
+        return {script, check:(words, maxSuggest)=>call({type:'check', words, maxSuggest}).then(r=>r.out)};
+      }catch(e){ worker.terminate(); } // e.g. a page opened from disk can't start module workers — compile on the page instead
+    }
+    const mod = await import(url); const sp = (mod.default || mod)(aff, dic);
+    return {script, check: async (words, maxSuggest)=>{ const out = {}; let n = 0; words.forEach(w=>{ if(!sp.correct(w)) out[w] = n++ < (maxSuggest||200) ? sp.suggest(w).slice(0,3) : []; }); return out; }};
+  })().catch(e=>{ delete spellers[key]; throw e; });
+}
+// words worth checking: no placeholders, tags, links, numbers, short words, abbreviations or camelCase ids
+function spellTokens(text){
+  const t = String(text||'').replace(TAG_RE,' ').replace(VAR_RE,' ').replace(/\{[^{}]*\}/g,' ').replace(/https?:\/\/\S+|www\.\S+|\S+@\S+\.\S+/g,' ').replace(/\\n/g,' ');
+  const out = [];
+  (t.match(/[\p{L}\p{M}'’ʼ]+(?:-[\p{L}\p{M}'’ʼ]+)*/gu)||[]).forEach(tok=>{
+    tok.split('-').forEach(w=>{
+      w = w.replace(/’|ʼ/g, "'").replace(/^'+|'+$/g,'');
+      if(w.length<3 || w===w.toUpperCase() || /\p{Ll}\p{Lu}/u.test(w)) return;
+      out.push(w);
+    });
+  });
+  return out;
+}
+function spellPersonalSet(s){
+  const set = new Set();
+  const add = txt=>spellTokens(txt).forEach(w=>set.add(w.toLowerCase()));
+  String(s.spellWords||'').split(/[\n,;]+/).forEach(w=>{ w = w.trim(); if(w) set.add(w.toLowerCase().replace(/’|ʼ/g,"'")); });
+  parseDntTerms(s.dntTerms).forEach(add);
+  dbList('glossaryTerms').forEach(t=>{ add(t.term); add(t.approved); });
+  return set;
+}
+let spellFailToastShown = {};
+async function runSpellCheck(rowIds, s, onProgress){
+  const rowSet = new Set(rowIds);
+  const rows = dbList('rows').filter(r=>rowSet.has(r.id));
+  const personal = spellPersonalSet(s);
+  const byLang = {};
+  rows.forEach(r=>{ if((r.target||'').trim()){ const l = spellBaseLang(r.languageCode); (byLang[l] = byLang[l]||[]).push(r); } });
+  const newIssues = [];
+  const mk = (r, text, words, sugg, field)=>({id:uid(), rowId:r.id, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode,
+    type:'Орфография', severity:'Низкая', text, status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:'Обнаружена (проверка орфографии)'}],
+    aiExplanation:null, aiSuggestion:null, aiConfidence:null, highlightField:field, highlightText:words[0], expectedText:(sugg[words[0]]||[])[0]||null, confidence:'high', matchType:null, spellWords:words});
+  const describe = (words, sugg)=>words.slice(0,4).map(w=>'«'+w+'»'+((sugg[w]||[]).length?' (может быть: '+sugg[w].join(', ')+')':'')).join('; ')+(words.length>4?' и ещё '+(words.length-4):'');
+  const tasks = Object.entries(byLang).map(([l, list])=>({l, list, field:'target', get:r=>r.target}));
+  if(s.spellSource){
+    // a typo in the source is one problem, not one per language: skip strings already flagged through another language's row
+    const seen = new Set(dbList('issues').filter(i=>i.type==='Орфография' && i.highlightField==='source' && !rowSet.has(i.rowId)).map(i=>{ const r = dbGet('rows', i.rowId); return r ? r.componentId+'|'+(r.key||r.source) : ''; }));
+    const list = rows.filter(r=>{ const k = r.componentId+'|'+(r.key||r.source); if(seen.has(k) || !(r.source||'').trim()) return false; seen.add(k); return true; });
+    if(list.length) tasks.push({l:'ru', list, field:'source', get:r=>r.source});
+  }
+  let done = 0; const total = rows.length;
+  for(const task of tasks){
+    let sp;
+    try{ sp = getSpeller(task.l); if(!sp){ done += task.field==='target' ? task.list.length : 0; continue; } sp = await sp; }
+    catch(e){ if(!spellFailToastShown[task.l]){ spellFailToastShown[task.l] = 1; toast('Орфография '+task.l+': '+e.message); } continue; }
+    const wordsByRow = new Map(), uniq = new Set();
+    task.list.forEach(r=>{ const ws = [...new Set(spellTokens(task.get(r)).filter(w=>!personal.has(w.toLowerCase()) && (!sp.script || scriptOfWord(w)===sp.script)))]; wordsByRow.set(r.id, ws); ws.forEach(w=>uniq.add(w)); });
+    const all = [...uniq], bad = {};
+    for(let k=0; k<all.length; k+=2000){ Object.assign(bad, await sp.check(all.slice(k, k+2000), 300)); }
+    task.list.forEach(r=>{
+      const miss = wordsByRow.get(r.id).filter(w=>w in bad);
+      if(miss.length) newIssues.push(mk(r, (task.field==='source' ? 'Опечатка в исходном тексте: ' : 'Возможная опечатка: ')+describe(miss, bad), miss, bad, task.field));
+    });
+    if(task.field==='target'){ done += task.list.length; if(onProgress) onProgress(done, total, 'spell'); }
+  }
+  if(newIssues.length) dbSave('issues', dbList('issues').concat(newIssues));
+  return newIssues.length;
+}
+function addSpellWordsFromIssue(issueId){
+  const i = dbGet('issues', issueId); if(!i) return;
+  const words = (i.spellWords||[]).map(w=>w.toLowerCase());
+  const s = getSettings();
+  const cur = new Set(String(s.spellWords||'').split(/[\n,;]+/).map(w=>w.trim().toLowerCase()).filter(Boolean));
+  words.forEach(w=>cur.add(w));
+  saveSettings({spellWords:[...cur].sort().join('\n')});
+  // close every open spelling problem that is only about words now accepted
+  let closed = 0;
+  dbSave('issues', dbList('issues').map(x=>{
+    if(x.type!=='Орфография' || !isOpenIssue(x) || !(x.spellWords||[]).every(w=>cur.has(w.toLowerCase()))) return x;
+    closed++; return Object.assign({}, x, {status:'Ложное срабатывание', history:(x.history||[]).concat([{ts:nowISO(), action:'Слово добавлено в словарь команды', by:getMe()||null}])});
+  }));
+  toast('В словаре: '+words.join(', ')+(closed>1?' · закрыто похожих: '+closed:''));
+  closeDetailPanel(); router();
+}
+function spellCardHtml(){
+  const s = getSettings();
+  const langs = [...new Set(dbList('projects').flatMap(p=>(p.languages||[]).map(l=>spellBaseLang(l.code))).concat(dbList('_dictionaries').map(d=>d.id)))].sort();
+  const rowsHtml = langs.map(l=>{ const src = spellDictSource(l);
+    const st = !src ? '<span class="pill st-rejected">нет словаря</span>' : src.kind==='custom' ? `<span class="pill st-accepted">свой: ${esc(src.custom.name)}</span>` : '<span class="pill st-new">встроенный</span>';
+    return `<tr><td>${languageFlag(l)} ${esc(languageLabel(l))} <span class="hint" style="margin:0;">${l}</span></td><td>${st}</td><td class="nowrap" style="text-align:right;"><button class="btn ghost sm" onclick="pickSpellDictionary('${l}')">${icon('upload',14)}${src&&src.kind==='custom'?'Заменить':'Загрузить .aff + .dic'}</button>${src&&src.kind==='custom'?`<button class="btn ghost sm" style="color:var(--crit);" title="Удалить свой словарь" onclick="deleteSpellDictionary('${l}')">${icon('trash',14)}</button>`:''}</td></tr>`; }).join('');
+  return `<div class="card"><h3 style="margin-bottom:4px;">Орфография</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Ищет опечатки в переводе по словарям Hunspell. Встроенные словари: русский, английский, армянский, грузинский, турецкий, украинский, белорусский — скачиваются при первой проверке. Для казахского, узбекского, киргизского и других загрузи свой словарь: пару файлов <span class="mono">.aff</span> и <span class="mono">.dic</span> (их можно взять, например, из словарей LibreOffice). Свои словари хранятся в этом браузере. Бренды из «Не переводить», термины глоссария и слова ниже считаются правильными.</div>
+    <label class="checkrow"><input type="checkbox" id="spEnabled" ${s.checkSpelling?'checked':''} onchange="saveSettings({checkSpelling:this.checked});toast(this.checked?'Орфография включена':'Орфография выключена')"> Проверять орфографию при загрузке файлов</label>
+    <label class="checkrow"><input type="checkbox" id="spSource" ${s.spellSource?'checked':''} onchange="saveSettings({spellSource:this.checked})"> Проверять и исходный текст (русский) — одна проблема на строку, а не на каждый язык</label>
+    ${langs.length ? `<div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>Язык</th><th>Словарь</th><th></th></tr></thead><tbody>${rowsHtml}</tbody></table></div>` : ''}
+    <label class="field" style="margin-top:14px;">Слова команды <span style="font-weight:400;color:var(--text-faint);">— считаются правильными во всех языках, по одному в строке. Пополняется кнопкой «В словарь» в карточке проблемы</span>
+      <textarea id="spWords" style="min-height:80px;font-family:inherit;font-size:14px;" placeholder="маркетплейс&#10;пункт выдачи" onchange="saveSettings({spellWords:this.value});toast('Слова сохранены')">${esc(s.spellWords||'')}</textarea></label>
+    <input type="file" id="spFile" accept=".aff,.dic" multiple style="display:none;" onchange="loadSpellDictionaryFiles(this)">
+  </div>`;
+}
+let spellPickLang = null;
+function pickSpellDictionary(l){ spellPickLang = l; const f = document.getElementById('spFile'); f.value = ''; f.click(); }
+async function loadSpellDictionaryFiles(input){
+  const files = [...input.files]; const aff = files.find(f=>/\.aff$/i.test(f.name)), dic = files.find(f=>/\.dic$/i.test(f.name));
+  if(!aff || !dic){ toast('Выбери сразу два файла: .aff и .dic'); return; }
+  const readText = async f=>{ const buf = await f.arrayBuffer(); const head = new TextDecoder('latin1').decode(buf.slice(0, 4000)); const m = f===aff ? head.match(/^SET\s+(\S+)/m) : null; const enc = (m ? m[1] : (readText.enc||'utf-8')).toLowerCase(); if(f===aff) readText.enc = enc; try{ return new TextDecoder(enc).decode(buf); }catch(e){ return new TextDecoder('utf-8').decode(buf); } };
+  const affText = await readText(aff), dicText = await readText(dic);
+  dbUpsert('_dictionaries', {id:spellPickLang, lang:spellPickLang, name:dic.name.replace(/\.dic$/i,''), aff:affText, dic:dicText, uploadedAt:nowISO()});
+  toast('Словарь для «'+languageLabel(spellPickLang)+'» загружен: '+(dicText.split('\n').length-1).toLocaleString('ru-RU')+' слов');
+  router();
+}
+async function deleteSpellDictionary(l){
+  if(!await uiConfirm({title:'Удалить свой словарь «'+languageLabel(l)+'»?', text:SPELL_CDN_DICTS[l]?'Дальше будет использоваться встроенный словарь.':'Орфография для этого языка перестанет проверяться.', okText:'Удалить'})) return;
+  dbRemove('_dictionaries', l); router();
+}
+
+/* ---------- string history ----------
+   rows keep targetHistory: [{ts, how:'upload'|'fix', from, to, file, by, comment}] — every change of the
+   translation between file versions and every fix made in the platform. */
+const ROW_HISTORY_MAX = 30;
+function wordDiffHtml(a, b){
+  a = a||''; b = b||'';
+  const A = a.split(/(\s+)/).filter(x=>x!==''), B = b.split(/(\s+)/).filter(x=>x!=='');
+  if(A.length*B.length > 250000) return `<del>${esc(a)}</del> <ins>${esc(b)}</ins>`;
+  const n = A.length, m = B.length, L = Array.from({length:n+1},()=>new Uint16Array(m+1));
+  for(let x=n-1;x>=0;x--) for(let y=m-1;y>=0;y--) L[x][y] = A[x]===B[y] ? L[x+1][y+1]+1 : Math.max(L[x+1][y], L[x][y+1]);
+  const out = []; let x = 0, y = 0;
+  const add = (k,t)=>{ const last = out[out.length-1]; if(last && last[0]===k) last[1]+=t; else out.push([k,t]); };
+  while(x<n && y<m){ if(A[x]===B[y]){ add('=',A[x]); x++; y++; } else if(L[x+1][y]>=L[x][y+1]) add('-',A[x++]); else add('+',B[y++]); }
+  while(x<n) add('-',A[x++]); while(y<m) add('+',B[y++]);
+  return out.map(([k,t])=>k==='=' ? esc(t) : k==='-' ? `<del>${esc(t)}</del>` : `<ins>${esc(t)}</ins>`).join('');
+}
+function rowHistoryHtml(r){
+  const hist = (r.targetHistory||[]).slice().reverse();
+  const file = r.fileId ? dbGet('files', r.fileId) : null;
+  const first = r.firstSeenAt || (file && file.uploadedAt);
+  if(!hist.length) return first ? `<div class="hint" style="margin-top:12px;">Перевод не менялся с ${fmtDate(first)}${file?' · файл '+esc(file.filename):''}</div>` : '';
+  return `<div style="margin-top:14px;"><div class="hint" style="margin-bottom:6px;">История перевода · ${hist.length} ${plural(hist.length,'изменение','изменения','изменений')}</div>
+    <div class="rhist">${hist.map(h=>`<div class="rhist-item ${h.how==='fix'?'fix':''}">
+      <div class="rhist-meta"><b>${h.how==='fix'?'Исправлено в платформе':'Новая версия файла'}</b> · ${fmtDate(h.ts)}${h.by?' · '+esc(h.by):''}${h.file?` · <span class="mono">${esc(h.file)}</span>`:''}${h.issueType?' · '+esc(h.issueType):''}</div>
+      <div class="rhist-diff mono">${wordDiffHtml(h.from, h.to)}</div>
+      ${h.sourceFrom!==undefined?`<div class="hint" style="margin:4px 0 0;">Исходный текст тоже изменился: ${wordDiffHtml(h.sourceFrom, r.source)}</div>`:''}
+      ${h.comment?`<div class="hint" style="margin:4px 0 0;">«${esc(h.comment)}»</div>`:''}
+    </div>`).join('')}
+    ${first?`<div class="rhist-item first"><div class="rhist-meta">Впервые появилась · ${fmtDate(first)}</div></div>`:''}</div></div>`;
 }
 function openRowDetail(rowId){
   const r = dbGet('rows', rowId);
@@ -3034,6 +3553,7 @@ function openRowDetail(rowId){
       ${pluralFormsHtml(r)}
       ${tmRowHtml(r)}
     </div>
+    ${rowHistoryHtml(r)}
     ${rowContextHtml(r)}
     <div style="margin-top:14px;"><div class="hint" style="margin-bottom:6px;">Найденные проблемы (${issues.length})</div>
       ${issues.length ? issues.map(i=>`<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
@@ -3142,7 +3662,11 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
       ['review','Требуют ревью', allIssues.filter(i=>i.status==='На проверке').length],
       ['ai','AI-проверенные', allIssues.filter(i=>i.aiExplanation!=null).length],
     ];
-    qwrap.innerHTML = chips.map(([mode,label,count])=>`<button type="button" class="chip ${st.quickFilter===mode?'chip-active':''}" onclick="setQuickFilter('${key}','${mode}', issuesFixedFilters['${mountId}'])">${esc(label)} <span class="chip-count">${count}</span></button>`).join('');
+    const qEl = document.getElementById(key+'_q'), curView = viewSignature(st, qEl ? qEl.value : '');
+    const views = dbList('savedViews').sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+    qwrap.innerHTML = `<div class="row" style="gap:0;row-gap:6px;flex-wrap:wrap;">${chips.map(([mode,label,count])=>`<button type="button" class="chip ${st.quickFilter===mode&&!views.some(v=>viewSignature(v)===curView)?'chip-active':''}" onclick="setQuickFilter('${key}','${mode}', issuesFixedFilters['${mountId}'])">${esc(label)} <span class="chip-count">${count}</span></button>`).join('')}
+      ${views.length?'<span class="chip-sep"></span>':''}${views.map(v=>`<span class="chip chip-view ${viewSignature(v)===curView?'chip-active':''}"><button type="button" onclick="applySavedView('${key}','${v.id}')" title="${esc(savedViewSummary(v))}">${icon('star',13)}${esc(v.name)}</button><button type="button" class="chip-x" title="Удалить фильтр" onclick="deleteSavedView('${key}','${v.id}')">${icon('x',12)}</button></span>`).join('')}
+      ${viewIsDefault(st, qEl ? qEl.value : '') ? '' : `<button type="button" class="chip chip-save" onclick="saveCurrentView('${key}')">${icon('plus',13)}Сохранить фильтр</button>`}</div>`;
   }
 
   // filter bar is cheap to fully re-render every time (reflects current selections/open panel);
@@ -3376,6 +3900,48 @@ function renderMsel(key, field, label, options){
       <div class="msel-actions"><a href="javascript:void(0)" onclick="clearMselField('${key}','${field}')" style="font-size:12px;color:var(--text-faint);">сбросить</a><button class="btn secondary sm" style="margin-left:auto;" onclick="closeMselPanel('${key}')">Готово</button></div>
     </div>` : '';
   return `<div class="msel"><button type="button" id="${key}_${field}_btn" class="btn secondary sm ${sel.size?'msel-on':''}" onclick="toggleMselPanel('${key}','${field}')">${esc(summary)}<span class="chev">${icon('chevronDown',14)}</span></button>${panel}</div>`;
+}
+/* ---------- saved filters ----------
+   savedViews: {id, name, quickFilter, filters:{field:[values]}, q, by, createdAt} — shared with the team through sync. */
+const VIEW_FIELDS = ['proj','comp','file','lang','sev','status','type'];
+function viewFromState(st, q){ const f = {}; VIEW_FIELDS.forEach(k=>{ const v = [...(st.filters[k]||[])].sort(); if(v.length) f[k] = v; }); return {quickFilter: st.quickFilter||'all', filters:f, q:(q||'').trim()}; }
+function viewSignature(st, q){ const v = st.filters && st.filters.proj instanceof Set ? viewFromState(st, q) : st; const f = v.filters||{}; return JSON.stringify([v.quickFilter||'all', VIEW_FIELDS.map(k=>(f[k]||[]).slice().sort()), (v.q||'').trim().toLowerCase()]); }
+function viewIsDefault(st, q){ return viewSignature(st, q)===JSON.stringify(['all', VIEW_FIELDS.map(()=>[]), '']); }
+function savedViewSummary(v){
+  const names = {proj:'проект', comp:'папка', file:'файл', lang:'язык', sev:'важность', status:'статус', type:'тип'};
+  const parts = []; const qf = {critical:'критические', review:'требуют ревью', ai:'AI-проверенные'}[v.quickFilter]; if(qf) parts.push(qf);
+  Object.entries(v.filters||{}).forEach(([k,vals])=>{ const label = k==='proj' ? vals.map(id=>dbGet('projects',id)?.name||'?') : k==='comp' ? vals.map(id=>dbGet('components',id)?.name||'?') : k==='file' ? vals.map(id=>dbGet('files',id)?.filename||'?') : vals; parts.push(names[k]+': '+label.join(', ')); });
+  if(v.q) parts.push('поиск «'+v.q+'»');
+  return parts.join(' · ') || 'все проблемы';
+}
+async function saveCurrentView(key){
+  const st = issuesPageState[key]; if(!st) return;
+  const qEl = document.getElementById(key+'_q');
+  const v = viewFromState(st, qEl ? qEl.value : '');
+  const name = await uiPrompt({title:'Сохранить фильтр', label:'Название', placeholder:'например: казахский, критичные, мои', text:esc(savedViewSummary(v))+'. Фильтр увидят все в команде, он появится рядом с быстрыми фильтрами и в палитре команд (Ctrl+K).'});
+  if(!name) return;
+  dbUpsert('savedViews', Object.assign({id:uid(), name, by:getMe()||null, createdAt:nowISO()}, v));
+  toast('Фильтр «'+name+'» сохранён'); rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+function applySavedView(key, id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  const st = issuesPageState[key] = issuesPageState[key] || {page:1, selected:new Set(), openPanel:null, quickFilter:'all', filters:{}};
+  st.quickFilter = v.quickFilter||'all'; st.page = 1; st.selected = new Set(); st.openPanel = null;
+  st.filters = {}; VIEW_FIELDS.forEach(k=>st.filters[k] = new Set((v.filters||{})[k]||[]));
+  const qEl = document.getElementById(key+'_q'); if(qEl) qEl.value = v.q||'';
+  if(document.getElementById(key)) rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+async function deleteSavedView(key, id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  const snap = snapshotTables(['savedViews']);
+  dbRemove('savedViews', id); toastUndo('Фильтр «'+v.name+'» удалён', snap);
+  rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+function openSavedViewGlobally(id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  applySavedView('issuesRoot', id);
+  if(location.hash!=='#/issues') location.hash = '#/issues';
+  setTimeout(()=>{ const qEl = document.getElementById('issuesRoot_q'); if(qEl && qEl.value!==(v.q||'')){ qEl.value = v.q||''; renderIssuesTableGeneric({}, 'issuesRoot'); } }, 60);
 }
 function setQuickFilter(key, mode, fixedFilter){
   const st = issuesPageState[key];
@@ -3638,6 +4204,8 @@ function detectionSourceLabel(issue){
   const a = first.action;
   if(a.includes('техническая проверка')) return 'Техническая проверка';
   if(a.includes('глоссария')) return 'Глоссарий';
+  if(a.includes('орфографии')) return 'Проверка орфографии';
+  if(a.includes('распознавание текста')) return 'Распознавание текста на скриншоте';
   if(a.includes('согласованности')) return 'Проверка согласованности';
   if(a.includes('по скриншоту')) return 'AI по скриншоту';
   if(a.includes('визуальная')) return 'Визуальная проверка';
@@ -3672,6 +4240,8 @@ function openIssueDetail(issueId){
       ${i.shotId ? `<button class="btn ghost sm" onclick="openShotViewer('${i.shotId}','${issueId}')">${icon('image',14)}Открыть скриншот</button>` : ''}
       ${r ? `<button class="btn ghost sm" onclick="openRowDetail('${i.rowId}')">Открыть строку</button>` : ''}
       ${i.visual ? '' : `<button class="btn ghost sm" onclick="passToVisualCheck('${issueId}')">В визуальную проверку</button>`}
+      ${i.visual ? '' : `<button class="btn ghost sm" onclick="openIgnoreRuleDialog('${issueId}')">${icon('x',14)}Игнорировать похожие</button>`}
+      ${i.type==='Орфография' && (i.spellWords||[]).length ? `<button class="btn ghost sm" onclick="addSpellWordsFromIssue('${issueId}')">${icon('plus',14)}В словарь: ${esc(i.spellWords.slice(0,3).join(', '))}</button>` : ''}
     </div>
     ${!i.visual ? rowContextHtml(r, issueId) : ''}
     ${issueDiscussionHtml(i, issueId)}
@@ -3725,6 +4295,11 @@ function rowScreens(r){
     const sess = dbGet('visualSessions', sh.sessionId);
     seen.add(i.shotId); out.push({sh, sess, issueId:i.id});
   });
+  // screenshots where text recognition found this string
+  dbList('visualShots').forEach(sh=>{
+    if(seen.has(sh.id) || !sh.ocr || !(sh.ocr.lines||[]).some(l=>l.rowId && sameKeyRows.has(l.rowId))) return;
+    seen.add(sh.id); out.push({sh, sess:dbGet('visualSessions', sh.sessionId), issueId:''});
+  });
   return out;
 }
 function rowContextHtml(r, currentIssueId){
@@ -3771,6 +4346,7 @@ function applyFix(issueId){
   const newTarget = document.getElementById('fixTarget').value;
   const comment = document.getElementById('fixComment').value.trim();
   const reviewer = document.getElementById('fixReviewer').value.trim();
+  if(oldTarget!==newTarget) r.targetHistory = (r.targetHistory||[]).concat([{ts:nowISO(), how:'fix', from:oldTarget, to:newTarget, by:reviewer||getMe()||null, comment:comment||undefined, issueType:i.type}]).slice(-ROW_HISTORY_MAX);
   r.target = newTarget; if(r.targetForms) r.targetForms[0] = newTarget; dbUpsert('rows', r);
   i.status = 'Принята после исправления';
   if(reviewer) i.assignedTo = reviewer;
@@ -4286,6 +4862,7 @@ function renderVisualSession(el, sessionId){
         <button class="btn secondary sm" onclick="openVisualSessionModal(null,'${s.id}')">${icon('edit',14)}Изменить</button>
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
         <button class="btn secondary sm" ${issues.length?'':'disabled'} onclick="runSessionSummary('${s.id}')" title="${aiReady?'Короткий разбор страницы: главное и что исправлять первым':'Подключи ИИ в Настройках'}">${icon('sparkles',14)}ИИ-вывод</button>
+        <button class="btn secondary" ${shots.length?'':'disabled'} onclick="runSessionOcr('${s.id}')" title="Бесплатно, в браузере: прочитать текст со скриншотов, связать его со строками и найти непереведённое">${icon('search',16)}Распознать текст</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
       </div>
     </div>
@@ -4310,7 +4887,7 @@ function renderVisualSession(el, sessionId){
       return `<div class="shot-card" onclick="openShotViewer('${sh.id}')">
         <div class="shot-thumb"><img src="${sh.thumb}" alt="" loading="lazy">
           ${si.length?`<span class="pill sev-${severityClass(w)} shot-count">${si.length}</span>`:''}
-          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}</div>
+          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}${sh.ocr?`<span class="shot-ocr" title="Текст распознан: ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')}, связано ${sh.ocr.lines.filter(l=>l.rowId).length}">Aa</span>`:''}</div>
         <div class="shot-meta"><span>${idx+1}. ${esc(sh.name)}</span>${sh.source==='video'?`<span class="hint" style="margin:0;">${fmtClock(sh.frameTime)}</span>`:''}</div>
       </div>`;
     }).join('')}</div>` : ''}
@@ -4434,6 +5011,198 @@ function shiftRefShot(delta){
   sh.refShotId = r.list[i].id; dbUpsert('visualShots', sh);
   renderShotViewer();
 }
+/* ---------- text recognition (OCR) on screenshots ----------
+   Tesseract.js runs in the browser: no AI, no key, nothing leaves the computer except the one-time
+   download of the engine and language data (from jsDelivr, then cached). Every recognized line is
+   matched to the project's strings; lines that are clearly wrong on screen become problems:
+   Russian text in a non-Russian UI, a visible placeholder or string key, roubles outside Russian. */
+let viewerOcr = false;
+const OCR_LANGS = {kk:'kaz', uz:'uzb', ky:'kir', tg:'tgk', hy:'hye', ka:'kat', az:'aze', tr:'tur', en:'eng', ru:'rus', uk:'ukr', be:'bel', zh:'chi_sim', ar:'ara', fr:'fra', de:'deu', es:'spa', he:'heb', ro:'ron', pl:'pol', mn:'mon', it:'ita', pt:'por', vi:'vie', th:'tha', ja:'jpn', ko:'kor'};
+const CYRILLIC_UI_LANGS = new Set(['ru','kk','ky','tg','be','uk','mn','bg','sr','mk']);
+function ocrLangsFor(code){
+  const c = String(code||'').toLowerCase(), l = spellBaseLang(c);
+  const main = l==='uz' && c.includes('cyrl') ? 'uzb_cyrl' : OCR_LANGS[l];
+  return [...new Set([main, 'rus', 'eng'].filter(Boolean))];
+}
+let tesseractLoad = null;
+function ensureTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(tesseractLoad) return tesseractLoad;
+  return tesseractLoad = new Promise((res, rej)=>{
+    const sc = document.createElement('script'); sc.src = cdnBase()+'tesseract.js@7.0.0/dist/tesseract.min.js';
+    sc.onload = ()=>res(); sc.onerror = ()=>{ tesseractLoad = null; rej(new Error('не загрузилась библиотека распознавания — проверь интернет')); };
+    document.head.appendChild(sc);
+  });
+}
+const ocrWorkers = {};
+let ocrProgress = null;
+function getOcrWorker(langs){
+  const key = langs.join('+');
+  if(ocrWorkers[key]) return ocrWorkers[key];
+  return ocrWorkers[key] = (async ()=>{
+    await ensureTesseract();
+    const opts = {workerPath:cdnBase()+'tesseract.js@7.0.0/dist/worker.min.js', corePath:cdnBase()+'tesseract.js-core@7.0.0', logger:m=>{ if(ocrProgress) ocrProgress(m); }};
+    if(window.LQA_TESSDATA) opts.langPath = window.LQA_TESSDATA;
+    return Tesseract.createWorker(langs, 1, opts);
+  })().catch(e=>{ delete ocrWorkers[key]; throw e; });
+}
+// small UI text reads much better at 2×; returns {src, w, h} of the original image
+function ocrPrepareImage(dataUrl){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const w = img.naturalWidth, h = img.naturalHeight, k = w < 1800 ? 2 : 1;
+      const cv = document.createElement('canvas'); cv.width = w*k; cv.height = h*k;
+      const cx = cv.getContext('2d', {willReadFrequently:true}); cx.imageSmoothingQuality = 'high'; cx.drawImage(img, 0, 0, w*k, h*k);
+      const src = k===1 ? dataUrl : cv.toDataURL('image/png');
+      // light text on coloured buttons and dark banners is invisible to Tesseract: a second, inverted grayscale pass reads it
+      // second image: inside mostly-dark areas light pixels (the text) become black on white, everything else is blanked out
+      const W = cv.width, H = cv.height, px = cx.getImageData(0, 0, W, H), d = px.data;
+      const Y = new Uint8Array(W*H), S = new Uint32Array((W+1)*(H+1));
+      let dark = 0;
+      for(let yy=0; yy<H; yy++){ let row = 0; for(let xx=0; xx<W; xx++){ const i = (yy*W+xx)*4, v = .299*d[i]+.587*d[i+1]+.114*d[i+2]; Y[yy*W+xx] = v; const m = v<128 ? 1 : 0; dark += m; row += m; S[(yy+1)*(W+1)+xx+1] = S[yy*(W+1)+xx+1] + row; } }
+      const darkShare = dark/(W*H);
+      let inv = null;
+      if(darkShare > .02){
+        const r = 14*k;
+        for(let yy=0; yy<H; yy++){ const y0 = Math.max(0,yy-r), y1 = Math.min(H,yy+r+1);
+          for(let xx=0; xx<W; xx++){ const x0 = Math.max(0,xx-r), x1 = Math.min(W,xx+r+1);
+            const frac = (S[y1*(W+1)+x1]-S[y0*(W+1)+x1]-S[y1*(W+1)+x0]+S[y0*(W+1)+x0])/((y1-y0)*(x1-x0));
+            const i = (yy*W+xx)*4, v = frac>.55 && Y[yy*W+xx]>150 ? 0 : 255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; } }
+        cx.putImageData(px, 0, 0); inv = cv.toDataURL('image/png');
+      }
+      res({src, inv, w, h, k, darkShare});
+    };
+    img.onerror = ()=>rej(new Error('не открылась картинка'));
+    img.src = dataUrl;
+  });
+}
+function normScreen(t){ return String(t||'').toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}%₽₸$€]+/gu,' ').replace(/\s+/g,' ').trim(); }
+function dice(a, b){
+  if(a===b) return 1; if(a.length<2 || b.length<2) return 0;
+  const m = new Map(); for(let i=0;i<a.length-1;i++){ const g = a.substr(i,2); m.set(g, (m.get(g)||0)+1); }
+  let hit = 0; for(let i=0;i<b.length-1;i++){ const g = b.substr(i,2), n = m.get(g); if(n){ hit++; m.set(g, n-1); } }
+  return 2*hit/(a.length+b.length-2);
+}
+// index of a project's strings for one language: exact target, exact source, and token → rows for fuzzy matches
+function ocrRowIndex(projectId, languageCode){
+  const lc = String(languageCode||'').toLowerCase();
+  const rows = dbList('rows').filter(r=>r.projectId===projectId && String(r.languageCode||'').toLowerCase()===lc);
+  const byTarget = new Map(), bySource = new Map(), byToken = new Map(), norm = new Map();
+  rows.forEach(r=>{
+    const t = normScreen(stripForScreen(r.target)), so = normScreen(stripForScreen(r.source));
+    norm.set(r.id, t);
+    if(t.length>=2 && !byTarget.has(t)) byTarget.set(t, r);
+    if(so.length>=4 && !bySource.has(so)) bySource.set(so, r);
+    new Set(t.split(' ').filter(w=>w.length>=3)).forEach(w=>{ const a = byToken.get(w); if(a){ if(a.length<400) a.push(r); } else byToken.set(w, [r]); });
+  });
+  return {rows, byTarget, bySource, byToken, norm};
+}
+function stripForScreen(t){ return String(t||'').replace(TAG_RE,' ').replace(VAR_RE,' ').replace(/\\n/g,' '); }
+function ocrMatchLine(idx, text){
+  const n = normScreen(text); if(n.length<2) return null;
+  if(idx.byTarget.has(n)) return {row:idx.byTarget.get(n), kind:'target', score:1};
+  if(idx.bySource.has(n)) return {row:idx.bySource.get(n), kind:'source', score:1};
+  const cand = new Map();
+  n.split(' ').filter(w=>w.length>=3).forEach(w=>(idx.byToken.get(w)||[]).forEach(r=>cand.set(r.id, r)));
+  let best = null;
+  cand.forEach(r=>{
+    const t = idx.norm.get(r.id); if(!t) return;
+    let sc = dice(n, t);
+    if(sc < .8 && t.length>=6 && n.includes(t)) sc = Math.max(sc, .78);   // the string is part of a longer line
+    if(sc < .8 && n.length>=6 && t.includes(n)) sc = Math.max(sc, .72);   // a line of a wrapped string
+    if(!best || sc > best.score) best = {row:r, kind:'target', score:sc};
+  });
+  return best && best.score >= .72 ? best : null;
+}
+const OCR_PLACEHOLDER_RE = /\{\{\s*[\w.]+\s*\}\}|\$\{\w+\}|%\d?\$?[sd@]\b|\{\d\}|<\/?(b|i|br|span|div|a|strong|em)\s*\/?>/i;
+const OCR_KEY_RE = /\b[a-z][a-z0-9]*(?:[._][a-z0-9]+){2,}\b/;
+function ocrFindingsForLine(line, lang, match){
+  const out = [], t = line.t, l = spellBaseLang(lang);
+  const ph = t.match(OCR_PLACEHOLDER_RE);
+  if(ph) out.push({type:'Видна переменная / тег / ключ', severity:'Критическая', text:'На экране видна переменная или тег: «'+ph[0]+'»', found:ph[0]});
+  else { const k = t.match(OCR_KEY_RE); if(k && !/\.(ru|kz|uz|com|net|org|by|am|ge|kg|az|tj)\b/.test(k[0])) out.push({type:'Видна переменная / тег / ключ', severity:'Высокая', text:'Похоже, на экране ключ строки вместо текста: «'+k[0]+'»', found:k[0]}); }
+  if(l!=='ru'){
+    const letters = (t.match(/\p{L}/gu)||[]).length, cyr = (t.match(/\p{Script=Cyrillic}/gu)||[]).length;
+    if(match && match.kind==='source') out.push({type:'Не переведено', severity:'Высокая', text:'Текст на экране совпадает с русским исходником — строка не переведена', found:t});
+    else if(!CYRILLIC_UI_LANGS.has(l) && cyr>=3 && cyr >= letters*.5) out.push({type:'Не переведено', severity:'Высокая', text:'Русский текст на экране: «'+t.slice(0,80)+'»', found:t});
+    // OCR often reads ₽ as the letter Р, so "12 990 Р" counts too
+    const rub = t.match(/\d[\d\s.,]*\s?(₽|Р(?![\p{L}])|руб\.?(?![\p{L}]))/u) || t.match(/₽/);
+    if(l!=='be' && rub) out.push({type:'Формат числа, даты, валюты', severity:'Высокая', text:'Рубли на экране для языка «'+languageLabel(lang)+'»', found:rub[0].trim()});
+  }
+  return out;
+}
+async function ocrShot(sh, sess, idx){
+  const langs = ocrLangsFor(sess.languageCode);
+  const worker = await getOcrWorker(langs);
+  const prep = await ocrPrepareImage(shotImage(sh.id));
+  const lines = [];
+  const overlaps = (a, b)=>{ const ix = Math.max(0, Math.min(a.x+a.w, b.x+b.w)-Math.max(a.x, b.x)), iy = Math.max(0, Math.min(a.y+a.h, b.y+b.h)-Math.max(a.y, b.y)); return ix*iy > .3*Math.min(a.w*a.h, b.w*b.h); };
+  const collect = data=>(data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(ln=>{
+    const t = String(ln.text||'').replace(/\s+/g,' ').trim();
+    if(!t || ln.confidence < 45 || !/\p{L}{2}/u.test(t)) return;
+    const bb = ln.bbox, k = prep.k;
+    const box = {x:bb.x0/k/prep.w, y:bb.y0/k/prep.h, w:(bb.x1-bb.x0)/k/prep.w, h:(bb.y1-bb.y0)/k/prep.h};
+    if(lines.some(l=>overlaps(l.b, box))) return;
+    lines.push({t, c:Math.round(ln.confidence), b:box});
+  })));
+  collect((await worker.recognize(prep.src, {}, {blocks:true, text:false})).data);
+  if(prep.inv) collect((await worker.recognize(prep.inv, {}, {blocks:true, text:false})).data);
+  lines.sort((a,b)=>a.b.y-b.b.y || a.b.x-b.b.x);
+  lines.forEach(ln=>{ const m = ocrMatchLine(idx, ln.t); if(m){ ln.rowId = m.row.id; ln.kind = m.kind; } });
+  return {at:nowISO(), langs, lines};
+}
+function applyOcrFindings(sh, sess){
+  const OCR_ACTION = 'Обнаружена (распознавание текста)';
+  const isOcr = i=>i.shotId===sh.id && (i.history||[])[0] && i.history[0].action===OCR_ACTION;
+  const kept = dbList('issues').filter(i=>!(isOcr(i) && i.status==='Новая'));
+  const decided = new Set(kept.filter(isOcr).map(i=>i.type+'|'+normScreen(i.highlightText)));
+  let created = 0;
+  (sh.ocr.lines||[]).forEach(ln=>{
+    if(ln.c < 60) return;
+    const row = ln.rowId ? dbGet('rows', ln.rowId) : null;
+    ocrFindingsForLine(ln, sess.languageCode, ln.rowId ? {kind:ln.kind} : null).forEach(f=>{
+      const k = f.type+'|'+normScreen(f.found); if(decided.has(k)) return; decided.add(k);
+      // a finding that is only part of the line gets a box around that part (estimated by character position)
+      const at = f.found && f.found!==ln.t ? ln.t.indexOf(f.found) : -1;
+      const bx = at>=0 ? {x:ln.b.x + ln.b.w*at/ln.t.length, w:ln.b.w*f.found.length/ln.t.length} : {x:ln.b.x, w:ln.b.w};
+      kept.push({id:uid(), visual:true, manual:true, sessionId:sess.id, shotId:sh.id, box:{x:Math.max(0,bx.x-.004), y:Math.max(0,ln.b.y-.004), w:Math.min(1,bx.w+.008), h:Math.min(1,ln.b.h+.008)},
+        projectId:sess.projectId, componentId:row?row.componentId:null, rowId:row?row.id:null, languageCode:sess.languageCode,
+        type:f.type, severity:f.severity, text:f.text, highlightText:f.found||null, expectedText:null,
+        status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:OCR_ACTION}]});
+      created++;
+    });
+  });
+  dbSave('issues', kept);
+  return created;
+}
+async function runSessionOcr(sessionId, shotIds){
+  const sess = dbGet('visualSessions', sessionId); if(!sess) return;
+  const shots = (shotIds ? shotIds.map(id=>dbGet('visualShots', id)) : dbQuery('visualShots', x=>x.sessionId===sessionId).sort((a,b)=>(a.order||0)-(b.order||0))).filter(Boolean);
+  if(!shots.length) return;
+  const status = t=>{ setShotStatus(t); const b = document.getElementById('ocrViewerStatus'); if(b) b.textContent = t; };
+  let done = 0, created = 0, linked = 0, total = 0;
+  ocrProgress = m=>{ if(m.status && m.status!=='recognizing text') status(done===0 && /load|initial/i.test(m.status) ? 'Загружаю распознавание ('+ocrLangsFor(sess.languageCode).join(', ')+')… '+Math.round((m.progress||0)*100)+'%' : ''); else if(m.status==='recognizing text') status('Распознаю текст: '+(done+1)+' из '+shots.length+' · '+Math.round((m.progress||0)*100)+'%'); };
+  try{
+    const idx = ocrRowIndex(sess.projectId, sess.languageCode);
+    for(const sh of shots){
+      const cur = dbGet('visualShots', sh.id); if(!cur) continue;
+      cur.ocr = await ocrShot(cur, sess, idx);
+      dbUpsert('visualShots', cur);
+      created += applyOcrFindings(cur, sess);
+      total += cur.ocr.lines.length; linked += cur.ocr.lines.filter(l=>l.rowId).length;
+      done++;
+      if(viewerState && viewerState.shotId===cur.id){ viewerOcr = true; renderShotViewer(); }
+    }
+    toast(`Текст распознан: ${done} ${plural(done,'скриншот','скриншота','скриншотов')} · строк ${total}, связано с переводом ${linked}${created?' · новых проблем '+created:''}`, {duration:6000});
+  }catch(e){ console.error(e); toast('Распознавание не получилось: '+e.message); }
+  finally{ ocrProgress = null; status(''); if(!viewerState) router(); }
+}
+function runShotOcr(shotId){ const sh = dbGet('visualShots', shotId); if(sh) runSessionOcr(sh.sessionId, [shotId]); }
+function ocrOverlayHtml(sh){
+  return (sh.ocr.lines||[]).map(l=>{ const r = l.rowId ? dbGet('rows', l.rowId) : null;
+    return `<div class="obox ${r?(l.kind==='source'?'src':'ok'):''}" style="left:${l.b.x*100}%;top:${l.b.y*100}%;width:${l.b.w*100}%;height:${l.b.h*100}%;" title="${esc(l.t)}${r?' — строка '+esc(r.key||'')+(l.kind==='source'?' (совпадает с исходником!)':''):' — не найдено в строках перевода'}" ${r?`onclick="event.stopPropagation();openRowDetail('${r.id}')"`:''}></div>`; }).join('');
+}
 function toggleViewerCompare(){ viewerCompare = !viewerCompare; renderShotViewer(); }
 function openShotViewer(shotId, focusIssueId){
   const sh = dbGet('visualShots', shotId);
@@ -4466,6 +5235,7 @@ function renderShotViewer(){
   const draftBox = d ? `<div class="vbox draft" style="left:${d.box.x*100}%;top:${d.box.y*100}%;width:${d.box.w*100}%;height:${d.box.h*100}%;"></div>` : '';
   const side = d ? visualDraftFormHtml(sess) : `
     <div class="hint" style="margin:0 0 12px;display:flex;gap:8px;align-items:flex-start;"><span style="color:var(--primary);flex-shrink:0;">${icon('edit',16)}</span><span>Выдели проблемное место мышью прямо на скриншоте — появится форма.</span></div>
+    ${sh.ocr ? `<div class="ocr-sum">Распознано ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')} текста · связано с переводом ${sh.ocr.lines.filter(l=>l.rowId).length}${viewerOcr?'':' · <a href="javascript:void(0)" onclick="viewerOcr=true;renderShotViewer()">показать</a>'} · <a href="javascript:void(0)" onclick="runShotOcr(\'${sh.id}\')">заново</a></div>` : ''}
     ${issues.length ? issues.map((i,n)=>`<div class="v-issue ${viewerState.focus===i.id?'focus':''}" onclick="focusViewerIssue('${i.id}')">
         <div class="row" style="gap:6px;flex-wrap:nowrap;"><span class="v-num sev-${severityClass(i.severity)}">${n+1}</span><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span><span class="pill type" style="overflow:hidden;text-overflow:ellipsis;">${esc(i.type)}</span></div>
         <div style="font-size:13px;margin-top:6px;">${esc(i.text)}</div>
@@ -4477,6 +5247,7 @@ function renderShotViewer(){
     <div class="viewer-top">
       <button class="top-ic" title="Закрыть (Esc)" onclick="closeShotViewer()" style="color:#fff;">${icon('x',20)}</button>
       <div style="min-width:0;flex:1;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sh.name)}</div><div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sess?sess.name:'')} · ${esc(sess?languageLabel(sess.languageCode):'')} · ${idx+1} из ${siblings.length}</div></div>
+      ${sh.ocr ? `<button class="btn on-dark sm ${viewerOcr?'is-on':''}" onclick="viewerOcr=!viewerOcr;renderShotViewer()" title="Показать распознанный текст (T)">Aa Текст</button>` : `<button class="btn on-dark sm" onclick="runShotOcr('${sh.id}')" title="Прочитать текст со скриншота и связать со строками">Aa Распознать</button>`}
       ${refInfo ? `<button class="btn on-dark sm ${comparing?'is-on':''}" onclick="toggleViewerCompare()" title="Показать оригинал рядом (C)">${icon('columns',14)}Сравнить</button>` : ''}
       <button class="btn on-dark sm" ${idx>0?'':'disabled'} onclick="openShotViewer('${idx>0?siblings[idx-1].id:''}')" title="Предыдущий (←)">←</button>
       <button class="btn on-dark sm" ${idx<siblings.length-1?'':'disabled'} onclick="openShotViewer('${idx<siblings.length-1?siblings[idx+1].id:''}')" title="Следующий (→)">→</button>
@@ -4490,7 +5261,7 @@ function renderShotViewer(){
             ${refInfo.shot ? `<div class="viewer-canvas ref"><img src="${shotImage(refInfo.shot.id)}" alt="" draggable="false"></div>` : `<div class="compare-empty">В сессии-оригинале «${esc(refSess?refSess.name:'')}» пока нет скриншотов</div>`}
           </div>
           <div class="compare-pane"><div class="compare-label"><span>Перевод · ${esc(sess?languageLabel(sess.languageCode):'')}</span></div>` : ''}
-        <div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${boxes}${draftBox}</div>
+        <div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${viewerOcr && sh.ocr ? ocrOverlayHtml(sh) : ''}${boxes}${draftBox}</div>
         ${comparing ? '</div>' : ''}
       </div>
       <aside class="viewer-side">${side}</aside>
@@ -4503,7 +5274,7 @@ function wireViewerDrawing(){
   let start = null, ghost = null;
   const pt = e=>{ const r = cv.getBoundingClientRect(); return {x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}; };
   cv.onpointerdown = e=>{
-    if(e.button!==0 || e.target.closest('.vbox:not(.draft)')) return;
+    if(e.button!==0 || e.target.closest('.vbox:not(.draft), .obox')) return;
     e.preventDefault(); cv.setPointerCapture(e.pointerId);
     start = pt(e);
     ghost = document.createElement('div'); ghost.className = 'vbox draft'; cv.appendChild(ghost);
@@ -4598,6 +5369,7 @@ document.addEventListener('keydown', e=>{
   if(!viewerState || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')) return;
   if(e.key==='Escape'){ if(viewerState.draft){ viewerState.draft=null; renderShotViewer(); } else closeShotViewer(); }
   if((e.key==='c' || e.key==='с' || e.key==='C' || e.key==='С') && !e.metaKey && !e.ctrlKey) toggleViewerCompare();
+  if((e.key==='t' || e.key==='е' || e.key==='T' || e.key==='Е') && !e.metaKey && !e.ctrlKey && viewerState){ const sh = dbGet('visualShots', viewerState.shotId); if(sh && sh.ocr){ viewerOcr = !viewerOcr; renderShotViewer(); } }
   if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
     const sh = dbGet('visualShots', viewerState.shotId);
     const sib = dbQuery('visualShots', x=>x.sessionId===sh.sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
@@ -4889,15 +5661,58 @@ function renderMeAvatar(){
   el.title = me ? me+' — сменить' : 'Кто ты? Выбери себя, чтобы видеть свои задачи';
   el.style.background = me ? `linear-gradient(135deg,${folderColor(me)},${folderColor(me+'x')})` : '';
 }
+const ROLE_KEY = 'lqa_role';
+function getRole(){ try{ return localStorage.getItem(ROLE_KEY) || ''; }catch(e){ return ''; } }
+function peopleByRole(){
+  const editorsByLang = Object.entries(EDITORS_BY_LANGUAGE).map(([code, list])=>({label:'Редакторы · '+languageLabel(code), names:list}));
+  return {
+    manager: [{label:'Менеджеры', names:MANAGERS}],
+    editor: [{label:'Редакторы', names:EDITORS}].concat(editorsByLang),
+  };
+}
+function roleOf(name){
+  if(MANAGERS.some(m=>sameName(m, name))) return 'manager';
+  if(EDITORS.concat(Object.values(EDITORS_BY_LANGUAGE).flat()).some(m=>sameName(m, name))) return 'editor';
+  return 'other';
+}
+const ROLE_LABELS = {manager:'Менеджер', editor:'Редактор', other:'Другое'};
 function openWhoAmI(){
   const me = getMe();
-  uiDialog(`<div class="dialog-ic">${icon('home',20)}</div><h3>Кто ты?</h3>
-    <div class="dialog-text">Нужно только этому браузеру: по имени платформа покажет твои задачи в «Мои задачи» и подпишет твои комментарии.</div>
-    <label class="field" style="margin-top:14px;">Имя<input type="text" id="meInput" list="mePeople" value="${esc(me)}" placeholder="Начни вводить — или выбери из списка" autocomplete="off"></label>
-    <datalist id="mePeople">${allPeople().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
-    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
-    (root, close)=>{ const inp = root.querySelector('#meInput'); root.querySelector('[data-ok]').onclick = ()=>close(inp.value.trim()); inp.focus(); inp.select(); })
-  .then(v=>{ if(v==null) return; try{ localStorage.setItem(ME_KEY, v); }catch(e){} renderMeAvatar(); router(); toast(v ? 'Привет, '+v.split(' ')[0]+'!' : 'Имя сброшено'); });
+  let role = getRole() || (me ? roleOf(me) : 'manager');
+  const groups = peopleByRole();
+  const listHtml = (r, q)=>{
+    if(r==='other') return `<label class="field" style="margin-top:4px;">Имя<input type="text" id="meOther" value="${esc(me && roleOf(me)==='other'?me:'')}" placeholder="Как тебя подписывать"></label>`;
+    const ql = (q||'').trim().toLowerCase();
+    return groups[r].map(g=>{ const names = g.names.filter(n=>!ql || n.toLowerCase().includes(ql)); if(!names.length) return '';
+      return `<div class="section-label" style="margin:12px 0 6px;">${esc(g.label)}</div><div class="people">${names.map(n=>`<button type="button" class="person ${sameName(n,me)?'on':''}" data-name="${esc(n)}"><span class="bubble-ava" style="background:${folderColor(n)}">${esc(initialsOf(n).toUpperCase())}</span>${esc(n)}</button>`).join('')}</div>`; }).join('') || '<div class="hint">Никого не нашлось</div>';
+  };
+  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.</div>
+    <div class="subtabbar" style="margin:14px 0 6px;" id="roleTabs">${Object.entries(ROLE_LABELS).map(([k,l])=>`<button type="button" class="subtabbtn ${k===role?'active':''}" data-role="${k}">${l}</button>`).join('')}</div>
+    <input type="text" id="peopleSearch" placeholder="Поиск по имени" style="width:100%;margin-top:8px;${role==='other'?'display:none;':''}">
+    <div id="peopleList" style="max-height:46vh;overflow:auto;margin-top:4px;">${listHtml(role)}</div>
+    <div class="modal-actions">${me?`<button class="btn ghost" data-reset style="margin-right:auto;color:var(--text-faint);">Сбросить</button>`:''}<button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok ${role==='other'?'':'style="display:none;"'}>Сохранить</button></div>`,
+  (root, close)=>{
+    const list = root.querySelector('#peopleList'), search = root.querySelector('#peopleSearch'), ok = root.querySelector('[data-ok]');
+    const wire = ()=>list.querySelectorAll('.person').forEach(b=>b.onclick = ()=>close({name:b.dataset.name, role}));
+    root.querySelectorAll('[data-role]').forEach(b=>b.onclick = ()=>{
+      role = b.dataset.role;
+      root.querySelectorAll('[data-role]').forEach(x=>x.classList.toggle('active', x===b));
+      search.style.display = role==='other' ? 'none' : ''; search.value = '';
+      ok.style.display = role==='other' ? '' : 'none';
+      list.innerHTML = listHtml(role); wire();
+      (role==='other' ? root.querySelector('#meOther') : search).focus();
+    });
+    search.oninput = ()=>{ list.innerHTML = listHtml(role, search.value); wire(); };
+    ok.onclick = ()=>{ const v = (root.querySelector('#meOther')||{}).value; if(!v || !v.trim()){ toast('Впиши имя'); return; } close({name:v.trim(), role:'other'}); };
+    const reset = root.querySelector('[data-reset]'); if(reset) reset.onclick = ()=>close({name:'', role:''});
+    wire(); (role==='other' ? root.querySelector('#meOther') : search).focus();
+  }).then(v=>{
+    if(!v) return;
+    try{ localStorage.setItem(ME_KEY, v.name); localStorage.setItem(ROLE_KEY, v.role); }catch(e){}
+    myTab = v.role==='manager' ? 'uploads' : 'assigned';
+    renderMeAvatar(); router();
+    toast(v.name ? 'Привет, '+v.name.split(' ')[0]+'!' : 'Имя сброшено');
+  });
 }
 function deadlineTs(d){ if(!d) return Infinity; if(d.type==='asap') return +new Date(new Date().toDateString()); // overdue dates sort above «как можно скорее»
   if(d.type==='date' && d.date) return +new Date(d.date); return Infinity; }
@@ -4929,7 +5744,7 @@ function renderMyTasks(el){
   const weekAgo = Date.now()-7*864e5;
   const doneWeek = dbList('issues').filter(i=>(i.history||[]).some(h=>sameName(h.reviewer, me) && h.ts && +new Date(h.ts)>=weekAgo)).length;
   const ids = myTab==='uploads' ? uploads : assigned;
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)}${getRole()?' · '+esc(ROLE_LABELS[getRole()]||''):''} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
     <div class="grid grid-4 stagger" style="margin-bottom:20px;">
       <div class="kpi ${overdue?'crit':''}"><div class="kpi-ic">${icon('alertTriangle',18)}</div><div class="num" data-count="${overdue}">${overdue}</div><div class="lbl">Просрочено</div></div>
       <div class="kpi high"><div class="kpi-ic">${icon('bell',18)}</div><div class="num" data-count="${asap+soon}">${asap+soon}</div><div class="lbl">Срочно и в ближайшие 3 дня</div></div>
@@ -4962,7 +5777,7 @@ function reconcileVersions(pairs){
   if(!pairs.length) return out;
   const rowsById = {}; dbList('rows').forEach(r=>rowsById[r.id]=r);
   let issues = dbList('issues');
-  const dropRows = new Set(), dropIssues = new Set();
+  const dropRows = new Set(), dropIssues = new Set(), rowUpdates = {};
   pairs.forEach(({prev, next})=>{
     const prevRows = dbList('rows').filter(r=>r.fileId===prev.id), nextRows = dbList('rows').filter(r=>r.fileId===next.id);
     const prevRowIds = new Set(prevRows.map(r=>r.id)), nextRowIds = new Set(nextRows.map(r=>r.id));
@@ -4997,6 +5812,15 @@ function reconcileVersions(pairs){
       if(i.visual || i.manual){ const nr = nextByIdentity[rowIdentity(rowsById[i.rowId])]; return Object.assign({}, i, {rowId: nr ? nr.id : null}, nr ? {componentId:nr.componentId} : {}); }
       dropIssues.add(i.id); return i;
     });
+    // string history: the new row inherits the old row's history, plus an entry when the text changed
+    const prevByIdentity = {}; prevRows.forEach(r=>prevByIdentity[rowIdentity(r)] = r);
+    nextRows.forEach(nr=>{
+      const pr = prevByIdentity[rowIdentity(nr)]; if(!pr) return;
+      let hist = (pr.targetHistory||[]).slice();
+      if(pr.target!==nr.target || pr.source!==nr.source) hist.push({ts:next.uploadedAt||nowISO(), how:'upload', from:pr.target, to:nr.target, sourceFrom: pr.source!==nr.source ? pr.source : undefined, file:next.filename, prevFile:prev.filename, by:next.uploadedBy||null});
+      if(hist.length){ rowUpdates[nr.id] = Object.assign({}, rowsById[nr.id]||nr, {targetHistory: hist.slice(-ROW_HISTORY_MAX), firstSeenAt: pr.firstSeenAt||prev.uploadedAt||null}); }
+      else if(pr.firstSeenAt || prev.uploadedAt) rowUpdates[nr.id] = Object.assign({}, rowsById[nr.id]||nr, {firstSeenAt: pr.firstSeenAt||prev.uploadedAt});
+    });
     prevRowIds.forEach(id=>dropRows.add(id));
     dbUpsert('files', Object.assign({}, prev, {supersededBy: next.id}));
     const key = next.componentId+'|'+next.languageCode;
@@ -5004,7 +5828,7 @@ function reconcileVersions(pairs){
     Object.keys(st).forEach(k=>acc[k]+=st[k]); acc.files.push(next.filename);
   });
   dbSave('issues', issues.filter(i=>!dropIssues.has(i.id)));
-  dbSave('rows', dbList('rows').filter(r=>!dropRows.has(r.id)));
+  dbSave('rows', dbList('rows').filter(r=>!dropRows.has(r.id)).map(r=>rowUpdates[r.id]||r));
   return out;
 }
 function versionSummaryText(d){
@@ -5283,6 +6107,156 @@ function downloadPseudoPo(){
   downloadPoFile(generatePoFromRows(rows), 'pseudo_'+((p?p.name:'project')+(c?'_'+c.name:'')).replace(/[^\p{L}\p{N}]+/gu,'_')+'.po');
   toast('Псевдолокализация: '+rows.length+' строк');
 }
+/* =========================================================
+   PERIOD REPORT — what was found and fixed between two dates, by language, type and folder.
+   "Resolved at" = time of the last history entry of a closed problem.
+   ========================================================= */
+let reportState = null;
+function openPeriodReport(){ location.hash = '#/report'; }
+function dayStart(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function isoDay(d){ const x = new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+function reportPresetRange(p){
+  const now = new Date(), today = dayStart(now);
+  if(p==='7') return [new Date(+today-6*864e5), today];
+  if(p==='30') return [new Date(+today-29*864e5), today];
+  if(p==='month') return [new Date(now.getFullYear(), now.getMonth(), 1), today];
+  if(p==='prevmonth') return [new Date(now.getFullYear(), now.getMonth()-1, 1), new Date(now.getFullYear(), now.getMonth(), 0)];
+  if(p==='quarter'){ const q = Math.floor(now.getMonth()/3)*3; return [new Date(now.getFullYear(), q, 1), today]; }
+  return null;
+}
+function issueResolvedAt(i){
+  if(isOpenIssue(i)) return null;
+  const h = (i.history||[]).filter(x=>x && x.ts); return h.length ? h[h.length-1].ts : (i.updatedAt || i.createdAt);
+}
+function issueResolvedBy(i){
+  const h = (i.history||[]).slice().reverse().find(x=>x && (x.reviewer || x.by)); return (h && (h.reviewer||h.by)) || i.assignedTo || null;
+}
+// quality of a language at moment t: latest run per folder (≤ t), weighted by row count
+function qualityAt(runs, lang, t){
+  const byComp = {};
+  runs.forEach(r=>{ if(r.languageCode!==lang || typeof r.quality!=='number' || +new Date(r.createdAt) > t) return; const k = r.componentId||'-'; if(!byComp[k] || new Date(byComp[k].createdAt) < new Date(r.createdAt)) byComp[k] = r; });
+  const list = Object.values(byComp); if(!list.length) return null;
+  const w = list.reduce((a,r)=>a+(r.rowCount||1),0);
+  return list.reduce((a,r)=>a+r.quality*(r.rowCount||1),0)/w;
+}
+function computePeriodReport(st){
+  const from = +dayStart(st.from), to = +dayStart(st.to) + 864e5 - 1;
+  const inRange = ts=>{ const t = +new Date(ts); return t>=from && t<=to; };
+  let issues = dbList('issues');
+  if(st.projectId) issues = issues.filter(i=>i.projectId===st.projectId);
+  if(st.lang) issues = issues.filter(i=>i.languageCode===st.lang);
+  let runs = dbList('runs'); if(st.projectId) runs = runs.filter(r=>r.projectId===st.projectId); if(st.lang) runs = runs.filter(r=>r.languageCode===st.lang);
+  let files = dbList('files').filter(f=>inRange(f.uploadedAt)); if(st.projectId) files = files.filter(f=>f.projectId===st.projectId); if(st.lang) files = files.filter(f=>f.languageCode===st.lang);
+  let sessions = dbList('visualSessions').filter(v=>inRange(v.createdAt)); if(st.projectId) sessions = sessions.filter(v=>v.projectId===st.projectId); if(st.lang) sessions = sessions.filter(v=>v.languageCode===st.lang);
+  const found = issues.filter(i=>inRange(i.createdAt));
+  const resolved = issues.filter(i=>{ const r = issueResolvedAt(i); return r && inRange(r); });
+  const openAtEnd = issues.filter(i=>{ if(+new Date(i.createdAt) > to) return false; const r = issueResolvedAt(i); return !r || +new Date(r) > to; });
+  const fixedInPlatform = resolved.filter(i=>i.status==='Принята после исправления').length;
+  const fp = resolved.filter(i=>i.status==='Ложное срабатывание').length;
+  const langs = [...new Set(issues.map(i=>i.languageCode).concat(runs.map(r=>r.languageCode)).filter(Boolean))].sort();
+  const byLang = langs.map(l=>({code:l,
+    found: found.filter(i=>i.languageCode===l).length,
+    crit: found.filter(i=>i.languageCode===l && i.severity==='Критическая').length,
+    resolved: resolved.filter(i=>i.languageCode===l).length,
+    open: openAtEnd.filter(i=>i.languageCode===l).length,
+    q0: qualityAt(runs, l, from), q1: qualityAt(runs, l, to)})).filter(x=>x.found||x.resolved||x.open||x.q1!=null);
+  const count = (arr, f)=>{ const m = {}; arr.forEach(i=>{ const k = f(i); if(k) m[k] = (m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+  const types = count(found, i=>i.type);
+  const folders = count(found, i=>i.componentId);
+  const people = count(resolved, i=>issueResolvedBy(i));
+  // per-day (or per-week for long ranges)
+  const days = Math.round((to-from)/864e5);
+  const step = days > 92 ? 7 : 1;
+  const buckets = [];
+  for(let t=from; t<=to; t+=step*864e5) buckets.push({t, found:0, resolved:0});
+  const bi = ts=>Math.min(buckets.length-1, Math.floor((+new Date(ts)-from)/(step*864e5)));
+  found.forEach(i=>buckets[bi(i.createdAt)].found++);
+  resolved.forEach(i=>buckets[bi(issueResolvedAt(i))].resolved++);
+  return {from, to, found, resolved, openAtEnd, fixedInPlatform, fp, byLang, types, folders, people, buckets, step, files, sessions,
+    rowsChecked: runs.filter(r=>inRange(r.createdAt)).reduce((a,r)=>a+(r.rowCount||0),0),
+    crit: found.filter(i=>i.severity==='Критическая').length};
+}
+function reportChartSvg(rep){
+  const B = rep.buckets; if(!B.length) return '';
+  const max = Math.max(1, ...B.map(b=>Math.max(b.found, b.resolved)));
+  const W = 1000, H = 190, pl = 30, pb = 22, pt = 8, bw = (W-pl)/B.length, y = v=>pt+(1-v/max)*(H-pt-pb);
+  const grid = [0,.5,1].map(k=>`<line x1="${pl}" x2="${W}" y1="${y(max*k)}" y2="${y(max*k)}" stroke="var(--border)"/><text x="${pl-6}" y="${y(max*k)+4}" text-anchor="end" font-size="10" fill="var(--text-faint)">${Math.round(max*k)}</text>`).join('');
+  const every = Math.ceil(B.length/10);
+  const bars = B.map((b,n)=>{ const x = pl+n*bw, w = Math.max(1.5, bw*0.36), d = new Date(b.t);
+    return `<rect x="${(x+bw*0.12).toFixed(1)}" y="${y(b.found).toFixed(1)}" width="${w.toFixed(1)}" height="${(H-pb-y(b.found)).toFixed(1)}" rx="2" fill="var(--primary)"><title>${d.toLocaleDateString('ru-RU')}: найдено ${b.found}</title></rect>
+      <rect x="${(x+bw*0.12+w+1).toFixed(1)}" y="${y(b.resolved).toFixed(1)}" width="${w.toFixed(1)}" height="${(H-pb-y(b.resolved)).toFixed(1)}" rx="2" fill="var(--ok)"><title>${d.toLocaleDateString('ru-RU')}: решено ${b.resolved}</title></rect>
+      ${n%every===0?`<text x="${(x+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text-faint)">${d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</text>`:''}`; }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">${grid}${bars}</svg>
+    <div class="trend-legend"><span><i style="background:var(--primary)"></i>Найдено</span><span><i style="background:var(--ok)"></i>Решено</span>${rep.step>1?'<span class="hint" style="margin:0;">по неделям</span>':''}</div>`;
+}
+function qualityCell(q0, q1){
+  if(q1==null) return '<span class="hint" style="margin:0;">—</span>';
+  const d = q0==null ? null : Math.round((q1-q0)*100);
+  return `<b style="color:${qualityColor(q1)}">${Math.round(q1*100)}%</b>${d?` <span class="delta ${d>0?'down':'up'}">${d>0?'+':''}${d}</span>`:''}`;
+}
+function renderPeriodReport(el){
+  setCrumbs(['Отчёт за период']);
+  if(!reportState){ const r = reportPresetRange('30'); reportState = {preset:'30', from:isoDay(r[0]), to:isoDay(r[1]), projectId:'', lang:''}; }
+  const st = reportState, projects = dbList('projects');
+  const rep = computePeriodReport(st);
+  const allLangs = [...new Set(dbList('issues').map(i=>i.languageCode).filter(Boolean))].sort();
+  const presets = [['7','7 дней'],['30','30 дней'],['month','Этот месяц'],['prevmonth','Прошлый месяц'],['quarter','Квартал']];
+  const bar = (list, total, label)=> list.length ? list.slice(0,8).map(([k,v])=>`<div class="rbar"><span class="rbar-l">${label(k)}</span><span class="rbar-t"><i style="width:${Math.max(3, v/total*100)}%"></i></span><b>${v}</b></div>`).join('') : '<div class="hint">Нет данных за период</div>';
+  const period = new Date(rep.from).toLocaleDateString('ru-RU')+' — '+new Date(rep.to).toLocaleDateString('ru-RU');
+  const proj = st.projectId ? dbGet('projects', st.projectId) : null;
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Отчёт за период</h1><div class="page-sub">${period}${proj?' · '+esc(proj.name):' · все проекты'}${st.lang?' · '+esc(languageLabel(st.lang)):''}</div></div>
+      <div class="row no-print"><button class="btn secondary" onclick="window.print()">${icon('file',15)}Печать / PDF</button><button class="btn" onclick="exportPeriodReportXlsx()">${icon('download',15)}Excel</button></div></div>
+    <div class="card no-print">
+      <div class="row" style="flex-wrap:wrap;gap:6px;">${presets.map(([k,l])=>`<button type="button" class="chip ${st.preset===k?'chip-active':''}" onclick="setReportPreset('${k}')">${l}</button>`).join('')}</div>
+      <div class="grid grid-4" style="margin-top:14px;">
+        <label class="field">С<input type="date" id="repFrom" value="${st.from}" onchange="setReportField('from', this.value)"></label>
+        <label class="field">По<input type="date" id="repTo" value="${st.to}" onchange="setReportField('to', this.value)"></label>
+        <label class="field">Проект<select onchange="setReportField('projectId', this.value)"><option value="">Все проекты</option>${projects.map(p=>`<option value="${p.id}" ${p.id===st.projectId?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+        <label class="field">Язык<select onchange="setReportField('lang', this.value)"><option value="">Все языки</option>${allLangs.map(l=>`<option value="${l}" ${l===st.lang?'selected':''}>${esc(languageLabel(l))} (${l})</option>`).join('')}</select></label>
+      </div>
+    </div>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="num">${rep.found.length}</div><div class="lbl">Найдено проблем</div></div>
+      <div class="kpi ok"><div class="num">${rep.resolved.length}</div><div class="lbl">Решено${rep.fixedInPlatform?' · '+rep.fixedInPlatform+' исправлено здесь':''}</div></div>
+      <div class="kpi crit"><div class="num">${rep.crit}</div><div class="lbl">Критических найдено</div></div>
+      <div class="kpi high"><div class="num">${rep.openAtEnd.length}</div><div class="lbl">Открыто на конец периода</div></div>
+    </div>
+    <div class="hint" style="margin:8px 0 18px;">Проверено строк: ${rep.rowsChecked.toLocaleString('ru-RU')} · загружено файлов: ${rep.files.length} · сессий визуальной проверки: ${rep.sessions.length}${rep.fp?' · ложных срабатываний: '+rep.fp:''}</div>
+    <div class="card"><h3>Найдено и решено по дням</h3>${reportChartSvg(rep)}</div>
+    <div class="card"><h3>По языкам</h3>${rep.byLang.length ? `<div class="table-wrap"><table><thead><tr><th>Язык</th><th>Найдено</th><th>Критических</th><th>Решено</th><th>Открыто на конец</th><th>Качество</th></tr></thead><tbody>
+      ${rep.byLang.map(l=>`<tr><td>${languageFlag(l.code)} ${esc(languageLabel(l.code))} <span class="hint" style="margin:0;">${esc(l.code)}</span></td><td>${l.found}</td><td>${l.crit?`<b style="color:var(--crit)">${l.crit}</b>`:'0'}</td><td>${l.resolved}</td><td>${l.open}</td><td>${qualityCell(l.q0, l.q1)}</td></tr>`).join('')}
+      </tbody></table></div><div class="hint">Качество — доля строк без открытых проблем на конец периода; цифра рядом — изменение с начала периода.</div>` : '<div class="hint">За этот период ничего не проверялось.</div>'}</div>
+    <div class="grid grid-2">
+      <div class="card"><h3>Частые типы проблем</h3>${bar(rep.types, rep.found.length, k=>esc(k))}</div>
+      <div class="card"><h3>Папки с проблемами</h3>${bar(rep.folders, rep.found.length, k=>{ const c = dbGet('components', k); return c ? esc(compPath(c)) : 'без папки'; })}</div>
+    </div>
+    ${rep.people.length ? `<div class="card"><h3>Кто решал</h3>${bar(rep.people, rep.resolved.length, k=>esc(k))}</div>` : ''}`;
+}
+function setReportPreset(p){ const r = reportPresetRange(p); if(!r) return; Object.assign(reportState, {preset:p, from:isoDay(r[0]), to:isoDay(r[1])}); router(); }
+function setReportField(k, v){ if((k==='from'||k==='to') && !v) return; reportState[k] = v; if(k==='from'||k==='to'){ reportState.preset = ''; if(reportState.from > reportState.to){ const t = reportState.from; reportState.from = reportState.to; reportState.to = t; } } router(); }
+function exportPeriodReportXlsx(){
+  const st = reportState; if(!st) return;
+  const rep = computePeriodReport(st);
+  ensureXlsx().then(ok=>{
+    if(!ok){ toast('Библиотека Excel не загрузилась — попробуй «Печать / PDF».'); return; }
+    const wb = XLSX.utils.book_new();
+    const period = new Date(rep.from).toLocaleDateString('ru-RU')+' — '+new Date(rep.to).toLocaleDateString('ru-RU');
+    const proj = st.projectId ? dbGet('projects', st.projectId) : null;
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Отчёт LQA Hub за период', period], ['Проект', proj?proj.name:'Все проекты'], ['Язык', st.lang ? languageLabel(st.lang)+' ('+st.lang+')' : 'Все языки'], [],
+      ['Найдено проблем', rep.found.length], ['Критических найдено', rep.crit], ['Решено', rep.resolved.length], ['Из них исправлено в платформе', rep.fixedInPlatform], ['Ложных срабатываний', rep.fp], ['Открыто на конец периода', rep.openAtEnd.length],
+      ['Проверено строк', rep.rowsChecked], ['Загружено файлов', rep.files.length], ['Сессий визуальной проверки', rep.sessions.length]]), 'Сводка');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.byLang.map(l=>({Язык:languageLabel(l.code), Код:l.code, Найдено:l.found, Критических:l.crit, Решено:l.resolved, Открыто_на_конец:l.open, Качество_в_начале:l.q0==null?'':Math.round(l.q0*100)+'%', Качество_в_конце:l.q1==null?'':Math.round(l.q1*100)+'%'}))), 'По языкам');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.types.map(([k,v])=>({Тип:k, Найдено:v}))), 'Типы');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.buckets.map(b=>({Дата:new Date(b.t).toLocaleDateString('ru-RU'), Найдено:b.found, Решено:b.resolved}))), 'По дням');
+    const rowOf = i=>{ const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId);
+      return {Проект:p?p.name:'', Папка:c?compPath(c):'', Язык:i.languageCode, Ключ:r?r.key||'':'', Исходный_текст:r?r.source:'', Перевод:r?r.target:'', Тип:i.type, Важность:i.severity, Описание:i.text, Статус:i.status, Найдена:fmtDate(i.createdAt), Решена:fmtDate(issueResolvedAt(i)), Кто:issueResolvedBy(i)||''}; };
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.found.map(rowOf)), 'Найдено');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rep.resolved.map(rowOf)), 'Решено');
+    XLSX.writeFile(wb, 'lqa_report_'+st.from+'_'+st.to+'.xlsx');
+  });
+}
+
 function renderExportPage(el){
   setCrumbs(['Экспорт']);
   const projects = dbList('projects');
@@ -5362,14 +6336,22 @@ function renderSettingsPage(el){
         <label class="checkrow"><input type="checkbox" id="sDnt" ${s.checkDnt?'checked':''}> Бренды и названия «Не переводить»</label>
         <label class="checkrow"><input type="checkbox" id="sScript" ${s.checkScript?'checked':''}> Алфавит: кириллица в uz, az, en, hy, ka и других</label>
         <label class="checkrow"><input type="checkbox" id="sLimits" ${s.checkLimits?'checked':''}> Лимиты длины по ключам (правила ниже)</label>
+        <label class="checkrow"><input type="checkbox" id="sNumbers" ${s.checkNumbers?'checked':''}> Числа: «12 990» в исходнике — «12 900» в переводе</label>
+        <label class="checkrow"><input type="checkbox" id="sLangRules" ${s.checkLangRules?'checked':''}> Правила языка: смешанные алфавиты, апостроф uz, точка hy и свои правила</label>
       </div>
       <label class="field" style="margin-top:16px;">Не переводить <span style="font-weight:400;color:var(--text-faint);">— бренды и названия сервисов, по одному в строке. Если слово есть в исходном тексте, оно должно остаться в переводе как есть</span>
         <textarea id="sDntTerms" style="min-height:96px;font-family:inherit;font-size:14px;" placeholder="Wildberries&#10;WB Partners">${esc(s.dntTerms||'')}</textarea></label>
       <label class="field" style="margin-top:16px;">Лимиты длины <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: шаблон ключа = максимум символов. Звёздочка — любой текст. Переменные и теги не считаются</span>
         <textarea id="sLengthRules" class="mono" style="min-height:96px;" placeholder="checkout.button.* = 20&#10;*.tab.title = 14&#10;catalog.filter.* = 24">${esc(s.lengthRules||'')}</textarea></label>
+      <label class="field" style="margin-top:16px;">Свои правила языков <span style="font-weight:400;color:var(--text-faint);">— по правилу в строке: язык ; что искать ; подсказка. «Что искать» — текст или /регулярное выражение/, язык * — для всех</span>
+        <textarea id="sCustomLangRules" class="mono" style="min-height:96px;" placeholder="kk ; тенге ; В интерфейсе пишем знак ₸, а не слово&#10;en ; /\bpls\b/i ; Без сокращений в интерфейсе&#10;* ; !! ; Двойной восклицательный знак">${esc(s.customLangRules||'')}</textarea></label>
+      <details class="hint" style="margin-top:8px;"><summary style="cursor:pointer;">Встроенные правила языков</summary>
+        <ul style="margin:6px 0 0;padding-left:18px;line-height:1.7;"><li>Все языки: латинская буква внутри кириллического слова и наоборот («Сeбет»)</li><li>uz: апостроф в oʻ/gʻ — знак ʻ</li><li>hy: точка в конце предложения — «։»</li><li>az: латинская ə, а не кириллическая ә</li><li>kk: кириллическая ә, а не латинская ə</li><li>zh: полноширинная пунктуация</li></ul></details>
       <div class="row" style="margin-top:16px;"><button class="btn" onclick="saveSettingsForm()">Сохранить</button></div>
       <div class="hint">Изменения применяются к новым проверкам. Чтобы пересчитать уже загруженные файлы — используй «Перезапустить проверку» во вкладке «Файлы» проекта.</div>
     </div>
+    ${ignoreRulesCardHtml()}
+    ${spellCardHtml()}
     <div class="card"><h3>Проверка ИИ</h3>
       <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
       <div class="grid grid-2">
@@ -5403,6 +6385,9 @@ function saveSettingsForm(){
     checkScript: document.getElementById('sScript').checked,
     checkLimits: document.getElementById('sLimits').checked,
     lengthRules: document.getElementById('sLengthRules').value,
+    checkNumbers: document.getElementById('sNumbers').checked,
+    checkLangRules: document.getElementById('sLangRules').checked,
+    customLangRules: document.getElementById('sCustomLangRules').value,
   });
   toast('Настройки сохранены');
 }
@@ -5436,6 +6421,84 @@ async function testAiBackend(){
 /* =========================================================
    GLOBAL SEARCH
    ========================================================= */
+/* =========================================================
+   COMMAND PALETTE (Ctrl/⌘+K): actions, pages, projects, folders, sessions,
+   glossaries, saved filters, strings and problems — all from one box.
+   ========================================================= */
+let paletteItems = [], paletteSel = 0;
+function paletteCommands(){
+  const cmds = [
+    {group:'Действия', icon:'plus', label:'Новый проект', run:()=>openProjectModal()},
+    {group:'Действия', icon:'image', label:'Новая сессия визуальной проверки', run:()=>{ location.hash='#/visual'; setTimeout(()=>openVisualSessionModal(null), 80); }},
+    {group:'Действия', icon:'moon', label:'Переключить тему', hint:'светлая / тёмная', run:()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')},
+    {group:'Действия', icon:'user', label:'Кто я — выбрать себя', run:()=>openWhoAmI()},
+    {group:'Действия', icon:'download', label:'Скачать резервную копию', run:()=>downloadBackup()},
+    {group:'Действия', icon:'check', label:'Мои задачи', run:()=>{ location.hash='#/my'; }},
+  ];
+  if(typeof openPeriodReport==='function') cmds.push({group:'Действия', icon:'barChart', label:'Отчёт за период', run:()=>openPeriodReport()});
+  if(syncEnabled()) cmds.push({group:'Действия', icon:'upload', label:'Синхронизировать сейчас', run:()=>syncNow(true)});
+  if(typeof startTour==='function') cmds.push({group:'Действия', icon:'sparkles', label:'Показать тур по платформе', run:()=>{ location.hash='#/'; setTimeout(startTour, 120); }});
+  NAV.forEach(n=>cmds.push({group:'Страницы', icon:n.icon, label:n.label, run:()=>{ location.hash=n.route; }}));
+  return cmds;
+}
+function paletteScore(text, q){
+  const t = text.toLowerCase(); if(!q) return 1;
+  const i = t.indexOf(q); if(i===0) return 3; if(i>0) return (/[\s«"(\/·-]/.test(t[i-1]) ? 2.5 : 2);
+  // all words present in any order
+  const words = q.split(/\s+/).filter(Boolean); if(words.length>1 && words.every(w=>t.includes(w))) return 1.5;
+  return 0;
+}
+function paletteCompute(qRaw){
+  const q = (qRaw||'').trim().toLowerCase();
+  const out = [];
+  const addScored = (items, limit)=>{ const sc = items.map(x=>[x, paletteScore(x.label+' '+(x.hint||''), q)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]); sc.slice(0, limit).forEach(x=>out.push(x[0])); };
+  addScored(dbList('savedViews').map(v=>({group:'Сохранённые фильтры', icon:'star', label:v.name, hint:savedViewSummary(v), run:()=>openSavedViewGlobally(v.id)})), q?6:4);
+  addScored(paletteCommands(), q?8:6);
+  if(q){
+    addScored(dbList('projects').map(p=>({group:'Проекты', icon:'folder', label:p.name, hint:(p.languages||[]).map(l=>l.code).join(' '), run:()=>{ location.hash='#/project/'+p.id; }})), 5);
+    addScored(dbList('components').map(c=>({group:'Папки', icon:'folder', label:compPath(c), hint:dbGet('projects',c.projectId)?.name||'', run:()=>{ location.hash='#/project/'+c.projectId+'/folder/'+c.id; }})), 6);
+    addScored(dbList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
+    addScored(dbList('glossaries').map(g=>({group:'Глоссарии', icon:'bookOpen', label:g.name, run:()=>{ location.hash='#/glossary/'+g.id; }})), 4);
+    if(q.length>=2){
+      const rows = []; const all = dbList('rows');
+      for(let k=0;k<all.length && rows.length<8;k++){ const r = all[k]; if((r.key||'').toLowerCase().includes(q) || (r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q)) rows.push(r); }
+      rows.forEach(r=>out.push({group:'Строки', icon:'file', label:(r.target||r.source||'').slice(0,90), hint:(r.key?r.key+' · ':'')+r.languageCode, run:()=>openRowDetail(r.id)}));
+      const iss = dbList('issues').filter(i=>(i.text||'').toLowerCase().includes(q)).slice(0,5);
+      iss.forEach(i=>out.push({group:'Проблемы', icon:'alertTriangle', label:i.text.slice(0,90), hint:i.type+' · '+(i.languageCode||''), run:()=>{ location.hash='#/issues'; setTimeout(()=>openIssueDetail(i.id), 120); }}));
+      out.push({group:'Поиск', icon:'search', label:'Искать «'+qRaw.trim()+'» во всех проблемах', run:()=>{ document.getElementById('globalSearch').value = qRaw.trim(); doGlobalSearch(); document.getElementById('globalSearch').value=''; }});
+    }
+  }
+  return out;
+}
+function openPalette(){
+  if(document.getElementById('cmdk')) return;
+  const bg = document.createElement('div'); bg.className = 'cmdk-bg'; bg.id = 'cmdk';
+  bg.innerHTML = `<div class="cmdk" role="dialog" aria-label="Палитра команд"><div class="cmdk-in">${icon('search',17)}<input id="cmdkInput" type="text" placeholder="Команда, проект, папка, строка…" autocomplete="off" spellcheck="false"><span class="cmdk-esc">Esc</span></div><div class="cmdk-list" id="cmdkList" role="listbox"></div>
+    <div class="cmdk-foot"><span><b>↑↓</b> выбрать</span><span><b>Enter</b> открыть</span><span><b>Esc</b> закрыть</span></div></div>`;
+  bg.addEventListener('mousedown', e=>{ if(e.target===bg) closePalette(); });
+  document.body.appendChild(bg);
+  const inp = document.getElementById('cmdkInput');
+  inp.addEventListener('input', ()=>{ paletteSel = 0; renderPaletteList(); });
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); paletteSel = Math.min(paletteItems.length-1, paletteSel+1); renderPaletteList(true); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); paletteSel = Math.max(0, paletteSel-1); renderPaletteList(true); }
+    else if(e.key==='Enter'){ e.preventDefault(); runPaletteItem(paletteSel); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closePalette(); }
+  });
+  paletteSel = 0; renderPaletteList(); inp.focus();
+}
+function closePalette(){ const el = document.getElementById('cmdk'); if(el) el.remove(); }
+function renderPaletteList(keepScroll){
+  const inp = document.getElementById('cmdkInput'), list = document.getElementById('cmdkList'); if(!inp || !list) return;
+  if(!keepScroll) paletteItems = paletteCompute(inp.value);
+  if(!paletteItems.length){ list.innerHTML = `<div class="cmdk-empty">Ничего не нашлось</div>`; return; }
+  let lastGroup = '';
+  list.innerHTML = paletteItems.map((it,n)=>{ const head = it.group!==lastGroup ? `<div class="cmdk-group">${esc(it.group)}</div>` : ''; lastGroup = it.group;
+    return head+`<div class="cmdk-item ${n===paletteSel?'sel':''}" role="option" data-n="${n}" onmousemove="if(paletteSel!==${n}){paletteSel=${n};renderPaletteList(true);}" onclick="runPaletteItem(${n})"><span class="cmdk-ic">${icon(it.icon||'chevronRight',16)}</span><span class="cmdk-label">${esc(it.label)}</span>${it.hint?`<span class="cmdk-hint">${esc(it.hint)}</span>`:''}</div>`; }).join('');
+  const sel = list.querySelector('.cmdk-item.sel'); if(sel && sel.scrollIntoView) sel.scrollIntoView({block:'nearest'});
+}
+function runPaletteItem(n){ const it = paletteItems[n]; if(!it) return; closePalette(); try{ it.run(); }catch(e){ toast('Не получилось: '+e.message); } }
+
 function doGlobalSearch(){
   const q = document.getElementById('globalSearch').value.trim();
   if(!q) return;
@@ -5502,14 +6565,14 @@ function countUp(el){
 window.addEventListener('hashchange', navigate);
 window.addEventListener('hashchange', ()=>toggleNav(false));
 document.addEventListener('keydown', e=>{
-  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
+  if((e.metaKey||e.ctrlKey) && (e.key.toLowerCase()==='k' || e.key.toLowerCase()==='л')){
     e.preventDefault();
-    const el = document.getElementById('globalSearch');
-    if(el){ el.focus(); el.select(); }
+    if(document.getElementById('cmdk')) closePalette(); else openPalette();
   }
 });
 document.getElementById('content').innerHTML = '<div class="empty">Загрузка…</div>';
 initTheme();
+try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbdHint').textContent = '⌘K'; }catch(e){}
 (async ()=>{
   const loaded = await idbLoadAll();
   DB = migrateFromLocalStorageIfNeeded(loaded);
