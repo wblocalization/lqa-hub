@@ -389,6 +389,7 @@ input[type=file].hidden-input{display:none;}
 .proj-stats div{font-size:12px;color:var(--text-faint);}
 .proj-stats b{display:block;font-size:16px;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
 .proj-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-faint);}
+.flag-ic{display:inline-block;height:1.05em;width:auto;aspect-ratio:4/3;vertical-align:-.17em;border-radius:3px;flex-shrink:0;}
 .proj-folders{display:flex;gap:5px;align-items:center;flex-wrap:wrap;min-width:0;margin-bottom:10px;}
 .proj-folders-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-faint);margin-right:3px;}
 .proj-folder{display:inline-flex;align-items:center;gap:5px;background:var(--bg-2);color:var(--text-soft);border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:500;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -4643,9 +4644,13 @@ const LANGUAGE_FLAGS = {
   az:'🇦🇿', en:'🇬🇧', am:'🇪🇹', hy:'🇦🇲', ka:'🇬🇪', kk:'🇰🇿', zh:'🇨🇳', ky:'🇰🇬',
   ru:'🇷🇺', tg:'🇹🇯', uz:'🇺🇿', sw:'🇹🇿', be:'🇧🇾', he:'🇮🇱', ko:'🇰🇷', tr:'🇹🇷', ar:'🇸🇦', fr:'🇫🇷'
 };
+// Team-drawn language icons (flags/<code>.svg, 64×48). Staff variants (kk-shtat) use the base language's icon;
+// a language without an icon falls back to the emoji flag.
+const FLAG_ICONS = new Set(['am','ar','az','be','en','fr','he','hy','ka','kk','ko','ky','ru','sw','tg','tr','uz','zh']);
 function languageFlag(code){
   if(!code) return '🌐';
-  const base = code.replace(/-shtat$/,'');
+  const base = String(code).toLowerCase().replace(/-shtat$/,'').split(/[-_]/)[0];
+  if(FLAG_ICONS.has(base)) return `<img class="flag-ic" src="flags/${base}.svg" alt="" aria-hidden="true" draggable="false">`;
   return LANGUAGE_FLAGS[base] || '🌐';
 }
 function renderGlossariesList(el){
