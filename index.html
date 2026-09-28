@@ -3091,18 +3091,30 @@ async function editFileMeta(fileId){
 }
 
 /* ---------- deleting a file ---------- */
-async function deleteFile(fileId){
-  const f = dbGet('files', fileId); if(!f) return;
-  const rowIds = new Set(dbList('rows').filter(r=>r.fileId===fileId).map(r=>r.id));
+function deleteFile(fileId){ return deleteFiles([fileId]); }
+async function deleteFiles(ids){
+  const set = new Set(ids), files = dbList('files').filter(f=>set.has(f.id)); if(!files.length) return;
+  const rowIds = new Set(dbList('rows').filter(r=>set.has(r.fileId)).map(r=>r.id));
   const nIssues = dbList('issues').filter(i=>rowIds.has(i.rowId) && !i.visual).length;
-  if(!await uiConfirm({title:'Удалить файл «'+fileLabel(f)+'»?', text:f.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues} ${plural(nIssues,'проблема','проблемы','проблем')} из этого файла. Проблемы со скриншотов останутся, но отвяжутся от строк.`, okText:'Удалить файл'})) return;
+  const one = files.length===1 ? files[0] : null;
+  if(!await uiConfirm({title: one ? 'Удалить файл «'+fileLabel(one)+'»?' : 'Удалить '+files.length+' '+plural(files.length,'файл','файла','файлов')+'?',
+    text: one && one.supersededBy ? 'Это прежняя версия файла, строк в ней уже нет — удалится только запись в списке.' : `Удалятся ${rowIds.size.toLocaleString('ru-RU')} ${plural(rowIds.size,'строка','строки','строк')} и ${nIssues.toLocaleString('ru-RU')} ${plural(nIssues,'проблема','проблемы','проблем')} из ${one?'этого файла':'этих файлов'}. Проблемы со скриншотов останутся, но отвяжутся от строк.`,
+    okText: one ? 'Удалить файл' : 'Удалить файлы'})) return;
   const snap = snapshotTables(['files','rows','issues']);
   dbSave('issues', dbList('issues').filter(i=>!(rowIds.has(i.rowId) && !i.visual)).map(i=>rowIds.has(i.rowId) ? Object.assign({}, i, {rowId:null}) : i));
-  dbSave('rows', dbList('rows').filter(r=>r.fileId!==fileId));
-  dbRemove('files', fileId);
-  toastUndo('Файл удалён', snap);
+  dbSave('rows', dbList('rows').filter(r=>!set.has(r.fileId)));
+  dbSave('files', dbList('files').filter(f=>!set.has(f.id)));
+  toastUndo(one ? 'Файл удалён' : 'Удалено файлов: '+files.length, snap);
   router();
 }
+function fileChkHtml(f){ return `<input type="checkbox" class="file-chk" value="${f.id}" onchange="fileSelChanged(this)">`; }
+function fileBulkBarHtml(){ return `<button class="btn danger sm file-bulk-del" style="display:none;" onclick="deleteSelectedFiles(this)">${icon('trash',14)}Удалить выбранные</button>`; }
+function fileSelChanged(el){
+  const card = el.closest('.card'), n = card.querySelectorAll('.file-chk:checked').length, b = card.querySelector('.file-bulk-del');
+  if(b){ b.style.display = n ? '' : 'none'; b.lastChild.textContent = 'Удалить выбранные: '+n; }
+}
+function toggleAllFiles(el){ const card = el.closest('.card'); card.querySelectorAll('.file-chk').forEach(c=>c.checked = el.checked); fileSelChanged(el); }
+function deleteSelectedFiles(btn){ return deleteFiles([...btn.closest('.card').querySelectorAll('.file-chk:checked')].map(c=>c.value)); }
 
 /* ---------- folder (component) detail page ---------- */
 const FOLDER_TABS = [['overview','Обзор'],['files','Файлы'],['strings','Строки']];
@@ -3152,9 +3164,9 @@ function renderFolderDetail(el, projectId, componentId, tab){
       ` : `<div class="empty">Сначала добавь язык проекту во вкладке «Языки».</div>`}
     </div>
     <div class="card">
-      <h3>Загруженные файлы</h3>
-      ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
+      <div class="row between"><h3>Загруженные файлы</h3>${files.length?fileBulkBarHtml():''}</div>
+      ${files.length ? `<div class="table-wrap"><table><thead><tr><th class="mgr-only" style="width:28px;"><input type="checkbox" title="Выбрать все файлы" onchange="toggleAllFiles(this)"></th><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mgr-only">${fileChkHtml(f)}</td><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -3364,11 +3376,11 @@ function renderProjectFiles(p){
     <div class="hint" id="uploadStatus"></div>
   </div>
   <div class="card">
-    <h3>Загруженные файлы</h3>
-    ${files.length ? `<div class="table-wrap"><table><thead><tr><th>Файл</th><th>Папка</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
+    <div class="row between"><h3>Загруженные файлы</h3>${files.length?fileBulkBarHtml():''}</div>
+    ${files.length ? `<div class="table-wrap"><table><thead><tr><th class="mgr-only" style="width:28px;"><input type="checkbox" title="Выбрать все файлы" onchange="toggleAllFiles(this)"></th><th>Файл</th><th>Папка</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
-        return `<tr><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
+        return `<tr><td class="mgr-only">${fileChkHtml(f)}</td><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
           <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
@@ -3840,6 +3852,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
         <div class="row" style="gap:14px;">
           <label class="hint" style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="${key}_all" onchange="toggleAllIssues('${key}', issuesFixedFilters['${mountId}'])"> выбрать все на странице</label>
           <button class="btn secondary sm" onclick="selectAllFiltered('${key}', issuesFixedFilters['${mountId}'])">Выбрать вообще все по фильтру</button>
+          <button class="btn ghost sm" style="color:var(--crit);" onclick="deleteAllFiltered('${key}')">${icon('trash',14)}Удалить всё по фильтру</button>
           <a href="javascript:void(0)" onclick="clearSelection('${key}', issuesFixedFilters['${mountId}'])" style="color:var(--text-faint);font-size:12.5px;">снять выделение</a>
         </div>
         <div id="${key}_bulkbar" class="row" style="display:none;">
@@ -3985,6 +3998,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
         <div class="row" style="gap:14px;">
           <label class="hint" style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="${key}_all" onchange="toggleAllIssues('${key}', issuesFixedFilters['${mountId}'])"> выбрать все на странице</label>
           <button class="btn secondary sm" onclick="selectAllFiltered('${key}', issuesFixedFilters['${mountId}'])">Выбрать вообще все по фильтру</button>
+          <button class="btn ghost sm" style="color:var(--crit);" onclick="deleteAllFiltered('${key}')">${icon('trash',14)}Удалить всё по фильтру</button>
           <a href="javascript:void(0)" onclick="clearSelection('${key}', issuesFixedFilters['${mountId}'])" style="color:var(--text-faint);font-size:12.5px;">снять выделение</a>
         </div>
         <div id="${key}_bulkbar" class="row" style="display:none;">
@@ -4370,7 +4384,50 @@ function confirmBulkStatus(ids){
 }
 
 /* ---- bulk: delete ---- */
+async function deleteAllFiltered(key){
+  const st = issuesPageState[key]; if(!st) return;
+  const ids = (st._lastFilteredIds||[]).slice();
+  if(!ids.length){ toast('По фильтру ничего не найдено'); return; }
+  if(st.mode==='rows') return deleteRowsOrIssues(ids);
+  if(!await uiConfirm({title:'Удалить все проблемы по фильтру — '+ids.length.toLocaleString('ru-RU')+'?', text:'Удалятся все проблемы, которые сейчас подходят под фильтр, на всех страницах. Сразу после удаления можно нажать «Отменить».', okText:'Удалить'})) return;
+  const snap = snapshotTables(['issues']), idSet = new Set(ids);
+  dbSave('issues', dbList('issues').filter(i=>!idSet.has(i.id)));
+  toastUndo('Удалено проблем: '+ids.length.toLocaleString('ru-RU'), snap);
+  Object.values(issuesPageState).forEach(s=>s.selected && s.selected.clear());
+  router();
+}
+// «Строки»: delete only the problems of these strings, or the strings themselves with their problems
+async function deleteRowsOrIssues(rowIds){
+  const set = new Set(rowIds), n = set.size;
+  const nIss = dbList('issues').filter(i=>set.has(i.rowId)).length;
+  const what = await uiDialog(`<h3>Удалить у ${n.toLocaleString('ru-RU')} ${plural(n,'строки','строк','строк')}</h3>
+    <label class="checkrow" style="margin-top:12px;"><input type="radio" name="delWhat" value="issues" checked> <span><b>Только проблемы</b> (${nIss.toLocaleString('ru-RU')}) — строки останутся</span></label>
+    <label class="checkrow"><input type="radio" name="delWhat" value="rows"> <span><b>Строки целиком</b> вместе с проблемами. Проблемы со скриншотов останутся, но отвяжутся от строк</span></label>
+    <div class="hint" style="margin-top:8px;">Сразу после удаления можно нажать «Отменить».</div>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn danger" data-ok>Удалить</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close(root.querySelector('input[name=delWhat]:checked').value); });
+  if(!what) return;
+  const snap = snapshotTables(['issues','rows','files']);
+  if(what==='issues'){
+    dbSave('issues', dbList('issues').filter(i=>!set.has(i.rowId)));
+    toastUndo('Удалено проблем: '+nIss.toLocaleString('ru-RU'), snap);
+  } else {
+    dbSave('issues', dbList('issues').filter(i=>!(set.has(i.rowId) && !i.visual)).map(i=>set.has(i.rowId) ? Object.assign({}, i, {rowId:null}) : i));
+    const touched = new Set(dbList('rows').filter(r=>set.has(r.id)).map(r=>r.fileId));
+    dbSave('rows', dbList('rows').filter(r=>!set.has(r.id)));
+    const left = {}; dbList('rows').forEach(r=>{ if(touched.has(r.fileId)) left[r.fileId] = (left[r.fileId]||0)+1; });
+    dbSave('files', dbList('files').map(f=>touched.has(f.id) ? Object.assign({}, f, {rowCount:left[f.id]||0}) : f));
+    toastUndo('Удалено строк: '+n.toLocaleString('ru-RU'), snap);
+  }
+  Object.values(issuesPageState).forEach(s=>s.selected && s.selected.clear());
+  router();
+}
 async function bulkDeleteIssues(key){
+  if(issuesPageState[key] && issuesPageState[key].mode==='rows'){
+    const rows = [...issuesPageState[key].selected];
+    if(!rows.length){ toast('Выбери хотя бы одну строку'); return; }
+    return deleteRowsOrIssues(rows);
+  }
   const ids = getSelectedIssueIds(key);
   if(!ids.length){ toast('Выбери хотя бы одну проблему'); return; }
   if(!await uiConfirm({title:'Удалить '+ids.length+' '+plural(ids.length,'проблему','проблемы','проблем')+'?', text:'Сразу после удаления можно нажать «Отменить».'})) return;
@@ -5322,15 +5379,21 @@ const DEFAULT_VENDORS = [
   {id:'v_janusww', name:'JanusWW', languages:[]},
   {id:'v_awatera', name:'Awatera', languages:[]},
   {id:'v_buro', name:'Бюро переводов', languages:[]},
+  {id:'v_ml', name:'ML', note:'Машинный перевод команды WB', languages:[]},
 ];
 const SAMPLE_ERROR_TYPES = ['Смысл','Терминология','Грамматика','Орфография','Пунктуация','Стиль','Не переведено','Переменные / теги','Длина / не помещается','Формат (числа, даты, валюта)','Другое'];
 const CONFIRMED_STATUSES = new Set(['Принята','Принята после исправления']);
 function wordCount(t){ return (String(t||'').replace(TAG_RE,' ').replace(VAR_RE,' ').match(/[\p{L}\p{N}]+/gu)||[]).length; }
 function ensureDefaultVendors(){
+  // ML (machine translation by the WB team) came later: teams that already have their vendors get it once
+  if((dbList('vendors').length || getSettings().vendorsSeeded) && !getSettings().vendorMlAdded){
+    if(!dbGet('vendors','v_ml') && !dbList('vendors').some(v=>/^ml\b/i.test(v.name||''))) dbUpsert('vendors', Object.assign({createdAt:nowISO()}, DEFAULT_VENDORS.find(v=>v.id==='v_ml')));
+    saveSettings({vendorMlAdded:true});
+  }
   if(dbList('vendors').length || getSettings().vendorsSeeded) return;
   const now = nowISO();
   dbSave('vendors', DEFAULT_VENDORS.map(v=>Object.assign({createdAt:now}, v)));
-  saveSettings({vendorsSeeded:true});
+  saveSettings({vendorsSeeded:true, vendorMlAdded:true});
 }
 function mqmScore(penalty, words){ return words ? Math.max(0, 100 - penalty*100/words) : null; }
 function fmtScore(x){ return x==null ? '—' : (Math.round(x*10)/10).toLocaleString('ru-RU')+'%'; }
@@ -6641,7 +6704,7 @@ const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addPr
   'addComponent','saveComponent','renameComponent','deleteComponent','uploadProjectPendingFiles','uploadFolderPendingFiles','addProjectPendingFiles','addFolderPendingFiles',
   'editFileMeta','deleteFile','rerunFileCheck','startSample','deleteSample','editVendor','openVendorScale','exportVendorReport','importVendorsFromFile',
   'openVisualSessionModal','saveVisualSession','deleteVisualSession','addShotFiles','deleteShot','openCrawlModal','stopCrawl',
-  'bulkDeleteIssues','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
+  'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
   'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount'];
 function guardManagerActions(){
   MANAGER_ACTIONS.forEach(name=>{
