@@ -1,21 +1,55 @@
 {
   "manifest_version": 3,
   "name": "LQA Hub — обход страниц",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Снимает скриншоты страниц Wildberries в твоём браузере и отправляет их в LQA Hub на проверку локализации.",
-  "icons": { "128": "icon.png" },
-  "action": { "default_title": "LQA Hub — обход страниц", "default_icon": "icon.png" },
-  "permissions": ["debugger", "tabs"],
-  "host_permissions": [
-    "*://*.wildberries.ru/*", "*://*.wildberries.kz/*", "*://*.wildberries.uz/*", "*://*.wildberries.am/*",
-    "*://*.wildberries.ge/*", "*://*.wildberries.kg/*", "*://*.wildberries.by/*", "*://*.wildberries.tj/*",
-    "*://*.wildberries.az/*", "*://*.wb.ru/*", "*://*.rwb.ru/*",
-    "http://localhost/*", "http://127.0.0.1/*"
+  "icons": {
+    "128": "icon.png"
+  },
+  "action": {
+    "default_title": "LQA Hub — обход страниц",
+    "default_icon": "icon.png"
+  },
+  "permissions": [
+    "debugger",
+    "tabs"
   ],
-  "background": { "service_worker": "background.js" },
-  "content_scripts": [{
-    "matches": ["https://wblocalization.github.io/*", "http://localhost/*", "http://127.0.0.1/*"],
-    "js": ["bridge.js"],
-    "run_at": "document_start"
-  }]
+  "host_permissions": [
+    "*://*.wildberries.ru/*",
+    "*://*.wildberries.kz/*",
+    "*://*.wildberries.uz/*",
+    "*://*.wildberries.am/*",
+    "*://*.wildberries.ge/*",
+    "*://*.wildberries.kg/*",
+    "*://*.wildberries.by/*",
+    "*://*.wildberries.tj/*",
+    "*://*.wildberries.az/*",
+    "*://*.wildberries.il/*",
+    "*://*.wildberries.ae/*",
+    "*://*.wildberries.com/*",
+    "*://*.wildberries.net/*",
+    "*://*.wildberries.eu/*",
+    "*://*.wb.ru/*",
+    "*://*.rwb.ru/*",
+    "*://*.wbbank.ru/*",
+    "*://*.wbstatic.net/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://wblocalization.github.io/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
 }
