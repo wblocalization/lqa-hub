@@ -83,3 +83,22 @@ test('отчёт показывает менеджеров: кто загруж�
   await expect(card.locator('tbody tr').first().locator('td').nth(2)).toHaveText('2');   // строк
   expectNoErrors(errors);
 });
+
+test('ключ строки виден целиком и копируется по клику', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const errors = await openApp(page);
+  const key = 'FINTECH_INSURANCES_new_individual_insurance_payment_description_long_key';
+  await page.evaluate(k => {
+    dbUpsert('projects', { id: 'p0', name: 'x', languages: [{ code: 'az', name: 'az' }] });
+    dbUpsert('components', { id: 'c0', projectId: 'p0', name: 'web' });
+    dbSave('rows', [{ id: 'r1', projectId: 'p0', componentId: 'c0', languageCode: 'az', key: k, source: 'Оплата', target: 'Ödəniş' }]);
+    openRowDetail('r1');
+  }, key);
+  const btn = page.locator('.modal .key-copy');
+  await expect(btn).toHaveText(key);
+  const box = await btn.boundingBox(), modal = await page.locator('.modal').boundingBox();
+  expect(box.x + box.width).toBeLessThanOrEqual(modal.x + modal.width);   // не вылезает за окно
+  await btn.click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(key);
+  expectNoErrors(errors);
+});
