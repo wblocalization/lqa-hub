@@ -107,6 +107,7 @@ button{font-family:inherit;}
 .crumbs b{color:var(--text);font-weight:600;}
 .crumbs .sep{margin:0 6px;opacity:.5;}
 .top-search{position:relative;width:300px;}
+.top-ic.mob-search{display:none;}
 .top-search .s-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;display:flex;}
 .top-search input[type=text]{width:100%;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);padding:0 52px 0 34px;font-size:13px;background:var(--surface-2);color:var(--text);transition:box-shadow .15s ease,border-color .15s ease,background .15s ease;}
 .top-search input[type=text]:hover{border-color:var(--border-strong);}
@@ -193,6 +194,31 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-soft);font-size:13px;font-weight:500;height:32px;padding:0 12px;border-radius:99px;cursor:pointer;margin-right:6px;transition:background .15s ease,border-color .15s ease,color .15s ease;}
 .chip:hover{border-color:var(--primary);color:var(--text);}
+.chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
+.chip-view{padding:0 4px 0 0;gap:0;}
+.chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
+.chip-view .chip-x{padding:0 6px;opacity:.5;}
+.chip-view .chip-x:hover{opacity:1;color:var(--crit);}
+.chip-view svg{flex-shrink:0;}
+.chip-save{border-style:dashed;color:var(--text-faint);}
+.cmdk-bg{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(3px);z-index:500;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px;animation:fadeIn .12s ease;}
+.cmdk{width:100%;max-width:620px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;max-height:70vh;animation:cmdkIn .16s cubic-bezier(.2,.8,.3,1);}
+@keyframes cmdkIn{from{opacity:0;transform:translateY(-8px) scale(.985);}to{opacity:1;transform:none;}}
+.cmdk-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);color:var(--text-faint);}
+.cmdk-in input{flex:1;border:none;outline:none;background:none;font-size:16px;color:var(--text);padding:0;box-shadow:none;min-width:0;}
+.cmdk-list{overflow-y:auto;padding:6px;}
+.cmdk-group{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);padding:10px 10px 4px;}
+.cmdk-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;min-width:0;}
+.cmdk-item.sel{background:var(--primary-bg);}
+.cmdk-item.sel .cmdk-ic{color:var(--primary);}
+.cmdk-ic{color:var(--text-faint);display:flex;flex-shrink:0;}
+.cmdk-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:14px;}
+.cmdk-hint{margin-left:auto;padding-left:10px;font-size:12px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%;flex-shrink:1;}
+.cmdk-esc{font-size:11px;font-weight:600;border:1px solid var(--border-strong);border-radius:6px;padding:2px 6px;color:var(--text-faint);}
+.cmdk-empty{padding:26px;text-align:center;color:var(--text-faint);}
+.cmdk-foot{display:flex;gap:16px;padding:9px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-faint);}
+.cmdk-foot b{font-weight:600;color:var(--text-soft);}
+@media (max-width:640px){ .cmdk-bg{padding-top:10px;} .cmdk-foot{display:none;} }
 .chip-active{background:var(--primary-bg);border-color:var(--primary);color:var(--primary-dark);font-weight:600;}
 .chip-count{background:var(--bg-2);color:var(--text-soft);border-radius:99px;padding:0 7px;font-size:12px;font-weight:600;line-height:18px;}
 .chip-active .chip-count{background:color-mix(in srgb,var(--primary) 18%,transparent);color:var(--primary-dark);}
@@ -562,6 +588,7 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
   .top-ic.menu-btn{display:flex;}
   .topbar{padding:0 12px 0 8px;}
   .top-search{display:none;}
+  .top-ic.mob-search{display:flex;}
   .content{padding:20px 16px 48px;}
   .page-title{font-size:22px;}
   .checklist,.grid-4,.grid-3,.grid-2{grid-template-columns:minmax(0,1fr);}
@@ -603,9 +630,10 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
       <div class="crumbs" id="crumbs"></div>
       <div class="top-search">
         <span class="s-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
-        <input type="text" id="globalSearch" placeholder="Поиск строк и проблем" onkeydown="if(event.key==='Enter')doGlobalSearch()">
-        <span class="kbd-hint">⌘K</span>
+        <input type="text" id="globalSearch" placeholder="Поиск и команды" readonly onfocus="this.blur();openPalette()" onclick="openPalette()">
+        <span class="kbd-hint" id="kbdHint">Ctrl K</span>
       </div>
+      <button type="button" class="top-ic mob-search" title="Поиск и команды" onclick="openPalette()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
       <button type="button" class="top-ic sync-badge" id="syncBadge" style="display:none;" onclick="syncNow(true)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="sync-dot"></span></button>
       <button type="button" class="top-ic" title="Уведомления" onclick="toggleNotifCenter()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="dot" id="notifDot"></span></button>
       <button type="button" class="avatar" id="meAvatar" onclick="openWhoAmI()" style="border:none;cursor:pointer;">?</button>
@@ -2108,6 +2136,11 @@ const ICONS = {
   search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
   plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  command: '<path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 0 0 0-6z"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   chevronDown: '<polyline points="6 9 12 15 18 9"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -3425,7 +3458,11 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
       ['review','Требуют ревью', allIssues.filter(i=>i.status==='На проверке').length],
       ['ai','AI-проверенные', allIssues.filter(i=>i.aiExplanation!=null).length],
     ];
-    qwrap.innerHTML = chips.map(([mode,label,count])=>`<button type="button" class="chip ${st.quickFilter===mode?'chip-active':''}" onclick="setQuickFilter('${key}','${mode}', issuesFixedFilters['${mountId}'])">${esc(label)} <span class="chip-count">${count}</span></button>`).join('');
+    const qEl = document.getElementById(key+'_q'), curView = viewSignature(st, qEl ? qEl.value : '');
+    const views = dbList('savedViews').sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+    qwrap.innerHTML = `<div class="row" style="gap:0;row-gap:6px;flex-wrap:wrap;">${chips.map(([mode,label,count])=>`<button type="button" class="chip ${st.quickFilter===mode&&!views.some(v=>viewSignature(v)===curView)?'chip-active':''}" onclick="setQuickFilter('${key}','${mode}', issuesFixedFilters['${mountId}'])">${esc(label)} <span class="chip-count">${count}</span></button>`).join('')}
+      ${views.length?'<span class="chip-sep"></span>':''}${views.map(v=>`<span class="chip chip-view ${viewSignature(v)===curView?'chip-active':''}"><button type="button" onclick="applySavedView('${key}','${v.id}')" title="${esc(savedViewSummary(v))}">${icon('star',13)}${esc(v.name)}</button><button type="button" class="chip-x" title="Удалить фильтр" onclick="deleteSavedView('${key}','${v.id}')">${icon('x',12)}</button></span>`).join('')}
+      ${viewIsDefault(st, qEl ? qEl.value : '') ? '' : `<button type="button" class="chip chip-save" onclick="saveCurrentView('${key}')">${icon('plus',13)}Сохранить фильтр</button>`}</div>`;
   }
 
   // filter bar is cheap to fully re-render every time (reflects current selections/open panel);
@@ -3659,6 +3696,48 @@ function renderMsel(key, field, label, options){
       <div class="msel-actions"><a href="javascript:void(0)" onclick="clearMselField('${key}','${field}')" style="font-size:12px;color:var(--text-faint);">сбросить</a><button class="btn secondary sm" style="margin-left:auto;" onclick="closeMselPanel('${key}')">Готово</button></div>
     </div>` : '';
   return `<div class="msel"><button type="button" id="${key}_${field}_btn" class="btn secondary sm ${sel.size?'msel-on':''}" onclick="toggleMselPanel('${key}','${field}')">${esc(summary)}<span class="chev">${icon('chevronDown',14)}</span></button>${panel}</div>`;
+}
+/* ---------- saved filters ----------
+   savedViews: {id, name, quickFilter, filters:{field:[values]}, q, by, createdAt} — shared with the team through sync. */
+const VIEW_FIELDS = ['proj','comp','file','lang','sev','status','type'];
+function viewFromState(st, q){ const f = {}; VIEW_FIELDS.forEach(k=>{ const v = [...(st.filters[k]||[])].sort(); if(v.length) f[k] = v; }); return {quickFilter: st.quickFilter||'all', filters:f, q:(q||'').trim()}; }
+function viewSignature(st, q){ const v = st.filters && st.filters.proj instanceof Set ? viewFromState(st, q) : st; const f = v.filters||{}; return JSON.stringify([v.quickFilter||'all', VIEW_FIELDS.map(k=>(f[k]||[]).slice().sort()), (v.q||'').trim().toLowerCase()]); }
+function viewIsDefault(st, q){ return viewSignature(st, q)===JSON.stringify(['all', VIEW_FIELDS.map(()=>[]), '']); }
+function savedViewSummary(v){
+  const names = {proj:'проект', comp:'папка', file:'файл', lang:'язык', sev:'важность', status:'статус', type:'тип'};
+  const parts = []; const qf = {critical:'критические', review:'требуют ревью', ai:'AI-проверенные'}[v.quickFilter]; if(qf) parts.push(qf);
+  Object.entries(v.filters||{}).forEach(([k,vals])=>{ const label = k==='proj' ? vals.map(id=>dbGet('projects',id)?.name||'?') : k==='comp' ? vals.map(id=>dbGet('components',id)?.name||'?') : k==='file' ? vals.map(id=>dbGet('files',id)?.filename||'?') : vals; parts.push(names[k]+': '+label.join(', ')); });
+  if(v.q) parts.push('поиск «'+v.q+'»');
+  return parts.join(' · ') || 'все проблемы';
+}
+async function saveCurrentView(key){
+  const st = issuesPageState[key]; if(!st) return;
+  const qEl = document.getElementById(key+'_q');
+  const v = viewFromState(st, qEl ? qEl.value : '');
+  const name = await uiPrompt({title:'Сохранить фильтр', label:'Название', placeholder:'например: казахский, критичные, мои', text:esc(savedViewSummary(v))+'. Фильтр увидят все в команде, он появится рядом с быстрыми фильтрами и в палитре команд (Ctrl+K).'});
+  if(!name) return;
+  dbUpsert('savedViews', Object.assign({id:uid(), name, by:getMe()||null, createdAt:nowISO()}, v));
+  toast('Фильтр «'+name+'» сохранён'); rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+function applySavedView(key, id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  const st = issuesPageState[key] = issuesPageState[key] || {page:1, selected:new Set(), openPanel:null, quickFilter:'all', filters:{}};
+  st.quickFilter = v.quickFilter||'all'; st.page = 1; st.selected = new Set(); st.openPanel = null;
+  st.filters = {}; VIEW_FIELDS.forEach(k=>st.filters[k] = new Set((v.filters||{})[k]||[]));
+  const qEl = document.getElementById(key+'_q'); if(qEl) qEl.value = v.q||'';
+  if(document.getElementById(key)) rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+async function deleteSavedView(key, id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  const snap = snapshotTables(['savedViews']);
+  dbRemove('savedViews', id); toastUndo('Фильтр «'+v.name+'» удалён', snap);
+  rerenderIssuesOrRows(key, issuesFixedFilters[key]);
+}
+function openSavedViewGlobally(id){
+  const v = dbGet('savedViews', id); if(!v) return;
+  applySavedView('issuesRoot', id);
+  if(location.hash!=='#/issues') location.hash = '#/issues';
+  setTimeout(()=>{ const qEl = document.getElementById('issuesRoot_q'); if(qEl && qEl.value!==(v.q||'')){ qEl.value = v.q||''; renderIssuesTableGeneric({}, 'issuesRoot'); } }, 60);
 }
 function setQuickFilter(key, mode, fixedFilter){
   const st = issuesPageState[key];
@@ -5783,6 +5862,84 @@ async function testAiBackend(){
 /* =========================================================
    GLOBAL SEARCH
    ========================================================= */
+/* =========================================================
+   COMMAND PALETTE (Ctrl/⌘+K): actions, pages, projects, folders, sessions,
+   glossaries, saved filters, strings and problems — all from one box.
+   ========================================================= */
+let paletteItems = [], paletteSel = 0;
+function paletteCommands(){
+  const cmds = [
+    {group:'Действия', icon:'plus', label:'Новый проект', run:()=>openProjectModal()},
+    {group:'Действия', icon:'image', label:'Новая сессия визуальной проверки', run:()=>{ location.hash='#/visual'; setTimeout(()=>openVisualSessionModal(null), 80); }},
+    {group:'Действия', icon:'moon', label:'Переключить тему', hint:'светлая / тёмная', run:()=>setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')},
+    {group:'Действия', icon:'user', label:'Кто я — выбрать себя', run:()=>openWhoAmI()},
+    {group:'Действия', icon:'download', label:'Скачать резервную копию', run:()=>downloadBackup()},
+    {group:'Действия', icon:'check', label:'Мои задачи', run:()=>{ location.hash='#/my'; }},
+  ];
+  if(typeof openPeriodReport==='function') cmds.push({group:'Действия', icon:'barChart', label:'Отчёт за период', run:()=>openPeriodReport()});
+  if(syncEnabled()) cmds.push({group:'Действия', icon:'upload', label:'Синхронизировать сейчас', run:()=>syncNow(true)});
+  if(typeof startTour==='function') cmds.push({group:'Действия', icon:'sparkles', label:'Показать тур по платформе', run:()=>{ location.hash='#/'; setTimeout(startTour, 120); }});
+  NAV.forEach(n=>cmds.push({group:'Страницы', icon:n.icon, label:n.label, run:()=>{ location.hash=n.route; }}));
+  return cmds;
+}
+function paletteScore(text, q){
+  const t = text.toLowerCase(); if(!q) return 1;
+  const i = t.indexOf(q); if(i===0) return 3; if(i>0) return (/[\s«"(\/·-]/.test(t[i-1]) ? 2.5 : 2);
+  // all words present in any order
+  const words = q.split(/\s+/).filter(Boolean); if(words.length>1 && words.every(w=>t.includes(w))) return 1.5;
+  return 0;
+}
+function paletteCompute(qRaw){
+  const q = (qRaw||'').trim().toLowerCase();
+  const out = [];
+  const addScored = (items, limit)=>{ const sc = items.map(x=>[x, paletteScore(x.label+' '+(x.hint||''), q)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]); sc.slice(0, limit).forEach(x=>out.push(x[0])); };
+  addScored(dbList('savedViews').map(v=>({group:'Сохранённые фильтры', icon:'star', label:v.name, hint:savedViewSummary(v), run:()=>openSavedViewGlobally(v.id)})), q?6:4);
+  addScored(paletteCommands(), q?8:6);
+  if(q){
+    addScored(dbList('projects').map(p=>({group:'Проекты', icon:'folder', label:p.name, hint:(p.languages||[]).map(l=>l.code).join(' '), run:()=>{ location.hash='#/project/'+p.id; }})), 5);
+    addScored(dbList('components').map(c=>({group:'Папки', icon:'folder', label:compPath(c), hint:dbGet('projects',c.projectId)?.name||'', run:()=>{ location.hash='#/project/'+c.projectId+'/folder/'+c.id; }})), 6);
+    addScored(dbList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
+    addScored(dbList('glossaries').map(g=>({group:'Глоссарии', icon:'bookOpen', label:g.name, run:()=>{ location.hash='#/glossary/'+g.id; }})), 4);
+    if(q.length>=2){
+      const rows = []; const all = dbList('rows');
+      for(let k=0;k<all.length && rows.length<8;k++){ const r = all[k]; if((r.key||'').toLowerCase().includes(q) || (r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q)) rows.push(r); }
+      rows.forEach(r=>out.push({group:'Строки', icon:'file', label:(r.target||r.source||'').slice(0,90), hint:(r.key?r.key+' · ':'')+r.languageCode, run:()=>openRowDetail(r.id)}));
+      const iss = dbList('issues').filter(i=>(i.text||'').toLowerCase().includes(q)).slice(0,5);
+      iss.forEach(i=>out.push({group:'Проблемы', icon:'alertTriangle', label:i.text.slice(0,90), hint:i.type+' · '+(i.languageCode||''), run:()=>{ location.hash='#/issues'; setTimeout(()=>openIssueDetail(i.id), 120); }}));
+      out.push({group:'Поиск', icon:'search', label:'Искать «'+qRaw.trim()+'» во всех проблемах', run:()=>{ document.getElementById('globalSearch').value = qRaw.trim(); doGlobalSearch(); document.getElementById('globalSearch').value=''; }});
+    }
+  }
+  return out;
+}
+function openPalette(){
+  if(document.getElementById('cmdk')) return;
+  const bg = document.createElement('div'); bg.className = 'cmdk-bg'; bg.id = 'cmdk';
+  bg.innerHTML = `<div class="cmdk" role="dialog" aria-label="Палитра команд"><div class="cmdk-in">${icon('search',17)}<input id="cmdkInput" type="text" placeholder="Команда, проект, папка, строка…" autocomplete="off" spellcheck="false"><span class="cmdk-esc">Esc</span></div><div class="cmdk-list" id="cmdkList" role="listbox"></div>
+    <div class="cmdk-foot"><span><b>↑↓</b> выбрать</span><span><b>Enter</b> открыть</span><span><b>Esc</b> закрыть</span></div></div>`;
+  bg.addEventListener('mousedown', e=>{ if(e.target===bg) closePalette(); });
+  document.body.appendChild(bg);
+  const inp = document.getElementById('cmdkInput');
+  inp.addEventListener('input', ()=>{ paletteSel = 0; renderPaletteList(); });
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); paletteSel = Math.min(paletteItems.length-1, paletteSel+1); renderPaletteList(true); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); paletteSel = Math.max(0, paletteSel-1); renderPaletteList(true); }
+    else if(e.key==='Enter'){ e.preventDefault(); runPaletteItem(paletteSel); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closePalette(); }
+  });
+  paletteSel = 0; renderPaletteList(); inp.focus();
+}
+function closePalette(){ const el = document.getElementById('cmdk'); if(el) el.remove(); }
+function renderPaletteList(keepScroll){
+  const inp = document.getElementById('cmdkInput'), list = document.getElementById('cmdkList'); if(!inp || !list) return;
+  if(!keepScroll) paletteItems = paletteCompute(inp.value);
+  if(!paletteItems.length){ list.innerHTML = `<div class="cmdk-empty">Ничего не нашлось</div>`; return; }
+  let lastGroup = '';
+  list.innerHTML = paletteItems.map((it,n)=>{ const head = it.group!==lastGroup ? `<div class="cmdk-group">${esc(it.group)}</div>` : ''; lastGroup = it.group;
+    return head+`<div class="cmdk-item ${n===paletteSel?'sel':''}" role="option" data-n="${n}" onmousemove="if(paletteSel!==${n}){paletteSel=${n};renderPaletteList(true);}" onclick="runPaletteItem(${n})"><span class="cmdk-ic">${icon(it.icon||'chevronRight',16)}</span><span class="cmdk-label">${esc(it.label)}</span>${it.hint?`<span class="cmdk-hint">${esc(it.hint)}</span>`:''}</div>`; }).join('');
+  const sel = list.querySelector('.cmdk-item.sel'); if(sel && sel.scrollIntoView) sel.scrollIntoView({block:'nearest'});
+}
+function runPaletteItem(n){ const it = paletteItems[n]; if(!it) return; closePalette(); try{ it.run(); }catch(e){ toast('Не получилось: '+e.message); } }
+
 function doGlobalSearch(){
   const q = document.getElementById('globalSearch').value.trim();
   if(!q) return;
@@ -5849,14 +6006,14 @@ function countUp(el){
 window.addEventListener('hashchange', navigate);
 window.addEventListener('hashchange', ()=>toggleNav(false));
 document.addEventListener('keydown', e=>{
-  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
+  if((e.metaKey||e.ctrlKey) && (e.key.toLowerCase()==='k' || e.key.toLowerCase()==='л')){
     e.preventDefault();
-    const el = document.getElementById('globalSearch');
-    if(el){ el.focus(); el.select(); }
+    if(document.getElementById('cmdk')) closePalette(); else openPalette();
   }
 });
 document.getElementById('content').innerHTML = '<div class="empty">Загрузка…</div>';
 initTheme();
+try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbdHint').textContent = '⌘K'; }catch(e){}
 (async ()=>{
   const loaded = await idbLoadAll();
   DB = migrateFromLocalStorageIfNeeded(loaded);
