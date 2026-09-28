@@ -15,7 +15,7 @@ async function uploadAs(page, vendorId, delivery, pairs) {
 
 test('перевод подрядчика: выборка, оценка и вердикт; проверка другим подрядчиком', async ({ page }) => {
   const errors = await openApp(page, '#/vendors');
-  await expect(page.locator('tbody tr')).toHaveCount(5);                      // подрядчики по умолчанию
+  await expect(page.locator('tbody tr')).toHaveCount(6);                      // подрядчики по умолчанию, вместе с ML
   await seedProject(page);
   await uploadAs(page, 'v_logrusit', 'translation', src);
   const f = await page.evaluate(() => dbList('files')[0]);
@@ -68,7 +68,7 @@ test('перевод подрядчика: выборка, оценка и ве�
 test('импорт подрядчиков из таблицы: языки берутся только из строк задач', async ({ page }) => {
   await page.route(/xlsx.*\.js/, r => r.fulfill({ path: require.resolve('xlsx/dist/xlsx.full.min.js'), contentType: 'text/javascript' }));
   const errors = await openApp(page, '#/vendors');
-  await page.evaluate(() => { dbSave('vendors', []); saveSettings({ vendorsSeeded: true }); router(); });
+  await page.evaluate(() => { dbSave('vendors', []); saveSettings({ vendorsSeeded: true, vendorMlAdded: true }); router(); });
   const wb = XLSX.utils.book_new();
   // лист-справочник: подрядчики и языки — независимые списки
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Продукт', 'Языки', 'Подрядчик'], ['Магазинка', 'Азербайджанский', 'Альфа'], ['WBP', 'Английский', 'Бета'], ['ПВЗ', 'Армянский', ''], ['СЦ', 'Грузинский', '']]), 'Списки');
@@ -79,5 +79,15 @@ test('импорт подрядчиков из таблицы: языки бер
   await expect.poll(() => page.evaluate(() => dbList('vendors').length)).toBe(2);
   const v = await page.evaluate(() => Object.fromEntries(dbList('vendors').map(x => [x.name, x.languages.slice().sort()])));
   expect(v).toEqual({ 'Альфа': ['hy', 'kk', 'uz'], 'Бета': [] });
+  expectNoErrors(errors);
+});
+
+test('ML появляется у команды, где подрядчики уже заведены, — один раз', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => { dbSave('vendors', [{ id: 'v_x', name: 'Альфа', languages: [] }]); saveSettings({ vendorsSeeded: true }); location.hash = '#/vendors'; });
+  await expect(page.locator('#content')).toContainText('ML');
+  expect(await page.evaluate(() => dbList('vendors').map(v => v.name))).toEqual(['Альфа', 'ML']);
+  await page.evaluate(() => { dbRemove('vendors', 'v_ml'); router(); });   // удалили сами — больше не возвращается
+  expect(await page.evaluate(() => dbList('vendors').map(v => v.name))).toEqual(['Альфа']);
   expectNoErrors(errors);
 });
