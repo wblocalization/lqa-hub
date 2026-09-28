@@ -1353,8 +1353,8 @@ function closeDetailPanel(){
 /* =========================================================
    PLACEHOLDER / VARIABLE / TAG DETECTION
    ========================================================= */
-// a % right after a number is a percent sign, not printf: «7%-dək», «50% dən» (Azerbaijani suffixes)
-const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|(?<!\d)%(\d+\$)?(?:[-+0 #]+\d*(\.\d+)?[sdxXofc@](?![A-Za-zÀ-ʯЀ-ӿ])|\d*(\.\d+)?[sdxXofc@])|\{\d+\}/g;
+// a % after a number, or followed by a word, is a percent sign with a suffix, not printf: «7%-dək» (az), «7 %dan» (uz), «50 % de» (fr)
+const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|(?<!\d)%(\d+\$)?[-+0 #]*\d*(\.\d+)?[sdxXofc@](?![A-Za-zÀ-ʯЀ-ӿ])|\{\d+\}/g;
 // Distinguishes real translatable copy from strings that are legitimately identical
 // between source and target because there's nothing to translate: pure placeholder
 // strings ("%@ · %@ · %@"), locale codes ("RU"), brand/campaign names ("FUN&SUN").

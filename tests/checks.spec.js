@@ -57,9 +57,11 @@ test('процент с суффиксом — не переменная: «7%-d
   const errors = await openApp(page);
   const r = await page.evaluate(() => ({
     az: extractAll('WB balları ilə 7%-dək keşbek və 50% dən çox', VAR_RE),
+    other: extractAll('7 %dan boshlab · 7%dan · 5 %-дан бастап · 50 % de réduction · %50\'ye varan · %0 faizli', VAR_RE),
     real: extractAll('Осталось %d шт., %s и %1$s, %-5d, %.2f', VAR_RE),
   }));
   expect(r.az).toEqual([]);
+  expect(r.other).toEqual([]);
   expect(r.real).toEqual(['%d', '%s', '%1$s', '%-5d', '%.2f']);
   await seedProject(page, { langs: ['az'] });
   await uploadPo(page, { lang: 'az', text: po('az', [['cb', 'До 7% кешбэка баллами ВБ', 'WB balları ilə 7%-dək keşbek']]) });
