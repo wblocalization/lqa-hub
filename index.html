@@ -384,6 +384,12 @@ input[type=file].hidden-input{display:none;}
 .proj-stats div{font-size:12px;color:var(--text-faint);}
 .proj-stats b{display:block;font-size:16px;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
 .proj-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-faint);}
+.proj-folders{display:flex;gap:5px;align-items:center;flex-wrap:wrap;min-width:0;margin-bottom:10px;}
+.proj-folders-lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-faint);margin-right:3px;}
+.proj-folder{display:inline-flex;align-items:center;gap:5px;background:var(--bg-2);color:var(--text-soft);border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:500;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.proj-folder i{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.proj-folder.more{background:none;padding:2px 4px;}
+.proj-foot>span:last-child{white-space:nowrap;}
 .dots{display:flex;gap:4px;align-items:center;}
 .dots i{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .proj-card-new{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:180px;border:1.5px dashed var(--border-strong);border-radius:var(--r-md);color:var(--text-soft);font-weight:500;cursor:pointer;background:transparent;transition:border-color .15s ease,color .15s ease,background .15s ease;font-size:14px;}
@@ -2591,7 +2597,10 @@ function renderProjectsList(el){
       const unresolved = issues.filter(i=>i.status==='Новая'||i.status==='На проверке').length;
       const hasData = rows.length>0;
       const quality = !hasData ? null : crit>0 ? {label:'Критические', cls:'critical'} : unresolved>0 ? {label:'Требует внимания', cls:'high'} : {label:'Всё хорошо', cls:'ok'};
-      const dots = comps.slice(0,6).map(c=>`<i style="background:${folderColor(c.id)};" title="${esc(c.name)}"></i>`).join('');
+      // top-level folders by name (subfolders live inside them), so it is clear what the project consists of
+      const top = comps.filter(c=>!c.parentId || !comps.some(x=>x.id===c.parentId)).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+      const shown = top.length>3 ? 2 : top.length;
+      const dots = top.length ? top.slice(0,shown).map(c=>`<span class="proj-folder" title="${esc(c.name)}"><i style="background:${folderColor(c.id)};"></i>${esc(c.name)}</span>`).join('') + (top.length>shown ? `<span class="proj-folder more" title="${esc(top.slice(shown).map(c=>c.name).join(', '))}">и ещё ${top.length-shown}</span>` : '') : '';
       return `<div class="card clickable proj-card" onclick="location.hash='#/project/${p.id}'">
         <div class="proj-card-head">
           <span class="proj-ava" style="background:linear-gradient(135deg,${folderColor(p.id)},${folderColor(p.id+'x')});">${esc(p.name.trim().slice(0,2).toUpperCase())}</span>
@@ -2603,7 +2612,8 @@ function renderProjectsList(el){
           <div><b>${hasData?issues.length.toLocaleString('ru-RU'):'—'}</b>проблем</div>
           <div><b>${(p.languages||[]).length}</b>${plural((p.languages||[]).length,'язык','языка','языков')}</div>
         </div>
-        <div class="proj-foot"><span class="dots">${dots}${comps.length>6?`<span>+${comps.length-6}</span>`:''}${comps.length?'':'нет папок'}</span><span>${last?'обновлено '+timeAgo(+new Date(last.createdAt)):'проверок ещё не было'}</span></div>
+        <div class="proj-folders"><span class="proj-folders-lbl">Папки</span>${dots || '<span class="hint" style="margin:0;">пока нет</span>'}</div>
+        <div class="proj-foot"><span></span><span>${last?'обновлено '+timeAgo(+new Date(last.createdAt)):'проверок ещё не было'}</span></div>
       </div>`;
     }).join('')}
     <button type="button" class="proj-card-new" onclick="openProjectModal()">${icon('plus',20)}Новый проект</button>
