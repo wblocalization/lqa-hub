@@ -102,3 +102,18 @@ test('ключ строки виден целиком и копируется п
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(key);
   expectNoErrors(errors);
 });
+
+test('историю проверок можно очистить — строки и проблемы остаются', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['kk'] });
+  await uploadPo(page, { lang: 'kk', text: po('kk', [['a', 'Корзина', '']]) });
+  await uploadPo(page, { lang: 'kk', text: po('kk', [['a', 'Корзина', 'Себет ']]) });
+  const before = await page.evaluate(() => [dbList('runs').length, dbList('rows').length, dbList('issues').length]);
+  expect(before[0]).toBeGreaterThan(1);
+  await page.evaluate(() => { location.hash = '#/runs'; });
+  await page.click('button:has-text("Очистить историю")');
+  await page.click('.dialog [data-ok]');
+  expect(await page.evaluate(() => [dbList('runs').length, dbList('rows').length, dbList('issues').length])).toEqual([0, before[1], before[2]]);
+  await expect(page.locator('#content')).toContainText('Проверок пока не было');
+  expectNoErrors(errors);
+});

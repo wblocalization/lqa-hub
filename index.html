@@ -3836,9 +3836,9 @@ function renderProjectChecksTable(projectId){
   const allRuns = dbQuery('runs', r=>r.projectId===projectId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const key = 'projChecks_'+projectId;
   const {slice, page, totalPages} = paginateArray(allRuns, key, 20);
-  wrap.innerHTML = `${qualityTrendChart(allRuns)}<div class="card"><h3>История проверок</h3>
-    ${allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Папка</th><th>Язык</th><th>Строк</th><th>Найдено проблем</th><th>Качество</th><th title="−исправлено  +новых  осталось">Изменения</th><th>Дата</th><th>Кто</th></tr></thead><tbody>
-      ${slice.map(r=>{ const c=dbGet('components', r.componentId); return `<tr><td>${folderBadge(c)}</td><td>${esc(r.languageCode)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${typeof r.quality==='number'?`<b style="color:${qualityColor(r.quality)}">${Math.round(r.quality*100)}%</b>`:'<span class="hint" style="margin:0;">—</span>'}</td><td>${runChangeHtml(r)}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td></tr>`; }).join('')}
+  wrap.innerHTML = `${qualityTrendChart(allRuns)}<div class="card"><div class="row between"><h3>История проверок</h3>${allRuns.length?`<button class="btn ghost sm" style="color:var(--crit);" onclick="clearRuns('${projectId}')">${icon('trash',14)}Очистить историю</button>`:''}</div>
+    ${allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Папка</th><th>Язык</th><th>Строк</th><th>Найдено проблем</th><th>Качество</th><th title="−исправлено  +новых  осталось">Изменения</th><th>Дата</th><th>Кто</th><th></th></tr></thead><tbody>
+      ${slice.map(r=>{ const c=dbGet('components', r.componentId); return `<tr><td>${folderBadge(c)}</td><td>${esc(r.languageCode)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${typeof r.quality==='number'?`<b style="color:${qualityColor(r.quality)}">${Math.round(r.quality*100)}%</b>`:'<span class="hint" style="margin:0;">—</span>'}</td><td>${runChangeHtml(r)}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td><td style="text-align:right;">${runDeleteBtn(r)}</td></tr>`; }).join('')}
     </tbody></table></div>${pagerHtml(key, page, totalPages, allRuns.length, `renderProjectChecksTable('${projectId}')`)}` : `<div class="empty">Проверок пока не было.</div>`}
   </div>`;
 }
@@ -4728,9 +4728,24 @@ function renderReviewQueue(el){
   renderIssuesTableGeneric({}, 'queueRoot');
 }
 
+// the check history is a log: clearing it removes only these records and the quality trend drawn from them —
+// strings, problems and files stay as they are
+function runDeleteBtn(r){ return `<button class="btn ghost sm" title="Удалить запись" onclick="deleteRun('${r.id}')">${icon('x',14)}</button>`; }
+function deleteRun(id){
+  const snap = snapshotTables(['runs']);
+  dbRemove('runs', id); toastUndo('Запись удалена', snap); router();
+}
+async function clearRuns(projectId){
+  const n = dbList('runs').filter(r=>!projectId || r.projectId===projectId).length; if(!n) return;
+  const p = projectId ? dbGet('projects', projectId) : null;
+  if(!await uiConfirm({title:'Очистить историю проверок'+(p?' проекта «'+p.name+'»':'')+'?', text:`Удалятся ${n} ${plural(n,'запись','записи','записей')} о проверках и график качества по ним. Строки, проблемы и файлы останутся. Сразу после удаления можно нажать «Отменить».`, okText:'Очистить'})) return;
+  const snap = snapshotTables(['runs']);
+  dbSave('runs', dbList('runs').filter(r=>projectId && r.projectId!==projectId));
+  toastUndo('История проверок очищена', snap); router();
+}
 function renderRunsPage(el){
   setCrumbs(['История проверок']);
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">История проверок</h1><div class="page-sub">Все запуски проверок по всем проектам</div></div></div>
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">История проверок</h1><div class="page-sub">Все запуски проверок по всем проектам</div></div>${dbList('runs').length?`<button class="btn ghost" style="color:var(--crit);" onclick="clearRuns()">${icon('trash',15)}Очистить историю</button>`:''}</div>
     <div id="runsPageWrap"></div>`;
   renderRunsTable();
 }
@@ -4740,8 +4755,8 @@ function renderRunsTable(){
   const allRuns = dbList('runs').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const key = 'runsPage';
   const {slice, page, totalPages} = paginateArray(allRuns, key, 20);
-  wrap.innerHTML = allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Проект</th><th>Язык</th><th>Папка</th><th>Строк</th><th>Найдено проблем</th><th>Дата</th><th>Кто</th></tr></thead><tbody>
-      ${slice.map(r=>{ const p=dbGet('projects', r.projectId), c=dbGet('components', r.componentId); return `<tr><td>${esc(p?p.name:'—')}</td><td>${esc(r.languageCode)}</td><td>${folderBadge(c)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td></tr>`; }).join('')}
+  wrap.innerHTML = allRuns.length ? `<div class="table-wrap"><table><thead><tr><th>Проект</th><th>Язык</th><th>Папка</th><th>Строк</th><th>Найдено проблем</th><th>Дата</th><th>Кто</th><th></th></tr></thead><tbody>
+      ${slice.map(r=>{ const p=dbGet('projects', r.projectId), c=dbGet('components', r.componentId); return `<tr><td>${esc(p?p.name:'—')}</td><td>${esc(r.languageCode)}</td><td>${folderBadge(c)}</td><td>${r.rowCount}</td><td>${r.issueCount}</td><td>${fmtDate(r.createdAt)}</td><td>${initialsAvatar(r.runBy)}</td><td style="text-align:right;">${runDeleteBtn(r)}</td></tr>`; }).join('')}
     </tbody></table></div>${pagerHtml(key, page, totalPages, allRuns.length, `renderRunsTable()`)}` : `<div class="empty">Проверок пока не было.</div>`;
 }
 
@@ -6745,7 +6760,7 @@ const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addPr
   'addComponent','saveComponent','renameComponent','deleteComponent','uploadProjectPendingFiles','uploadFolderPendingFiles','addProjectPendingFiles','addFolderPendingFiles',
   'editFileMeta','deleteFile','rerunFileCheck','startSample','deleteSample','editVendor','openVendorScale','exportVendorReport','importVendorsFromFile',
   'openVisualSessionModal','saveVisualSession','deleteVisualSession','addShotFiles','deleteShot','openCrawlModal','stopCrawl',
-  'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
+  'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','deleteRun','clearRuns','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
   'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount'];
 function guardManagerActions(){
   MANAGER_ACTIONS.forEach(name=>{
