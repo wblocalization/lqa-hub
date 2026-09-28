@@ -5030,6 +5030,7 @@ function renderVisualSession(el, sessionId){
         <button class="btn secondary sm" onclick="openVisualSessionModal(null,'${s.id}')">${icon('edit',14)}Изменить</button>
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
         <button class="btn secondary sm" ${issues.length?'':'disabled'} onclick="runSessionSummary('${s.id}')" title="${aiReady?'Короткий разбор страницы: главное и что исправлять первым':'Подключи ИИ в Настройках'}">${icon('sparkles',14)}ИИ-вывод</button>
+        <button class="btn secondary" onclick="openCrawlModal('${s.id}')" title="Расширение Chrome само откроет страницы WB и снимет скриншоты">${icon('globe',16)}Обойти страницы</button>
         <button class="btn secondary" ${shots.length?'':'disabled'} onclick="runSessionOcr('${s.id}')" title="Бесплатно, в браузере: прочитать текст со скриншотов, связать его со строками и найти непереведённое">${icon('search',16)}Распознать текст</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
       </div>
@@ -5048,7 +5049,7 @@ function renderVisualSession(el, sessionId){
     </label>
     <div class="row hint" style="margin:8px 0 18px;gap:6px;">Кадр из видео каждые
       <select id="frameInterval" style="height:28px;padding:0 8px;font-size:13px;" onchange="visualState.interval=+this.value">${[1,2,3,5,10].map(v=>`<option value="${v}" ${visualState.interval===v?'selected':''}>${v} с</option>`).join('')}</select>
-      <span id="shotStatus" style="margin-left:8px;color:var(--primary);font-weight:500;"></span></div>
+      <span id="shotStatus" style="margin-left:8px;color:var(--primary);font-weight:500;"></span><a href="javascript:void(0)" id="crawlStopBtn" onclick="stopCrawl()" style="display:${crawlState?'':'none'};margin-left:8px;color:var(--crit);font-size:12.5px;">остановить</a></div>
     ${shots.length ? `<div class="shot-grid">${shots.map((sh,idx)=>{
       const si = issues.filter(i=>i.shotId===sh.id);
       const w = worstSeverity(si);
@@ -5056,7 +5057,7 @@ function renderVisualSession(el, sessionId){
         <div class="shot-thumb"><img src="${sh.thumb}" alt="" loading="lazy">
           ${si.length?`<span class="pill sev-${severityClass(w)} shot-count">${si.length}</span>`:''}
           ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}${sh.ocr?`<span class="shot-ocr" title="Текст распознан: ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')}, связано ${sh.ocr.lines.filter(l=>l.rowId).length}">Aa</span>`:''}</div>
-        <div class="shot-meta"><span>${idx+1}. ${esc(sh.name)}</span>${sh.source==='video'?`<span class="hint" style="margin:0;">${fmtClock(sh.frameTime)}</span>`:''}</div>
+        <div class="shot-meta"><span title="${esc(sh.pageUrl||'')}">${idx+1}. ${esc(sh.name)}</span>${sh.source==='video'?`<span class="hint" style="margin:0;">${fmtClock(sh.frameTime)}</span>`:''}</div>
       </div>`;
     }).join('')}</div>` : ''}
     ${issues.length ? `<div class="section-label" style="margin-top:28px;">Проблемы в этой сессии</div><div id="visualIssuesRoot"></div>` : ''}
@@ -5089,7 +5090,7 @@ async function addShotFiles(sessionId, files, how){
   visualState.busy = true;
   const shots = dbList('visualShots'), images = dbList('visualShotImages');
   let order = Math.max(0, ...shots.filter(s=>s.sessionId===sessionId).map(s=>s.order||0));
-  let added = 0;
+  let added = 0; const newIds = [];
   try{
     for(const f of files){
       if(f.type.startsWith('video/')){
@@ -5104,14 +5105,16 @@ async function addShotFiles(sessionId, files, how){
         const img = await loadImageFromFile(f);
         const full = drawScaled(img, SHOT_MAX_W, SHOT_MAX_H);
         const id = uid();
-        shots.push({id, sessionId, name: how==='paste' ? 'Вставлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : f.name.replace(/\.[^.]+$/,''), source:'image', w:full.width, h:full.height, thumb:drawScaled(img, THUMB_W, THUMB_W*3).toDataURL('image/webp', .8), order:++order, createdAt:nowISO()});
-        images.push({id, dataUrl: full.toDataURL('image/webp', .86)}); added++;
+        const meta = f._lqa || {};
+        shots.push(Object.assign({id, sessionId, name: meta.name || (how==='paste' ? 'Вставлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : f.name.replace(/\.[^.]+$/,'')), source: meta.url ? 'crawl' : 'image', w:full.width, h:full.height, thumb:drawScaled(img, THUMB_W, THUMB_W*3).toDataURL('image/webp', .8), order:++order, createdAt:nowISO()}, meta.url ? {pageUrl:meta.url, viewport:meta.viewport} : {}));
+        images.push({id, dataUrl: full.toDataURL('image/webp', .86)}); added++; newIds.push(id);
       }
     }
   }catch(err){ console.error(err); toast('Не получилось обработать файл: '+err.message); }
   visualState.busy = false; setShotStatus('');
-  if(added){ dbSave('visualShotImages', images); dbSave('visualShots', shots); toast('Добавлено скриншотов: '+added); }
-  router();
+  if(added){ dbSave('visualShotImages', images); dbSave('visualShots', shots); if(how!=='crawl') toast('Добавлено скриншотов: '+added); }
+  if(how!=='crawl' || !viewerState) router();
+  return newIds;
 }
 function loadImageFromFile(file){
   return new Promise((resolve, reject)=>{
@@ -5179,6 +5182,108 @@ function shiftRefShot(delta){
   sh.refShotId = r.list[i].id; dbUpsert('visualShots', sh);
   renderShotViewer();
 }
+/* ---------- page crawl through the Chrome extension ----------
+   The extension (folder extension/ in the repository) runs in the person's own Chrome, so the site
+   sees a normal visitor. The page sends it a list of links; it opens each one in a separate window,
+   emulates a desktop or a phone, scrolls, and sends back full-page screenshots, which land in the
+   current session like dropped files. Pages per project are kept in crawlRoutes (shared with the team). */
+let crawlExt = document.documentElement.dataset.lqaExtension || null;
+function lqaPost(msg){ window.postMessage(msg, location.origin==='null' ? '*' : location.origin); }
+let crawlState = null;
+window.addEventListener('message', e=>{
+  if(e.source!==window || !e.data || typeof e.data.lqaExt!=='string') return;
+  const m = e.data;
+  if(m.lqaExt==='ready'){ crawlExt = m.version; return; }
+  if(!crawlState) return;
+  if(m.lqaExt==='progress') crawlStatus(`Обход ${m.done+1} из ${m.total}: ${m.name} — ${m.stage}`);
+  else if(m.lqaExt==='shot') crawlQueueShot(m);
+  else if(m.lqaExt==='pageError'){ crawlState.errors.push(m.name+': '+m.message); }
+  else if(m.lqaExt==='error'){ toast('Обход не запустился: '+m.message, {duration:8000}); crawlState = null; crawlStatus(''); }
+  else if(m.lqaExt==='done'){ crawlState.finished = m; crawlMaybeFinish(); }
+});
+function crawlStatus(t){ setShotStatus(t); const b = document.getElementById('crawlStopBtn'); if(b) b.style.display = t ? '' : 'none'; }
+const CRAWL_DEFAULT_PAGES = 'Главная | https://www.wildberries.ru/\nПоиск | https://www.wildberries.ru/catalog/0/search.aspx?search=платье';
+function crawlRouteFor(projectId){ return dbGet('crawlRoutes', projectId) || {id:projectId, pages:CRAWL_DEFAULT_PAGES, viewports:['desktop','mobile'], screens:3, ocr:true}; }
+function parseCrawlPages(text){
+  return String(text||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const i = l.lastIndexOf('|'); const name = i>=0 ? l.slice(0,i).trim() : '', url = (i>=0 ? l.slice(i+1) : l).trim();
+    return {name: name || url.replace(/^https?:\/\/(www\.)?/,'').slice(0,40), url};
+  }).filter(p=>/^https?:\/\//.test(p.url));
+}
+async function openCrawlModal(sessionId){
+  const sess = dbGet('visualSessions', sessionId); if(!sess) return;
+  if(!crawlExt){ lqaPost({lqaHub:'ping'}); await new Promise(r=>setTimeout(r, 250)); }
+  if(!crawlExt){
+    const onSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+    uiDialog(`<h3>Нужно расширение для Chrome</h3>
+      <div class="dialog-text" style="line-height:1.6;">Страницы WB обходит небольшое расширение: оно работает в твоём браузере, поэтому сайт видит обычного посетителя и не блокирует. Поставить — 2 минуты, один раз.</div>
+      <ol style="margin:12px 0 0;padding-left:20px;line-height:1.9;font-size:14px;">
+        <li>Скачай <a class="link" href="https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip" target="_blank" rel="noopener">архив с платформой</a> и распакуй его.</li>
+        <li>Открой в Chrome адрес <span class="mono">chrome://extensions</span> и справа вверху включи <b>Режим разработчика</b>.</li>
+        <li><b>Загрузить распакованное расширение</b> → выбери папку <span class="mono">extension</span> из архива.</li>
+        <li>Обнови эту страницу.</li>
+      </ol>
+      ${onSite ? '' : `<div class="hint" style="margin-top:10px;">Расширение работает на сайте <a class="link" href="https://wblocalization.github.io/lqa-hub/" target="_blank" rel="noopener">wblocalization.github.io/lqa-hub</a>, а не в файле, открытом с диска.</div>`}
+      <div class="modal-actions"><a class="btn secondary" href="https://github.com/wblocalization/lqa-hub/tree/main/extension" target="_blank" rel="noopener">Подробнее</a><button class="btn" data-cancel>Понятно</button></div>`);
+    return;
+  }
+  const r = crawlRouteFor(sess.projectId);
+  const res = await uiDialog(`<h3>Обойти страницы</h3>
+    <div class="dialog-text">Расширение откроет страницы в отдельном окне, прокрутит и снимет их целиком. Скриншоты добавятся в сессию «${esc(sess.name)}».</div>
+    <label class="field" style="margin-top:14px;">Страницы <span style="font-weight:400;color:var(--text-faint);">— по одной в строке: Название | ссылка. Список общий для проекта</span>
+      <textarea id="crPages" class="mono" style="min-height:130px;font-size:12.5px;">${esc(r.pages)}</textarea></label>
+    <div class="row" style="gap:18px;margin-top:12px;flex-wrap:wrap;">
+      <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crDesk" ${r.viewports.includes('desktop')?'checked':''}> Компьютер 1440×900</label>
+      <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crMob" ${r.viewports.includes('mobile')?'checked':''}> Телефон 390×844</label>
+      <label class="checkrow" style="border:none;padding:0;">Высота снимка <select id="crScreens" style="height:30px;margin-left:6px;">${[1,2,3,5,8].map(n=>`<option value="${n}" ${+r.screens===n?'selected':''}>${n} ${plural(n,'экран','экрана','экранов')}</option>`).join('')}</select></label>
+      <label class="checkrow" style="border:none;padding:0;"><input type="checkbox" id="crOcr" ${r.ocr!==false?'checked':''}> Сразу распознать текст</label>
+    </div>
+    <div class="hint" style="margin-top:10px;">Пока идёт обход, не закрывай окно робота. Chrome покажет полоску «начало отлаживать этот браузер» — так расширение изображает телефон и снимает страницу целиком.</div>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>${icon('globe',15)}Начать обход</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({pages:root.querySelector('#crPages').value, viewports:[root.querySelector('#crDesk').checked?'desktop':'', root.querySelector('#crMob').checked?'mobile':''].filter(Boolean), screens:+root.querySelector('#crScreens').value, ocr:root.querySelector('#crOcr').checked}); });
+  if(!res) return;
+  const pages = parseCrawlPages(res.pages);
+  if(!pages.length){ toast('Впиши хотя бы одну ссылку'); return; }
+  if(!res.viewports.length){ toast('Выбери компьютер, телефон или оба'); return; }
+  dbUpsert('crawlRoutes', Object.assign({id:sess.projectId}, res));
+  startCrawl(sessionId, {pages, viewports:res.viewports, screens:res.screens}, res.ocr);
+}
+function startCrawl(sessionId, job, ocr){
+  if(crawlState){ toast('Обход уже идёт'); return; }
+  crawlState = {sessionId, ocr, queue:[], busy:false, ids:[], errors:[], finished:null, total:job.pages.length*job.viewports.length};
+  crawlStatus('Обход: запускаю расширение…');
+  toast('Обход начался: '+crawlState.total+' '+plural(crawlState.total,'снимок','снимка','снимков'), {duration:8000, action:{label:'Остановить', fn:stopCrawl}});
+  lqaPost({lqaHub:'crawl', job});
+}
+function stopCrawl(){ lqaPost({lqaHub:'stop'}); crawlStatus('Останавливаю обход…'); }
+async function crawlQueueShot(m){
+  const st = crawlState; if(!st) return;
+  st.queue.push(m);
+  if(st.busy) return;
+  st.busy = true;
+  while(st.queue.length){
+    const item = st.queue.shift();
+    try{
+      const blob = await (await fetch(item.dataUrl)).blob();
+      const file = new File([blob], item.name+'.jpg', {type:'image/jpeg'});
+      file._lqa = {name:item.name, url:item.url, viewport:item.viewport};
+      while(visualState.busy) await new Promise(r=>setTimeout(r, 150));
+      st.ids.push(...(await addShotFiles(st.sessionId, [file], 'crawl') || []));
+    }catch(e){ st.errors.push(item.name+': '+e.message); }
+  }
+  st.busy = false;
+  crawlMaybeFinish();
+}
+async function crawlMaybeFinish(){
+  const st = crawlState; if(!st || !st.finished || st.busy || st.queue.length) return;
+  crawlState = null; crawlStatus('');
+  const f = st.finished;
+  toast(`Обход ${f.stopped?'остановлен':'завершён'}: снято ${st.ids.length} из ${st.total}${st.errors.length?' · не получилось: '+st.errors.length:''}`, {duration:8000});
+  if(st.errors.length) console.warn('Обход: ошибки', st.errors);
+  if(st.ocr && st.ids.length) await runSessionOcr(st.sessionId, st.ids);
+  else router();
+}
+
 /* ---------- text recognition (OCR) on screenshots ----------
    Tesseract.js runs in the browser: no AI, no key, nothing leaves the computer except the one-time
    download of the engine and language data (from jsDelivr, then cached). Every recognized line is
