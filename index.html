@@ -204,6 +204,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
   .main{margin:0 !important;padding:0 !important;} .content{padding:0 !important;max-width:none !important;}
   body{background:#fff !important;} .card,.kpi{break-inside:avoid;box-shadow:none !important;}
 }
+.obox{position:absolute;border:1.5px dashed rgba(120,120,140,.75);border-radius:3px;background:rgba(120,120,140,.08);z-index:1;}
+.obox.ok{border-color:rgba(21,128,61,.85);background:rgba(21,128,61,.10);cursor:pointer;}
+.obox.src{border-color:rgba(217,45,32,.9);background:rgba(217,45,32,.12);cursor:pointer;}
+.obox:hover{border-style:solid;}
+.shot-ocr{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;background:rgba(21,128,61,.92);color:#fff;border-radius:6px;padding:1px 6px;}
+.ocr-sum{font-size:12.5px;color:var(--text-soft);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;}
 .chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
 .chip-view{padding:0 4px 0 0;gap:0;}
 .chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
@@ -4272,6 +4278,11 @@ function rowScreens(r){
     const sess = dbGet('visualSessions', sh.sessionId);
     seen.add(i.shotId); out.push({sh, sess, issueId:i.id});
   });
+  // screenshots where text recognition found this string
+  dbList('visualShots').forEach(sh=>{
+    if(seen.has(sh.id) || !sh.ocr || !(sh.ocr.lines||[]).some(l=>l.rowId && sameKeyRows.has(l.rowId))) return;
+    seen.add(sh.id); out.push({sh, sess:dbGet('visualSessions', sh.sessionId), issueId:''});
+  });
   return out;
 }
 function rowContextHtml(r, currentIssueId){
@@ -4834,6 +4845,7 @@ function renderVisualSession(el, sessionId){
         <button class="btn secondary sm" onclick="openVisualSessionModal(null,'${s.id}')">${icon('edit',14)}Изменить</button>
         <button class="btn secondary sm" title="Удалить сессию" onclick="deleteVisualSession('${s.id}')" style="color:var(--crit);">${icon('trash',14)}</button>
         <button class="btn secondary sm" ${issues.length?'':'disabled'} onclick="runSessionSummary('${s.id}')" title="${aiReady?'Короткий разбор страницы: главное и что исправлять первым':'Подключи ИИ в Настройках'}">${icon('sparkles',14)}ИИ-вывод</button>
+        <button class="btn secondary" ${shots.length?'':'disabled'} onclick="runSessionOcr('${s.id}')" title="Бесплатно, в браузере: прочитать текст со скриншотов, связать его со строками и найти непереведённое">${icon('search',16)}Распознать текст</button>
         <button class="btn" ${shots.length?'':'disabled'} onclick="runVisualAI('${s.id}')" title="${aiReady?'Проверить все скриншоты ИИ':'Подключи ИИ в Настройках'}">${icon('sparkles',16)}ИИ-проверка</button>
       </div>
     </div>
@@ -4858,7 +4870,7 @@ function renderVisualSession(el, sessionId){
       return `<div class="shot-card" onclick="openShotViewer('${sh.id}')">
         <div class="shot-thumb"><img src="${sh.thumb}" alt="" loading="lazy">
           ${si.length?`<span class="pill sev-${severityClass(w)} shot-count">${si.length}</span>`:''}
-          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}</div>
+          ${sh.aiCheckedAt?`<span class="shot-ai" title="Проверено ИИ">${icon('sparkles',12)}</span>`:''}${sh.ocr?`<span class="shot-ocr" title="Текст распознан: ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')}, связано ${sh.ocr.lines.filter(l=>l.rowId).length}">Aa</span>`:''}</div>
         <div class="shot-meta"><span>${idx+1}. ${esc(sh.name)}</span>${sh.source==='video'?`<span class="hint" style="margin:0;">${fmtClock(sh.frameTime)}</span>`:''}</div>
       </div>`;
     }).join('')}</div>` : ''}
@@ -4982,6 +4994,198 @@ function shiftRefShot(delta){
   sh.refShotId = r.list[i].id; dbUpsert('visualShots', sh);
   renderShotViewer();
 }
+/* ---------- text recognition (OCR) on screenshots ----------
+   Tesseract.js runs in the browser: no AI, no key, nothing leaves the computer except the one-time
+   download of the engine and language data (from jsDelivr, then cached). Every recognized line is
+   matched to the project's strings; lines that are clearly wrong on screen become problems:
+   Russian text in a non-Russian UI, a visible placeholder or string key, roubles outside Russian. */
+let viewerOcr = false;
+const OCR_LANGS = {kk:'kaz', uz:'uzb', ky:'kir', tg:'tgk', hy:'hye', ka:'kat', az:'aze', tr:'tur', en:'eng', ru:'rus', uk:'ukr', be:'bel', zh:'chi_sim', ar:'ara', fr:'fra', de:'deu', es:'spa', he:'heb', ro:'ron', pl:'pol', mn:'mon', it:'ita', pt:'por', vi:'vie', th:'tha', ja:'jpn', ko:'kor'};
+const CYRILLIC_UI_LANGS = new Set(['ru','kk','ky','tg','be','uk','mn','bg','sr','mk']);
+function ocrLangsFor(code){
+  const c = String(code||'').toLowerCase(), l = spellBaseLang(c);
+  const main = l==='uz' && c.includes('cyrl') ? 'uzb_cyrl' : OCR_LANGS[l];
+  return [...new Set([main, 'rus', 'eng'].filter(Boolean))];
+}
+let tesseractLoad = null;
+function ensureTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(tesseractLoad) return tesseractLoad;
+  return tesseractLoad = new Promise((res, rej)=>{
+    const sc = document.createElement('script'); sc.src = cdnBase()+'tesseract.js@7.0.0/dist/tesseract.min.js';
+    sc.onload = ()=>res(); sc.onerror = ()=>{ tesseractLoad = null; rej(new Error('не загрузилась библиотека распознавания — проверь интернет')); };
+    document.head.appendChild(sc);
+  });
+}
+const ocrWorkers = {};
+let ocrProgress = null;
+function getOcrWorker(langs){
+  const key = langs.join('+');
+  if(ocrWorkers[key]) return ocrWorkers[key];
+  return ocrWorkers[key] = (async ()=>{
+    await ensureTesseract();
+    const opts = {workerPath:cdnBase()+'tesseract.js@7.0.0/dist/worker.min.js', corePath:cdnBase()+'tesseract.js-core@7.0.0', logger:m=>{ if(ocrProgress) ocrProgress(m); }};
+    if(window.LQA_TESSDATA) opts.langPath = window.LQA_TESSDATA;
+    return Tesseract.createWorker(langs, 1, opts);
+  })().catch(e=>{ delete ocrWorkers[key]; throw e; });
+}
+// small UI text reads much better at 2×; returns {src, w, h} of the original image
+function ocrPrepareImage(dataUrl){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const w = img.naturalWidth, h = img.naturalHeight, k = w < 1800 ? 2 : 1;
+      const cv = document.createElement('canvas'); cv.width = w*k; cv.height = h*k;
+      const cx = cv.getContext('2d', {willReadFrequently:true}); cx.imageSmoothingQuality = 'high'; cx.drawImage(img, 0, 0, w*k, h*k);
+      const src = k===1 ? dataUrl : cv.toDataURL('image/png');
+      // light text on coloured buttons and dark banners is invisible to Tesseract: a second, inverted grayscale pass reads it
+      // second image: inside mostly-dark areas light pixels (the text) become black on white, everything else is blanked out
+      const W = cv.width, H = cv.height, px = cx.getImageData(0, 0, W, H), d = px.data;
+      const Y = new Uint8Array(W*H), S = new Uint32Array((W+1)*(H+1));
+      let dark = 0;
+      for(let yy=0; yy<H; yy++){ let row = 0; for(let xx=0; xx<W; xx++){ const i = (yy*W+xx)*4, v = .299*d[i]+.587*d[i+1]+.114*d[i+2]; Y[yy*W+xx] = v; const m = v<128 ? 1 : 0; dark += m; row += m; S[(yy+1)*(W+1)+xx+1] = S[yy*(W+1)+xx+1] + row; } }
+      const darkShare = dark/(W*H);
+      let inv = null;
+      if(darkShare > .02){
+        const r = 14*k;
+        for(let yy=0; yy<H; yy++){ const y0 = Math.max(0,yy-r), y1 = Math.min(H,yy+r+1);
+          for(let xx=0; xx<W; xx++){ const x0 = Math.max(0,xx-r), x1 = Math.min(W,xx+r+1);
+            const frac = (S[y1*(W+1)+x1]-S[y0*(W+1)+x1]-S[y1*(W+1)+x0]+S[y0*(W+1)+x0])/((y1-y0)*(x1-x0));
+            const i = (yy*W+xx)*4, v = frac>.55 && Y[yy*W+xx]>150 ? 0 : 255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; } }
+        cx.putImageData(px, 0, 0); inv = cv.toDataURL('image/png');
+      }
+      res({src, inv, w, h, k, darkShare});
+    };
+    img.onerror = ()=>rej(new Error('не открылась картинка'));
+    img.src = dataUrl;
+  });
+}
+function normScreen(t){ return String(t||'').toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}%₽₸$€]+/gu,' ').replace(/\s+/g,' ').trim(); }
+function dice(a, b){
+  if(a===b) return 1; if(a.length<2 || b.length<2) return 0;
+  const m = new Map(); for(let i=0;i<a.length-1;i++){ const g = a.substr(i,2); m.set(g, (m.get(g)||0)+1); }
+  let hit = 0; for(let i=0;i<b.length-1;i++){ const g = b.substr(i,2), n = m.get(g); if(n){ hit++; m.set(g, n-1); } }
+  return 2*hit/(a.length+b.length-2);
+}
+// index of a project's strings for one language: exact target, exact source, and token → rows for fuzzy matches
+function ocrRowIndex(projectId, languageCode){
+  const lc = String(languageCode||'').toLowerCase();
+  const rows = dbList('rows').filter(r=>r.projectId===projectId && String(r.languageCode||'').toLowerCase()===lc);
+  const byTarget = new Map(), bySource = new Map(), byToken = new Map(), norm = new Map();
+  rows.forEach(r=>{
+    const t = normScreen(stripForScreen(r.target)), so = normScreen(stripForScreen(r.source));
+    norm.set(r.id, t);
+    if(t.length>=2 && !byTarget.has(t)) byTarget.set(t, r);
+    if(so.length>=4 && !bySource.has(so)) bySource.set(so, r);
+    new Set(t.split(' ').filter(w=>w.length>=3)).forEach(w=>{ const a = byToken.get(w); if(a){ if(a.length<400) a.push(r); } else byToken.set(w, [r]); });
+  });
+  return {rows, byTarget, bySource, byToken, norm};
+}
+function stripForScreen(t){ return String(t||'').replace(TAG_RE,' ').replace(VAR_RE,' ').replace(/\\n/g,' '); }
+function ocrMatchLine(idx, text){
+  const n = normScreen(text); if(n.length<2) return null;
+  if(idx.byTarget.has(n)) return {row:idx.byTarget.get(n), kind:'target', score:1};
+  if(idx.bySource.has(n)) return {row:idx.bySource.get(n), kind:'source', score:1};
+  const cand = new Map();
+  n.split(' ').filter(w=>w.length>=3).forEach(w=>(idx.byToken.get(w)||[]).forEach(r=>cand.set(r.id, r)));
+  let best = null;
+  cand.forEach(r=>{
+    const t = idx.norm.get(r.id); if(!t) return;
+    let sc = dice(n, t);
+    if(sc < .8 && t.length>=6 && n.includes(t)) sc = Math.max(sc, .78);   // the string is part of a longer line
+    if(sc < .8 && n.length>=6 && t.includes(n)) sc = Math.max(sc, .72);   // a line of a wrapped string
+    if(!best || sc > best.score) best = {row:r, kind:'target', score:sc};
+  });
+  return best && best.score >= .72 ? best : null;
+}
+const OCR_PLACEHOLDER_RE = /\{\{\s*[\w.]+\s*\}\}|\$\{\w+\}|%\d?\$?[sd@]\b|\{\d\}|<\/?(b|i|br|span|div|a|strong|em)\s*\/?>/i;
+const OCR_KEY_RE = /\b[a-z][a-z0-9]*(?:[._][a-z0-9]+){2,}\b/;
+function ocrFindingsForLine(line, lang, match){
+  const out = [], t = line.t, l = spellBaseLang(lang);
+  const ph = t.match(OCR_PLACEHOLDER_RE);
+  if(ph) out.push({type:'Видна переменная / тег / ключ', severity:'Критическая', text:'На экране видна переменная или тег: «'+ph[0]+'»', found:ph[0]});
+  else { const k = t.match(OCR_KEY_RE); if(k && !/\.(ru|kz|uz|com|net|org|by|am|ge|kg|az|tj)\b/.test(k[0])) out.push({type:'Видна переменная / тег / ключ', severity:'Высокая', text:'Похоже, на экране ключ строки вместо текста: «'+k[0]+'»', found:k[0]}); }
+  if(l!=='ru'){
+    const letters = (t.match(/\p{L}/gu)||[]).length, cyr = (t.match(/\p{Script=Cyrillic}/gu)||[]).length;
+    if(match && match.kind==='source') out.push({type:'Не переведено', severity:'Высокая', text:'Текст на экране совпадает с русским исходником — строка не переведена', found:t});
+    else if(!CYRILLIC_UI_LANGS.has(l) && cyr>=3 && cyr >= letters*.5) out.push({type:'Не переведено', severity:'Высокая', text:'Русский текст на экране: «'+t.slice(0,80)+'»', found:t});
+    // OCR often reads ₽ as the letter Р, so "12 990 Р" counts too
+    const rub = t.match(/\d[\d\s.,]*\s?(₽|Р(?![\p{L}])|руб\.?(?![\p{L}]))/u) || t.match(/₽/);
+    if(l!=='be' && rub) out.push({type:'Формат числа, даты, валюты', severity:'Высокая', text:'Рубли на экране для языка «'+languageLabel(lang)+'»', found:rub[0].trim()});
+  }
+  return out;
+}
+async function ocrShot(sh, sess, idx){
+  const langs = ocrLangsFor(sess.languageCode);
+  const worker = await getOcrWorker(langs);
+  const prep = await ocrPrepareImage(shotImage(sh.id));
+  const lines = [];
+  const overlaps = (a, b)=>{ const ix = Math.max(0, Math.min(a.x+a.w, b.x+b.w)-Math.max(a.x, b.x)), iy = Math.max(0, Math.min(a.y+a.h, b.y+b.h)-Math.max(a.y, b.y)); return ix*iy > .3*Math.min(a.w*a.h, b.w*b.h); };
+  const collect = data=>(data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(ln=>{
+    const t = String(ln.text||'').replace(/\s+/g,' ').trim();
+    if(!t || ln.confidence < 45 || !/\p{L}{2}/u.test(t)) return;
+    const bb = ln.bbox, k = prep.k;
+    const box = {x:bb.x0/k/prep.w, y:bb.y0/k/prep.h, w:(bb.x1-bb.x0)/k/prep.w, h:(bb.y1-bb.y0)/k/prep.h};
+    if(lines.some(l=>overlaps(l.b, box))) return;
+    lines.push({t, c:Math.round(ln.confidence), b:box});
+  })));
+  collect((await worker.recognize(prep.src, {}, {blocks:true, text:false})).data);
+  if(prep.inv) collect((await worker.recognize(prep.inv, {}, {blocks:true, text:false})).data);
+  lines.sort((a,b)=>a.b.y-b.b.y || a.b.x-b.b.x);
+  lines.forEach(ln=>{ const m = ocrMatchLine(idx, ln.t); if(m){ ln.rowId = m.row.id; ln.kind = m.kind; } });
+  return {at:nowISO(), langs, lines};
+}
+function applyOcrFindings(sh, sess){
+  const OCR_ACTION = 'Обнаружена (распознавание текста)';
+  const isOcr = i=>i.shotId===sh.id && (i.history||[])[0] && i.history[0].action===OCR_ACTION;
+  const kept = dbList('issues').filter(i=>!(isOcr(i) && i.status==='Новая'));
+  const decided = new Set(kept.filter(isOcr).map(i=>i.type+'|'+normScreen(i.highlightText)));
+  let created = 0;
+  (sh.ocr.lines||[]).forEach(ln=>{
+    if(ln.c < 60) return;
+    const row = ln.rowId ? dbGet('rows', ln.rowId) : null;
+    ocrFindingsForLine(ln, sess.languageCode, ln.rowId ? {kind:ln.kind} : null).forEach(f=>{
+      const k = f.type+'|'+normScreen(f.found); if(decided.has(k)) return; decided.add(k);
+      // a finding that is only part of the line gets a box around that part (estimated by character position)
+      const at = f.found && f.found!==ln.t ? ln.t.indexOf(f.found) : -1;
+      const bx = at>=0 ? {x:ln.b.x + ln.b.w*at/ln.t.length, w:ln.b.w*f.found.length/ln.t.length} : {x:ln.b.x, w:ln.b.w};
+      kept.push({id:uid(), visual:true, manual:true, sessionId:sess.id, shotId:sh.id, box:{x:Math.max(0,bx.x-.004), y:Math.max(0,ln.b.y-.004), w:Math.min(1,bx.w+.008), h:Math.min(1,ln.b.h+.008)},
+        projectId:sess.projectId, componentId:row?row.componentId:null, rowId:row?row.id:null, languageCode:sess.languageCode,
+        type:f.type, severity:f.severity, text:f.text, highlightText:f.found||null, expectedText:null,
+        status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(), action:OCR_ACTION}]});
+      created++;
+    });
+  });
+  dbSave('issues', kept);
+  return created;
+}
+async function runSessionOcr(sessionId, shotIds){
+  const sess = dbGet('visualSessions', sessionId); if(!sess) return;
+  const shots = (shotIds ? shotIds.map(id=>dbGet('visualShots', id)) : dbQuery('visualShots', x=>x.sessionId===sessionId).sort((a,b)=>(a.order||0)-(b.order||0))).filter(Boolean);
+  if(!shots.length) return;
+  const status = t=>{ setShotStatus(t); const b = document.getElementById('ocrViewerStatus'); if(b) b.textContent = t; };
+  let done = 0, created = 0, linked = 0, total = 0;
+  ocrProgress = m=>{ if(m.status && m.status!=='recognizing text') status(done===0 && /load|initial/i.test(m.status) ? 'Загружаю распознавание ('+ocrLangsFor(sess.languageCode).join(', ')+')… '+Math.round((m.progress||0)*100)+'%' : ''); else if(m.status==='recognizing text') status('Распознаю текст: '+(done+1)+' из '+shots.length+' · '+Math.round((m.progress||0)*100)+'%'); };
+  try{
+    const idx = ocrRowIndex(sess.projectId, sess.languageCode);
+    for(const sh of shots){
+      const cur = dbGet('visualShots', sh.id); if(!cur) continue;
+      cur.ocr = await ocrShot(cur, sess, idx);
+      dbUpsert('visualShots', cur);
+      created += applyOcrFindings(cur, sess);
+      total += cur.ocr.lines.length; linked += cur.ocr.lines.filter(l=>l.rowId).length;
+      done++;
+      if(viewerState && viewerState.shotId===cur.id){ viewerOcr = true; renderShotViewer(); }
+    }
+    toast(`Текст распознан: ${done} ${plural(done,'скриншот','скриншота','скриншотов')} · строк ${total}, связано с переводом ${linked}${created?' · новых проблем '+created:''}`, {duration:6000});
+  }catch(e){ console.error(e); toast('Распознавание не получилось: '+e.message); }
+  finally{ ocrProgress = null; status(''); if(!viewerState) router(); }
+}
+function runShotOcr(shotId){ const sh = dbGet('visualShots', shotId); if(sh) runSessionOcr(sh.sessionId, [shotId]); }
+function ocrOverlayHtml(sh){
+  return (sh.ocr.lines||[]).map(l=>{ const r = l.rowId ? dbGet('rows', l.rowId) : null;
+    return `<div class="obox ${r?(l.kind==='source'?'src':'ok'):''}" style="left:${l.b.x*100}%;top:${l.b.y*100}%;width:${l.b.w*100}%;height:${l.b.h*100}%;" title="${esc(l.t)}${r?' — строка '+esc(r.key||'')+(l.kind==='source'?' (совпадает с исходником!)':''):' — не найдено в строках перевода'}" ${r?`onclick="event.stopPropagation();openRowDetail('${r.id}')"`:''}></div>`; }).join('');
+}
 function toggleViewerCompare(){ viewerCompare = !viewerCompare; renderShotViewer(); }
 function openShotViewer(shotId, focusIssueId){
   const sh = dbGet('visualShots', shotId);
@@ -5014,6 +5218,7 @@ function renderShotViewer(){
   const draftBox = d ? `<div class="vbox draft" style="left:${d.box.x*100}%;top:${d.box.y*100}%;width:${d.box.w*100}%;height:${d.box.h*100}%;"></div>` : '';
   const side = d ? visualDraftFormHtml(sess) : `
     <div class="hint" style="margin:0 0 12px;display:flex;gap:8px;align-items:flex-start;"><span style="color:var(--primary);flex-shrink:0;">${icon('edit',16)}</span><span>Выдели проблемное место мышью прямо на скриншоте — появится форма.</span></div>
+    ${sh.ocr ? `<div class="ocr-sum">Распознано ${sh.ocr.lines.length} ${plural(sh.ocr.lines.length,'строка','строки','строк')} текста · связано с переводом ${sh.ocr.lines.filter(l=>l.rowId).length}${viewerOcr?'':' · <a href="javascript:void(0)" onclick="viewerOcr=true;renderShotViewer()">показать</a>'} · <a href="javascript:void(0)" onclick="runShotOcr(\'${sh.id}\')">заново</a></div>` : ''}
     ${issues.length ? issues.map((i,n)=>`<div class="v-issue ${viewerState.focus===i.id?'focus':''}" onclick="focusViewerIssue('${i.id}')">
         <div class="row" style="gap:6px;flex-wrap:nowrap;"><span class="v-num sev-${severityClass(i.severity)}">${n+1}</span><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span><span class="pill type" style="overflow:hidden;text-overflow:ellipsis;">${esc(i.type)}</span></div>
         <div style="font-size:13px;margin-top:6px;">${esc(i.text)}</div>
@@ -5025,6 +5230,7 @@ function renderShotViewer(){
     <div class="viewer-top">
       <button class="top-ic" title="Закрыть (Esc)" onclick="closeShotViewer()" style="color:#fff;">${icon('x',20)}</button>
       <div style="min-width:0;flex:1;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sh.name)}</div><div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(sess?sess.name:'')} · ${esc(sess?languageLabel(sess.languageCode):'')} · ${idx+1} из ${siblings.length}</div></div>
+      ${sh.ocr ? `<button class="btn on-dark sm ${viewerOcr?'is-on':''}" onclick="viewerOcr=!viewerOcr;renderShotViewer()" title="Показать распознанный текст (T)">Aa Текст</button>` : `<button class="btn on-dark sm" onclick="runShotOcr('${sh.id}')" title="Прочитать текст со скриншота и связать со строками">Aa Распознать</button>`}
       ${refInfo ? `<button class="btn on-dark sm ${comparing?'is-on':''}" onclick="toggleViewerCompare()" title="Показать оригинал рядом (C)">${icon('columns',14)}Сравнить</button>` : ''}
       <button class="btn on-dark sm" ${idx>0?'':'disabled'} onclick="openShotViewer('${idx>0?siblings[idx-1].id:''}')" title="Предыдущий (←)">←</button>
       <button class="btn on-dark sm" ${idx<siblings.length-1?'':'disabled'} onclick="openShotViewer('${idx<siblings.length-1?siblings[idx+1].id:''}')" title="Следующий (→)">→</button>
@@ -5038,7 +5244,7 @@ function renderShotViewer(){
             ${refInfo.shot ? `<div class="viewer-canvas ref"><img src="${shotImage(refInfo.shot.id)}" alt="" draggable="false"></div>` : `<div class="compare-empty">В сессии-оригинале «${esc(refSess?refSess.name:'')}» пока нет скриншотов</div>`}
           </div>
           <div class="compare-pane"><div class="compare-label"><span>Перевод · ${esc(sess?languageLabel(sess.languageCode):'')}</span></div>` : ''}
-        <div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${boxes}${draftBox}</div>
+        <div class="viewer-canvas" id="viewerCanvas"><img src="${shotImage(sh.id)}" alt="" draggable="false">${viewerOcr && sh.ocr ? ocrOverlayHtml(sh) : ''}${boxes}${draftBox}</div>
         ${comparing ? '</div>' : ''}
       </div>
       <aside class="viewer-side">${side}</aside>
@@ -5051,7 +5257,7 @@ function wireViewerDrawing(){
   let start = null, ghost = null;
   const pt = e=>{ const r = cv.getBoundingClientRect(); return {x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}; };
   cv.onpointerdown = e=>{
-    if(e.button!==0 || e.target.closest('.vbox:not(.draft)')) return;
+    if(e.button!==0 || e.target.closest('.vbox:not(.draft), .obox')) return;
     e.preventDefault(); cv.setPointerCapture(e.pointerId);
     start = pt(e);
     ghost = document.createElement('div'); ghost.className = 'vbox draft'; cv.appendChild(ghost);
@@ -5146,6 +5352,7 @@ document.addEventListener('keydown', e=>{
   if(!viewerState || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')) return;
   if(e.key==='Escape'){ if(viewerState.draft){ viewerState.draft=null; renderShotViewer(); } else closeShotViewer(); }
   if((e.key==='c' || e.key==='с' || e.key==='C' || e.key==='С') && !e.metaKey && !e.ctrlKey) toggleViewerCompare();
+  if((e.key==='t' || e.key==='е' || e.key==='T' || e.key==='Е') && !e.metaKey && !e.ctrlKey && viewerState){ const sh = dbGet('visualShots', viewerState.shotId); if(sh && sh.ocr){ viewerOcr = !viewerOcr; renderShotViewer(); } }
   if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
     const sh = dbGet('visualShots', viewerState.shotId);
     const sib = dbQuery('visualShots', x=>x.sessionId===sh.sessionId).sort((a,b)=>(a.order||0)-(b.order||0));
