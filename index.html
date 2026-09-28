@@ -2351,9 +2351,9 @@ function initTheme(){
 }
 function renderSidebar(){
   const h = location.hash || '#/';
-  const openIssueCount = dbList('issues').filter(i=>i.status==='Новая'||i.status==='На проверке').length;
+  const openIssueCount = vList('issues').filter(i=>i.status==='Новая'||i.status==='На проверке').length;
   const groups = {};
-  NAV.forEach(n=>{ (groups[n.group] = groups[n.group]||[]).push(n); });
+  NAV.filter(n=>routeAllowed(n.route.replace(/^#\//,'').split('/').filter(Boolean))).forEach(n=>{ (groups[n.group] = groups[n.group]||[]).push(n); });
   let html = '';
   Object.keys(groups).forEach(g=>{
     html += `<div class="side-group-label">${esc(g)}</div>`;
@@ -2382,11 +2382,16 @@ function toggleNav(open){
 }
 
 function router(){
-  renderSidebar(); renderMeAvatar();
+  renderSidebar(); renderMeAvatar(); applyRoleUi();
   const hash = location.hash || '#/';
   const parts = hash.replace(/^#\//,'').split('/').filter(Boolean);
   const content = document.getElementById('content');
   try{
+    if(!routeAllowed(parts)){
+      setCrumbs(['Нет доступа']);
+      content.innerHTML = `<div class="card">${emptyState({icon:'user', title:'Этот раздел для менеджеров', text:'Здесь то, что настраивает менеджер. Твои задачи — в «Моих задачах», проблемы твоих языков — в «Проблемах».', action:'<a class="btn" href="#/my">Мои задачи</a> <a class="btn secondary" href="#/issues">Проблемы</a>'})}</div>`;
+      return;
+    }
     if(parts.length===0) return renderDashboard(content);
     if(parts[0]==='projects' && parts.length===1) return renderProjectsList(content);
     if(parts[0]==='project' && parts[1] && parts[2]==='folder' && parts[3]) return renderFolderDetail(content, parts[1], parts[3], parts[4]||'overview');
@@ -2461,7 +2466,7 @@ function qualityColor(q){ return q>=.95 ? 'var(--ok)' : q>=.85 ? '#65A30D' : q>=
 const isOpenIssue = i => i.status==='Новая' || i.status==='На проверке';
 // per-language quality: share of that language's strings with no open problem
 function languageStats(){
-  const rows = dbList('rows'), issues = dbList('issues');
+  const rows = vList('rows'), issues = vList('issues');
   const by = {};
   const get = code => by[code] = by[code] || {code, rows:0, rowsWithOpen:new Set(), open:0, crit:0, high:0, med:0, low:0, resolved:0, week:[0,0,0,0,0,0,0], visual:0};
   rows.forEach(r=>{ if(r.languageCode) get(r.languageCode).rows++; });
@@ -2477,7 +2482,7 @@ function languageStats(){
     } else st.resolved++;
   });
   const runsByLang = {};
-  dbList('runs').filter(r=>typeof r.quality==='number').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).forEach(r=>{ (runsByLang[r.languageCode] = runsByLang[r.languageCode]||[]).push(r.quality); });
+  vList('runs').filter(r=>typeof r.quality==='number').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).forEach(r=>{ (runsByLang[r.languageCode] = runsByLang[r.languageCode]||[]).push(r.quality); });
   return Object.values(by).map(st=>{ const q = runsByLang[st.code]||[]; return Object.assign(st, {quality: st.rows ? 1 - st.rowsWithOpen.size/st.rows : (st.open?0:1), trend: q.length>1 ? q[q.length-1]-q[q.length-2] : null}); })
     .sort((a,b)=> b.crit-a.crit || b.open-a.open || b.rows-a.rows);
 }
@@ -2490,9 +2495,9 @@ function greeting(){ const h = new Date().getHours(); return h<5 ? 'Доброй
 function renderDashboard(el){
   setCrumbs(['Главная']);
   if(!getMe()) setTimeout(renderGoogleButtons, 0);
-  const projects = dbList('projects');
-  const rows = dbList('rows');
-  const issues = dbList('issues');
+  const projects = vProjects();
+  const rows = vList('rows');
+  const issues = vList('issues');
   if(!projects.length){
     el.innerHTML = `<div class="card" style="margin-top:8px;">${emptyState({img:IMG.EMPTY_BOXES, title:'Добро пожаловать в LQA Hub', text:'Создай проект, добавь папки и загрузи .po файлы — проверка локализации запустится автоматически.', action:'<button class="btn" onclick="openProjectModal()">'+icon('plus',16)+'Создать первый проект</button>'})}</div>`;
     return;
@@ -2506,7 +2511,7 @@ function renderDashboard(el){
   const rowsWithOpen = new Set(open.map(i=>i.rowId).filter(Boolean));
   const quality = rows.length ? 1 - rowsWithOpen.size/rows.length : 1;
   const langs = languageStats();
-  const runs = dbList('runs').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
+  const runs = vList('runs').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
   const sevRank = {'Критическая':0,'Высокая':1,'Средняя':2,'Низкая':3};
   const attention = open.slice().sort((a,b)=>(sevRank[a.severity]??9)-(sevRank[b.severity]??9) || new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
   const bySeverity = {'Критическая':0,'Высокая':0,'Средняя':0,'Низкая':0};
@@ -2599,7 +2604,7 @@ function plural(n, one, few, many){
    ========================================================= */
 function renderProjectsList(el){
   setCrumbs(['Проекты']);
-  const projects = dbList('projects');
+  const projects = vProjects();
   if(!projects.length){
     el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Проекты</h1><div class="page-sub">Продукты и сервисы, для которых проверяется локализация</div></div></div>
       <div class="card">${emptyState({img:IMG.EMPTY_BOXES, title:'Пока нет проектов', text:'Создай первый проект, чтобы загрузить .po файлы и запустить проверку.', action:'<button class="btn" onclick="openProjectModal()">'+icon('plus',16)+'Новый проект</button>'})}</div>`;
@@ -2610,9 +2615,9 @@ function renderProjectsList(el){
       <button class="btn" onclick="openProjectModal()">${icon('plus',16)}Новый проект</button></div>
     <div class="grid grid-3">${projects.map(p=>{
       const comps = dbQuery('components', c=>c.projectId===p.id);
-      const rows = dbQuery('rows', r=>r.projectId===p.id);
-      const issues = dbQuery('issues', i=>i.projectId===p.id);
-      const last = dbQuery('runs', r=>r.projectId===p.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+      const rows = vQuery('rows', r=>r.projectId===p.id);
+      const issues = vQuery('issues', i=>i.projectId===p.id);
+      const last = vQuery('runs', r=>r.projectId===p.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
       const crit = issues.filter(i=>i.severity==='Критическая').length;
       const unresolved = issues.filter(i=>i.status==='Новая'||i.status==='На проверке').length;
       const hasData = rows.length>0;
@@ -2630,7 +2635,7 @@ function renderProjectsList(el){
         <div class="proj-stats">
           <div><b>${rows.length.toLocaleString('ru-RU')}</b>строк</div>
           <div><b>${hasData?issues.length.toLocaleString('ru-RU'):'—'}</b>проблем</div>
-          <div><b>${(p.languages||[]).length}</b>${plural((p.languages||[]).length,'язык','языка','языков')}</div>
+          <div><b>${(visibleLangs(p)||[]).length}</b>${plural((visibleLangs(p)||[]).length,'язык','языка','языков')}</div>
         </div>
         <div class="proj-folders"><span class="proj-folders-lbl">Папки</span>${dots || '<span class="hint" style="margin:0;">пока нет</span>'}</div>
         <div class="proj-foot"><span></span><span>${last?'обновлено '+timeAgo(+new Date(last.createdAt)):'проверок ещё не было'}</span></div>
@@ -2695,7 +2700,7 @@ function renderProjectDetail(el, projectId, topTab, subTab){
   if(topTab==='content') subTab = subTab || 'strings';
   const crumbLabel = PROJECT_TOP_TABS.find(t=>t[0]===topTab)?.[1]||'';
   setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id}, crumbLabel]);
-  const tabsHtml = PROJECT_TOP_TABS.map(([key,label])=>`<button class="tabbtn ${topTab===key?'active':''}" onclick="location.hash='#/project/${projectId}/${key}'">${label}</button>`).join('');
+  const tabsHtml = PROJECT_TOP_TABS.filter(([key])=>isManager() || !MANAGER_PROJECT_TABS.includes(key)).map(([key,label])=>`<button class="tabbtn ${topTab===key?'active':''}" onclick="location.hash='#/project/${projectId}/${key}'">${label}</button>`).join('');
   let subTabsHtml = '';
   let body = '';
   if(topTab==='overview') body = renderProjectOverview(project);
@@ -2709,15 +2714,15 @@ function renderProjectDetail(el, projectId, topTab, subTab){
   else if(topTab==='quality') body = renderProjectChecks(project);
   else if(topTab==='settings') body = renderProjectLanguages(project);
 
-  const rows = dbQuery('rows', r=>r.projectId===project.id);
+  const rows = vQuery('rows', r=>r.projectId===project.id);
   const comps = dbQuery('components', c=>c.projectId===project.id);
-  const filesLast = dbQuery('files', f=>f.projectId===project.id);
-  const runsLast = dbQuery('runs', r=>r.projectId===project.id);
+  const filesLast = vQuery('files', f=>f.projectId===project.id);
+  const runsLast = vQuery('runs', r=>r.projectId===project.id);
   const lastTs = Math.max(0, ...filesLast.map(f=>+new Date(f.uploadedAt||0)), ...runsLast.map(r=>+new Date(r.createdAt||0)));
   const pills = comps.slice(0,6).map(c=>`<a class="hero-chip" href="#/project/${projectId}/folder/${c.id}"><i style="background:${folderColor(c.id)};"></i>${esc(c.name)}</a>`).join('');
   const initials = project.name.trim().slice(0,2).toUpperCase();
   const meta = [rows.length ? rows.length.toLocaleString('ru-RU')+' '+plural(rows.length,'строка','строки','строк') : null,
-    (project.languages||[]).length+' '+plural((project.languages||[]).length,'язык','языка','языков'),
+    (visibleLangs(project)||[]).length+' '+plural((visibleLangs(project)||[]).length,'язык','языка','языков'),
     lastTs ? 'обновлено '+timeAgo(lastTs) : null].filter(Boolean).join(' · ');
   el.innerHTML = `
     <div class="project-hero">
@@ -2740,11 +2745,11 @@ function renderProjectDetail(el, projectId, topTab, subTab){
 }
 function renderProjectOverview(p){
   const comps = dbQuery('components', c=>c.projectId===p.id);
-  const rows = dbQuery('rows', r=>r.projectId===p.id);
-  const issues = dbQuery('issues', i=>i.projectId===p.id);
-  const runs = dbQuery('runs', r=>r.projectId===p.id);
-  const files = dbQuery('files', f=>f.projectId===p.id);
-  const hasLanguages = (p.languages||[]).length > 0;
+  const rows = vQuery('rows', r=>r.projectId===p.id);
+  const issues = vQuery('issues', i=>i.projectId===p.id);
+  const runs = vQuery('runs', r=>r.projectId===p.id);
+  const files = vQuery('files', f=>f.projectId===p.id);
+  const hasLanguages = (visibleLangs(p)||[]).length > 0;
   const hasComponents = comps.length > 0;
   const hasFiles = rows.length > 0;
 
@@ -3018,8 +3023,8 @@ function toggleFolderExpand(id, ev){ if(ev) ev.stopPropagation(); if(expandedFol
 function folderCounts(id){
   const set = compWithDescendants(id);
   let rows = 0, issues = 0, open = 0;
-  dbList('rows').forEach(r=>{ if(set.has(r.componentId)) rows++; });
-  dbList('issues').forEach(i=>{ if(set.has(i.componentId)){ issues++; if(isOpenIssue(i)) open++; } });
+  vList('rows').forEach(r=>{ if(set.has(r.componentId)) rows++; });
+  vList('issues').forEach(i=>{ if(set.has(i.componentId)){ issues++; if(isOpenIssue(i)) open++; } });
   return {rows, issues, open};
 }
 function subfolderCardsHtml(projectId, parentId){
@@ -3106,9 +3111,9 @@ function renderFolderDetail(el, projectId, componentId, tab){
   if(!project || !comp){ el.innerHTML = '<div class="empty"><b>Папка не найдена</b></div>'; return; }
   setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id+'/folders'}].concat(compAncestors(comp).map(a=>({label:a.name, hash:'#/project/'+project.id+'/folder/'+a.id}))).concat([{label:comp.name, hash:'#/project/'+project.id+'/folder/'+componentId}, FOLDER_TABS.find(t=>t[0]===tab)?.[1]||'']));
   const withKids = compWithDescendants(componentId);
-  const rows = dbQuery('rows', r=>withKids.has(r.componentId));
-  const issues = dbQuery('issues', i=>withKids.has(i.componentId));
-  const files = dbQuery('files', f=>f.componentId===componentId).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const rows = vQuery('rows', r=>withKids.has(r.componentId));
+  const issues = vQuery('issues', i=>withKids.has(i.componentId));
+  const files = vQuery('files', f=>f.componentId===componentId).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
   const crit = issues.filter(i=>i.severity==='Критическая').length;
 
   const tabsHtml = FOLDER_TABS.map(([key,label])=>`<button class="tabbtn ${tab===key?'active':''}" onclick="location.hash='#/project/${projectId}/folder/${componentId}/${key}'">${label}</button>`).join('');
@@ -3125,7 +3130,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
       <div class="kpi"><div class="num">${files.length}</div><div class="lbl">Файлов в этой папке</div></div>
     </div>`;
   } else if(tab==='files'){
-    const langs = project.languages||[];
+    const langs = visibleLangs(project)||[];
     body = `<div class="card">
       <h3>Загрузить .po в «${esc(comp.name)}»</h3>
       ${langs.length ? `
@@ -3334,8 +3339,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
 
 function renderProjectFiles(p){
   const comps = dbQuery('components', c=>c.projectId===p.id);
-  const langs = p.languages || [];
-  const files = dbQuery('files', f=>f.projectId===p.id).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const langs = visibleLangs(p) || [];
+  const files = vQuery('files', f=>f.projectId===p.id).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
   if(!comps.length || !langs.length){
     return `<div class="card"><div class="empty"><b>Сначала добавь язык и папку</b>Загрузка .po возможна после того, как в проекте есть хотя бы один язык и одна папка.</div></div>`;
   }
@@ -3811,16 +3816,16 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   const st = issuesPageState[key];
 
   const languageOptions = fixedFilter.projectId
-    ? (dbGet('projects', fixedFilter.projectId)?.languages||[]).map(l=>[l.code, l.name])
-    : [...new Set(dbList('issues').map(i=>i.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
+    ? visibleLangs(dbGet('projects', fixedFilter.projectId)).map(l=>[l.code, l.name])
+    : [...new Set(vList('issues').map(i=>i.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
   const componentOptions = fixedFilter.componentId ? [] :
-    (fixedFilter.projectId ? dbQuery('components', c=>c.projectId===fixedFilter.projectId) : dbList('components').filter(c=>dbList('issues').some(i=>i.componentId===c.id)));
-  const fileOptions = (fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
-    : fixedFilter.projectId ? dbQuery('files', f=>f.projectId===fixedFilter.projectId)
-    : dbList('files')).filter(f=>!f.supersededBy);
+    (fixedFilter.projectId ? dbQuery('components', c=>c.projectId===fixedFilter.projectId) : dbList('components').filter(c=>vList('issues').some(i=>i.componentId===c.id)));
+  const fileOptions = (fixedFilter.componentId ? vQuery('files', f=>f.componentId===fixedFilter.componentId)
+    : fixedFilter.projectId ? vQuery('files', f=>f.projectId===fixedFilter.projectId)
+    : vList('files')).filter(f=>!f.supersededBy);
   const SEV_OPTS = ['Критическая','Высокая','Средняя','Низкая'].map(v=>[v,v]);
   const STATUS_OPTS = ['Новая','На проверке','Принята','Принята после исправления','Отклонена','Ложное срабатывание'].map(v=>[v,v]);
-  const TYPE_OPTS = [...new Set(dbList('issues').map(i=>i.type))].map(v=>[v,v]);
+  const TYPE_OPTS = [...new Set(vList('issues').map(i=>i.type))].map(v=>[v,v]);
 
   let root = document.getElementById(mountId);
   if(!root) return;
@@ -3849,7 +3854,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   const qwrap = document.getElementById(key+'_quickwrap');
   if(qwrap){
     const onlyIds = fixedFilter.ids ? new Set(fixedFilter.ids) : null;
-    const allIssues = dbList('issues').filter(i => !fixedFilter.projectId || i.projectId===fixedFilter.projectId).filter(i => !fixedFilter.componentId || i.componentId===fixedFilter.componentId).filter(i => !fixedFilter.sessionId || i.sessionId===fixedFilter.sessionId).filter(i => !onlyIds || onlyIds.has(i.id));
+    const allIssues = vList('issues').filter(i => !fixedFilter.projectId || i.projectId===fixedFilter.projectId).filter(i => !fixedFilter.componentId || i.componentId===fixedFilter.componentId).filter(i => !fixedFilter.sessionId || i.sessionId===fixedFilter.sessionId).filter(i => !onlyIds || onlyIds.has(i.id));
     const chips = [
       ['all','Все', allIssues.length],
       ['critical','Критические', allIssues.filter(i=>i.severity==='Критическая').length],
@@ -3882,7 +3887,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   const f = st.filters;
   const projectId = fixedFilter.projectId || null; // single fixed project (folder/project-scoped views) still applies as before
 
-  let issues = dbList('issues');
+  let issues = vList('issues');
   if(st.quickFilter==='critical') issues = issues.filter(i=>i.severity==='Критическая');
   else if(st.quickFilter==='review') issues = issues.filter(i=>i.status==='На проверке');
   else if(st.quickFilter==='ai') issues = issues.filter(i=>i.aiExplanation!=null);
@@ -3893,7 +3898,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   if(fixedFilter.sessionId) issues = issues.filter(i=>i.sessionId===fixedFilter.sessionId);
   if(fixedFilter.ids){ const only = new Set(fixedFilter.ids); issues = issues.filter(i=>only.has(i.id)); }
   if(f.file.size){
-    const rowIdsInFiles = new Set(dbQuery('rows', r=>f.file.has(r.fileId)).map(r=>r.id));
+    const rowIdsInFiles = new Set(vQuery('rows', r=>f.file.has(r.fileId)).map(r=>r.id));
     issues = issues.filter(i=>rowIdsInFiles.has(i.rowId));
   }
   if(f.lang.size) issues = issues.filter(i=>f.lang.has(i.languageCode));
@@ -3901,7 +3906,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
   if(f.status.size) issues = issues.filter(i=>f.status.has(i.status));
   if(f.type.size) issues = issues.filter(i=>f.type.has(i.type));
   if(q){
-    const rowsById = {}; dbList('rows').forEach(r=>rowsById[r.id]=r);
+    const rowsById = {}; vList('rows').forEach(r=>rowsById[r.id]=r);
     issues = issues.filter(i=>{
       const r = rowsById[i.rowId];
       return i.text.toLowerCase().includes(q) || (r && ((r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q) || (r.key||'').toLowerCase().includes(q)));
@@ -3957,16 +3962,16 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
   st.mode = 'rows';
 
   const languageOptions = fixedFilter.projectId
-    ? (dbGet('projects', fixedFilter.projectId)?.languages||[]).map(l=>[l.code, l.name])
-    : [...new Set(dbList('rows').map(r=>r.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
+    ? visibleLangs(dbGet('projects', fixedFilter.projectId)).map(l=>[l.code, l.name])
+    : [...new Set(vList('rows').map(r=>r.languageCode).filter(Boolean))].sort().map(c=>[c,c]);
   const componentOptions = fixedFilter.componentId ? [] :
     (fixedFilter.projectId ? dbQuery('components', c=>c.projectId===fixedFilter.projectId) : dbList('components'));
-  const fileOptions = (fixedFilter.componentId ? dbQuery('files', f=>f.componentId===fixedFilter.componentId)
-    : fixedFilter.projectId ? dbQuery('files', f=>f.projectId===fixedFilter.projectId)
-    : dbList('files')).filter(f=>!f.supersededBy);
+  const fileOptions = (fixedFilter.componentId ? vQuery('files', f=>f.componentId===fixedFilter.componentId)
+    : fixedFilter.projectId ? vQuery('files', f=>f.projectId===fixedFilter.projectId)
+    : vList('files')).filter(f=>!f.supersededBy);
   const SEV_OPTS = ['Критическая','Высокая','Средняя','Низкая'].map(v=>[v,v]);
   const STATUS_OPTS = ['Новая','На проверке','Принята','Принята после исправления','Отклонена','Ложное срабатывание'].map(v=>[v,v]);
-  const TYPE_OPTS = [...new Set(dbList('issues').map(i=>i.type))].map(v=>[v,v]);
+  const TYPE_OPTS = [...new Set(vList('issues').map(i=>i.type))].map(v=>[v,v]);
 
   let root = document.getElementById(mountId);
   if(!root) return;
@@ -4006,7 +4011,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
   let q = document.getElementById(key+'_q'); q = q ? q.value.toLowerCase() : '';
   const f = st.filters;
 
-  let rows = dbList('rows');
+  let rows = vList('rows');
   if(fixedFilter.projectId) rows = rows.filter(r=>r.projectId===fixedFilter.projectId);
   else if(f.proj.size) rows = rows.filter(r=>f.proj.has(r.projectId));
   if(fixedFilter.componentId) rows = rows.filter(r=>r.componentId===fixedFilter.componentId);
@@ -4018,7 +4023,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
   const rowIdSet = new Set(rows.map(r=>r.id));
   const hasIssueFilter = f.sev.size>0 || f.status.size>0 || f.type.size>0;
   const issuesByRow = {};
-  dbList('issues').forEach(i=>{
+  vList('issues').forEach(i=>{
     if(!rowIdSet.has(i.rowId)) return;
     if(f.sev.size && !f.sev.has(i.severity)) return;
     if(f.status.size && !f.status.has(i.status)) return;
@@ -4216,7 +4221,7 @@ function getSelectedIssueIds(key){
   if(!st) return [];
   if(st.mode==='rows'){
     const rowIds = st.selected;
-    return dbList('issues').filter(i=>rowIds.has(i.rowId)).map(i=>i.id);
+    return vList('issues').filter(i=>rowIds.has(i.rowId)).map(i=>i.id);
   }
   return [...st.selected];
 }
@@ -4984,7 +4989,7 @@ function visualIssueCell(i){
 }
 function visualSessionStats(sessionId){
   const shots = dbQuery('visualShots', s=>s.sessionId===sessionId);
-  const issues = dbQuery('issues', i=>i.visual && i.sessionId===sessionId);
+  const issues = vQuery('issues', i=>i.visual && i.sessionId===sessionId);
   return {shots, issues};
 }
 function shotImage(shotId){ const r = dbGet('visualShotImages', shotId); return r ? r.dataUrl : ''; }
@@ -4998,7 +5003,7 @@ function worstSeverity(issues){
 function renderVisualList(el, projectId){
   const inProject = !!projectId;
   if(!inProject) setCrumbs(['Визуальная проверка']);
-  const sessions = dbList('visualSessions').filter(s=>!projectId || s.projectId===projectId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const sessions = vList('visualSessions').filter(s=>!projectId || s.projectId===projectId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const queue = dbList('visualChecks').filter(v=>!projectId || v.projectId===projectId);
   const head = inProject ? `<div class="row between" style="margin-bottom:16px;"><div class="hint" style="margin:0;">Скриншоты и видео интерфейса на разных языках — проблемы размечаются прямо на картинке.</div><button class="btn sm" onclick="openVisualSessionModal('${projectId}')">${icon('plus',14)}Новая сессия</button></div>`
     : `<div class="page-head"><div><h1 class="page-title">Визуальная проверка</h1><div class="page-sub">Скриншоты и видео интерфейса — ищем то, чего не видно в файлах: обрезки, непереведённое, вёрстку</div></div>
@@ -6469,7 +6474,7 @@ function renderMeAvatar(){
   if(me && g && g.picture){ el.style.background = `center/cover no-repeat url("${g.picture.replace(/"/g,'')}")`; el.textContent = ''; el.title = me+' · '+g.email+' — сменить'; }
   const chip = document.getElementById('meChip'), nm = document.getElementById('meName');
   if(chip){ chip.classList.toggle('anon', !me); chip.title = el.title; }
-  if(nm) nm.innerHTML = me ? esc(me.split(' ')[0])+'<small>'+esc(ROLE_LABELS[getRole()||roleOf(me)]||'')+'</small>' : (googleEnabled() ? 'Войти' : 'Кто ты?');
+  if(nm) nm.innerHTML = me ? esc(me.split(' ')[0])+'<small>'+esc(ROLE_LABELS[currentRole()]||'')+'</small>' : (googleEnabled() ? 'Войти' : 'Кто ты?');
 }
 const ROLE_KEY = 'lqa_role';
 function getRole(){ try{ return localStorage.getItem(ROLE_KEY) || ''; }catch(e){ return ''; } }
@@ -6525,6 +6530,7 @@ function openWhoAmI(){
     wire(); (role==='other' ? root.querySelector('#meOther') : search).focus();
   }).then(v=>{
     if(!v) return;
+    if(v.role==='manager' && !googleIdentity() && googleEnabled() && managersLinked()){ toast('Менеджеры входят через Google — нажми «Войти через Google»', {duration:7000}); return; }
     if(!v.name) googleSignOut();
     setIdentity(v.name, v.role);
     const g = googleIdentity();
@@ -6537,6 +6543,90 @@ function setIdentity(name, role){
   try{ localStorage.setItem(ME_KEY, name||''); localStorage.setItem(ROLE_KEY, role||''); }catch(e){}
   myTab = role==='manager' ? 'uploads' : 'assigned';
   renderMeAvatar();
+}
+
+/* ---------- roles & access ----------
+   Managers see and do everything. Editors (and «Другое») see only their languages and review:
+   statuses, comments, fixes, glossary terms — but don't create projects or folders, upload or delete
+   files and screenshots, or open manager pages. With Google sign-in the role comes from the team's
+   email list, which only a manager edits; without Google it's the «Кто ты?» choice. This is the
+   interface: someone determined can still reach the data with the backend key. */
+function linkedAccount(){ const g = googleIdentity(); return g ? (getSettings().googleAccounts||{})[g.email] || null : null; }
+function managersLinked(){ return Object.values(getSettings().googleAccounts||{}).some(a=>a && a.role==='manager'); }
+function currentRole(){
+  const acc = linkedAccount();
+  if(acc) return acc.role || 'editor';
+  const me = getMe(), role = me ? (getRole() || roleOf(me)) : '';
+  if(googleEnabled() && managersLinked()) return role==='manager' || !me ? 'guest' : role;  // managers sign in with Google
+  return me ? role : 'manager';   // nobody has picked a name yet — the hub stays fully open, as before roles
+}
+function isManager(){ return currentRole()==='manager'; }
+function myLanguages(){
+  if(isManager()) return null;
+  const me = getMe(); if(!me) return null;
+  const set = new Set((((getSettings().personLangs||{})[me])||[]).map(c=>String(c).toLowerCase()));
+  Object.entries(EDITORS_BY_LANGUAGE).forEach(([code, list])=>{ if(list.some(n=>sameName(n, me))) set.add(code.toLowerCase()); });
+  return set.size ? set : null;   // no languages set yet — show all rather than an empty hub
+}
+function vList(table){
+  const langs = myLanguages(), arr = dbList(table);
+  return langs ? arr.filter(r=>!r.languageCode || langs.has(String(r.languageCode).toLowerCase())) : arr;
+}
+function vQuery(table, pred){ return vList(table).filter(pred); }
+function visibleLangs(p){
+  const all = (p && p.languages) || [], langs = myLanguages();
+  return langs ? all.filter(l=>langs.has(String(l.code).toLowerCase())) : all;
+}
+function vProjects(){ const langs = myLanguages(); return langs ? dbList('projects').filter(p=>visibleLangs(p).length) : dbList('projects'); }
+const MANAGER_ROUTES = ['analytics','report','vendors','sample','export','extension','runs'];
+const MANAGER_PROJECT_TABS = ['quality','settings'];
+// actions only a manager can take — their buttons are hidden for everyone else and the functions refuse
+const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addProjectLanguage','removeProjectLanguage','addAllStandardLanguages','saveProjectLanguages',
+  'addComponent','saveComponent','renameComponent','deleteComponent','uploadProjectPendingFiles','uploadFolderPendingFiles','addProjectPendingFiles','addFolderPendingFiles',
+  'editFileMeta','deleteFile','rerunFileCheck','startSample','deleteSample','editVendor','openVendorScale','exportVendorReport','importVendorsFromFile',
+  'openVisualSessionModal','saveVisualSession','deleteVisualSession','addShotFiles','deleteShot','openCrawlModal','stopCrawl',
+  'bulkDeleteIssues','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
+  'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount'];
+function guardManagerActions(){
+  MANAGER_ACTIONS.forEach(name=>{
+    const fn = window[name];
+    if(typeof fn!=='function' || fn._guarded) return;
+    const g = function(){ if(!isManager()){ toast('Это делает менеджер'); return; } return fn.apply(this, arguments); };
+    g._guarded = true; window[name] = g;
+  });
+  const css = MANAGER_ACTIONS.map(n=>`body.role-limited [onclick*="${n}("]`).concat(['body.role-limited #poDrop','body.role-limited #folderPoDrop','body.role-limited #shotDrop','body.role-limited .mgr-only']).join(',')+'{display:none !important;}';
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+}
+function applyRoleUi(){ document.body.classList.toggle('role-limited', !isManager()); }
+function routeAllowed(parts){
+  if(isManager()) return true;
+  if(MANAGER_ROUTES.includes(parts[0])) return false;
+  if(parts[0]==='project' && MANAGER_PROJECT_TABS.includes(parts[2])) return false;
+  if(parts[0]==='project' && parts[1] && myLanguages() && !visibleLangs(dbGet('projects', parts[1])).length) return false;
+  if(parts[0]==='visual' && parts[1]){ const v = dbGet('visualSessions', parts[1]); if(v && myLanguages() && v.languageCode && !myLanguages().has(String(v.languageCode).toLowerCase())) return false; }
+  return true;
+}
+function teamAccessCardHtml(){
+  const s = getSettings(), pl = s.personLangs || {};
+  const people = [...new Set([...EDITORS, ...Object.values(EDITORS_BY_LANGUAGE).flat(), ...Object.values(s.googleAccounts||{}).filter(a=>a.role!=='manager').map(a=>a.name), ...Object.keys(pl)])]
+    .filter(n=>n && roleOf(n)!=='manager').sort((a,b)=>a.localeCompare(b,'ru'));
+  const byList = n=>Object.entries(EDITORS_BY_LANGUAGE).filter(([,list])=>list.some(x=>sameName(x,n))).map(([c])=>c);
+  return `<div class="card"><h3 style="margin-bottom:4px;">Команда и доступ</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Менеджеры видят всё. Редакторы видят только свои языки и разбирают проблемы: статусы, комментарии, исправления, глоссарии. Создавать проекты и папки, загружать и удалять файлы и скриншоты, открывать подрядчиков, отчёты, аналитику и экспорт может только менеджер. Если языки не заданы, редактор видит все.</div>
+    <div class="table-wrap"><table><thead><tr><th>Редактор</th><th>Языки</th><th></th></tr></thead><tbody>
+      ${people.map(n=>{ const langs = [...new Set([...(pl[n]||[]), ...byList(n)])];
+        return `<tr><td>${initialsAvatar(n)}</td><td>${langs.length ? langs.map(c=>`<span class="pill type" style="margin:2px;">${languageFlag(c)} ${esc(c)}</span>`).join('') : '<span class="hint" style="margin:0;">все языки</span>'}</td><td style="text-align:right;"><button class="btn ghost sm" data-person="${esc(n)}" onclick="editPersonLangs(this.dataset.person)">${icon('edit',14)}Языки</button></td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+}
+function editPersonLangs(name){
+  if(!isManager()) return;
+  const cur = new Set(((getSettings().personLangs||{})[name])||[]);
+  const codes = [...new Set([...LANGUAGE_GROUPS.flatMap(g=>g.items.map(i=>i[0])), ...dbList('projects').flatMap(p=>(p.languages||[]).map(l=>l.code))])];
+  uiDialog(`<h3>Языки: ${esc(name)}</h3><div class="dialog-text">Редактор увидит только проблемы, строки и скриншоты этих языков.</div>
+    <div class="grid grid-2" style="gap:6px 16px;max-height:50vh;overflow:auto;margin-top:10px;">${codes.map(c=>`<label class="checkrow" style="margin:0;"><input type="checkbox" value="${esc(c)}" ${cur.has(c)?'checked':''}> ${languageFlag(c)} ${esc(languageLabel(c))} <span class="hint" style="margin:0 0 0 4px;">${esc(c)}</span></label>`).join('')}</div>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close([...root.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value)); })
+  .then(v=>{ if(!v) return; const pl = Object.assign({}, getSettings().personLangs||{}); if(v.length) pl[name] = v; else delete pl[name]; saveSettings({personLangs:pl}); router(); toast(v.length ? name+': '+v.join(', ') : name+' видит все языки'); });
 }
 
 /* ---------- sign in with Google ----------
@@ -6577,8 +6667,28 @@ function renderGoogleButtons(){
 }
 function linkGoogleAccount(email, name, role){
   const acc = Object.assign({}, getSettings().googleAccounts||{});
-  acc[String(email).toLowerCase()] = {name, role, linkedAt:nowISO()};
+  email = String(email).toLowerCase();
+  const prev = acc[email];
+  // once the team has a manager, only a manager hands out roles — otherwise anyone could sign in
+  // and pick a manager's name; re-picking yourself keeps the role you were given
+  if(managersLinked() && !(prev && prev.role==='manager')){
+    const want = role;
+    role = prev ? prev.role : (role==='manager' ? 'editor' : role);
+    if(want==='manager' && role!=='manager') toast('Роль менеджера выдаёт менеджер: Настройки → Вход через Google', {duration:8000});
+  }
+  acc[email] = {name, role, linkedAt:nowISO()};
   saveSettings({googleAccounts:acc});
+}
+function setAccountRole(email, role){
+  if(!isManager()) return;
+  const acc = Object.assign({}, getSettings().googleAccounts||{});
+  if(!acc[email]) return;
+  if(role!=='manager' && acc[email].role==='manager' && Object.values(acc).filter(a=>a.role==='manager').length===1){ toast('Нужен хотя бы один менеджер'); router(); return; }
+  acc[email] = Object.assign({}, acc[email], {role});
+  saveSettings({googleAccounts:acc});
+  const g = googleIdentity();
+  if(g && g.email===email) setIdentity(acc[email].name, role);
+  toast(acc[email].name+': '+ROLE_LABELS[role]); router();
 }
 function onGoogleCredential(resp){
   let p; try{ p = decodeJwtPayload(resp.credential); }catch(e){ toast('Не получилось прочитать ответ Google'); return; }
@@ -6612,21 +6722,21 @@ function googleCardHtml(){
   const s = getSettings(), acc = Object.entries(s.googleAccounts||{}).sort((a,b)=>a[1].name.localeCompare(b[1].name,'ru'));
   const origin = /^https?:$/.test(location.protocol) ? location.origin : 'https://wblocalization.github.io';
   return `<div class="card"><h3 style="margin-bottom:4px;">Вход через Google</h3>
-    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Каждый входит своим Gmail, и платформа сразу знает, кто это: редактор попадает в «Мои задачи». При первом входе человек один раз выбирает себя из списка, дальше его почта узнаётся на всех устройствах. Это для удобства, а не защита: данные команды по-прежнему видны всем, у кого есть доступ к платформе.</div>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Каждый входит своим Gmail, и платформа сразу знает, кто это: редактор попадает в «Мои задачи». При первом входе человек один раз выбирает себя из списка, дальше его почта узнаётся на всех устройствах. Роль вошедшего через Google берётся из таблицы ниже, сам человек её не поменяет: роль менеджера выдаёт только менеджер.</div>
     <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;">
       <label class="field" style="flex:1;min-width:280px;margin:0;">Client ID <span style="font-weight:400;color:var(--text-faint);">— из Google Cloud, заканчивается на .apps.googleusercontent.com</span><input type="text" id="gClientId" value="${esc(s.googleClientId||'')}" placeholder="1234567890-abc….apps.googleusercontent.com" autocomplete="off"></label>
       <button class="btn" onclick="saveGoogleClientId()">Сохранить</button></div>
     <details class="hint" style="margin-top:12px;" ${s.googleClientId?'':'open'}><summary style="cursor:pointer;font-weight:500;color:var(--text-soft);">Как получить Client ID (10 минут, один раз на команду)</summary>
       <ol style="margin:8px 0 0;padding-left:20px;line-height:1.8;">
         <li>Открой <a class="link" href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> под своим Gmail → вверху выбор проекта → <b>Новый проект</b>, название «LQA Hub» → Создать.</li>
-        <li>Меню → <b>APIs &amp; Services → OAuth consent screen</b> (в новом интерфейсе — <b>Google Auth Platform → Branding</b>). Название приложения «LQA Hub», почта поддержки — твоя. Тип пользователей — <b>External</b>.</li>
+        <li>Меню → <b>APIs &amp; Services → OAuth consent screen</b> (в новом интерфейсе — <b>Google Auth Platform → Branding</b>). Название приложения «LQA Hub», почта поддержки — твоя. Тип пользователей — <b>External</b>. Там же заполни <b>App domain</b>: Application home page — <span class="mono">https://wblocalization.github.io/lqa-hub/</span>, Privacy policy — <span class="mono">https://wblocalization.github.io/lqa-hub/privacy.html</span>. Без них Google не даст опубликовать.</li>
         <li>Раздел <b>Audience</b> (или кнопка на той же странице) → <b>Publish app</b> / «Опубликовать». Иначе войти смогут только те, кого добавишь в список тестировщиков. Для входа по почте и имени проверка Google не нужна.</li>
         <li><b>Credentials → Create credentials → OAuth client ID</b> (или <b>Clients → Create client</b>). Тип — <b>Web application</b>. В <b>Authorized JavaScript origins</b> добавь <span class="mono">${esc(origin)}</span>. Создать.</li>
         <li>Скопируй <b>Client ID</b> и вставь сюда → Сохранить. Настройка общая: у всей команды включится автоматически через командное хранилище.</li>
       </ol>
       <div style="margin-top:6px;">Вход работает на опубликованном сайте (${esc(origin)}), а не в файле, открытом с диска.</div></details>
     ${acc.length ? `<div class="section-label" style="margin-top:16px;">Связанные почты · ${acc.length}</div><div class="table-wrap"><table><thead><tr><th>Почта</th><th>Кто</th><th>Роль</th><th></th></tr></thead><tbody>
-      ${acc.map(([email, a])=>`<tr><td class="mono">${esc(email)}</td><td>${initialsAvatar(a.name)}</td><td>${esc(ROLE_LABELS[a.role]||'—')}</td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" title="Отвязать: при следующем входе человек снова выберет себя" onclick="unlinkGoogleAccount('${esc(email)}')">${icon('x',14)}</button></td></tr>`).join('')}
+      ${acc.map(([email, a])=>`<tr><td class="mono">${esc(email)}</td><td>${initialsAvatar(a.name)}</td><td><select style="height:30px;font-size:13px;" onchange="setAccountRole('${esc(email)}', this.value)">${['manager','editor','other'].map(r=>`<option value="${r}" ${(a.role||'editor')===r?'selected':''}>${ROLE_LABELS[r]}</option>`).join('')}</select></td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" title="Отвязать: при следующем входе человек снова выберет себя" onclick="unlinkGoogleAccount('${esc(email)}')">${icon('x',14)}</button></td></tr>`).join('')}
     </tbody></table></div>` : ''}
   </div>`;
 }
@@ -6641,11 +6751,11 @@ function deadlineTs(d){ if(!d) return Infinity; if(d.type==='asap') return +new 
 function isOverdue(d){ return d && d.type==='date' && d.date && new Date(d.date) < new Date(new Date().toDateString()); }
 function myTaskIds(me){
   if(!me) return {assigned:[], uploads:[]};
-  const assigned = dbList('issues').filter(i=>isOpenIssue(i) && sameName(i.assignedTo, me)).map(i=>i.id);
-  const myFiles = new Set(dbList('files').filter(f=>sameName(f.uploadedBy, me)).map(f=>f.id));
-  const myRows = new Set(dbList('rows').filter(r=>myFiles.has(r.fileId)).map(r=>r.id));
+  const assigned = vList('issues').filter(i=>isOpenIssue(i) && sameName(i.assignedTo, me)).map(i=>i.id);
+  const myFiles = new Set(vList('files').filter(f=>sameName(f.uploadedBy, me)).map(f=>f.id));
+  const myRows = new Set(vList('rows').filter(r=>myFiles.has(r.fileId)).map(r=>r.id));
   const assignedSet = new Set(assigned);
-  const uploads = myRows.size ? dbList('issues').filter(i=>isOpenIssue(i) && myRows.has(i.rowId) && !assignedSet.has(i.id)).map(i=>i.id) : [];
+  const uploads = myRows.size ? vList('issues').filter(i=>isOpenIssue(i) && myRows.has(i.rowId) && !assignedSet.has(i.id)).map(i=>i.id) : [];
   return {assigned, uploads};
 }
 function myTaskCount(){ const me = getMe(); if(!me) return 0; return myTaskIds(me).assigned.length; }
@@ -6665,7 +6775,7 @@ function renderMyTasks(el){
   const asap = all.filter(i=>i.deadline && i.deadline.type==='asap').length;
   const soon = all.filter(i=>{ const t = deadlineTs(i.deadline); return i.deadline && i.deadline.type==='date' && !isOverdue(i.deadline) && t - Date.now() < 3*864e5; }).length;
   const weekAgo = Date.now()-7*864e5;
-  const doneWeek = dbList('issues').filter(i=>(i.history||[]).some(h=>sameName(h.reviewer, me) && h.ts && +new Date(h.ts)>=weekAgo)).length;
+  const doneWeek = vList('issues').filter(i=>(i.history||[]).some(h=>sameName(h.reviewer, me) && h.ts && +new Date(h.ts)>=weekAgo)).length;
   const ids = myTab==='uploads' ? uploads : assigned;
   el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Мои задачи</h1><div class="page-sub">${esc(me)}${getRole()?' · '+esc(ROLE_LABELS[getRole()]||''):''} · <a href="javascript:void(0)" class="link" onclick="openWhoAmI()">это не я</a></div></div></div>
     <div class="grid grid-4 stagger" style="margin-bottom:20px;">
@@ -6692,7 +6802,7 @@ function rowIdentity(r){ return (r.key||'')+'\u0001'+(r.key ? '' : r.source||'')
 function issueFingerprint(i, row){ return rowIdentity(row)+'\u0001'+i.type+'\u0001'+(i.highlightText||''); }
 function rowsQuality(rowIds){
   const set = new Set(rowIds); if(!set.size) return null;
-  const bad = new Set(dbList('issues').filter(i=>isOpenIssue(i) && set.has(i.rowId)).map(i=>i.rowId));
+  const bad = new Set(vList('issues').filter(i=>isOpenIssue(i) && set.has(i.rowId)).map(i=>i.rowId));
   return 1 - bad.size/set.size;
 }
 function reconcileVersions(pairs){
@@ -7274,6 +7384,11 @@ function doExport(fmt){
 function renderSettingsPage(el){
   setCrumbs(['Настройки']);
   const s = getSettings();
+  if(!isManager()){
+    el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Настройки</h1><div class="page-sub">Подключение к данным команды. Правила проверки и доступ настраивает менеджер</div></div></div>
+      ${syncCardHtml()}${aiCardHtml(s)}${spellCardHtml()}`;
+    return;
+  }
   el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Настройки</h1><div class="page-sub">Правила технической проверки и общие параметры</div></div></div>
     ${backupCardHtml()}
     ${syncCardHtml()}
@@ -7311,8 +7426,12 @@ function renderSettingsPage(el){
     </div>
     ${ignoreRulesCardHtml()}
     ${googleCardHtml()}
+    ${teamAccessCardHtml()}
     ${spellCardHtml()}
-    <div class="card"><h3>Проверка ИИ</h3>
+    ${aiCardHtml(s)}`;
+}
+function aiCardHtml(s){
+  return `<div class="card"><h3>Проверка ИИ</h3>
       <div class="hint" style="margin:-6px 0 14px;line-height:1.6;">ИИ работает через твой backend в Google Apps Script: он хранит ключ API у себя, в браузер ключ не попадает. Готовый код и пошаговая инструкция лежат в репозитории, в папке <span class="mono">apps-script/</span> (файлы <span class="mono">ai-review-appsscript.gs</span> и <span class="mono">README.md</span>). Один и тот же адрес проверяет и строки перевода, и скриншоты из «Визуальной проверки».</div>
       <div class="grid grid-2">
         <label class="field">Backend<select id="aiEnabled"><option value="false" ${!s.aiEnabled?'selected':''}>Выключен</option><option value="true" ${s.aiEnabled?'selected':''}>Включён</option></select></label>
@@ -7420,16 +7539,16 @@ function paletteCompute(qRaw){
   addScored(dbList('savedViews').map(v=>({group:'Сохранённые фильтры', icon:'star', label:v.name, hint:savedViewSummary(v), run:()=>openSavedViewGlobally(v.id)})), q?6:4);
   addScored(paletteCommands(), q?8:6);
   if(q){
-    addScored(dbList('projects').map(p=>({group:'Проекты', icon:'folder', label:p.name, hint:(p.languages||[]).map(l=>l.code).join(' '), run:()=>{ location.hash='#/project/'+p.id; }})), 5);
+    addScored(dbList('projects').map(p=>({group:'Проекты', icon:'folder', label:p.name, hint:(visibleLangs(p)||[]).map(l=>l.code).join(' '), run:()=>{ location.hash='#/project/'+p.id; }})), 5);
     addScored(dbList('components').map(c=>({group:'Папки', icon:'folder', label:compPath(c), hint:dbGet('projects',c.projectId)?.name||'', run:()=>{ location.hash='#/project/'+c.projectId+'/folder/'+c.id; }})), 6);
-    addScored(dbList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
+    addScored(vList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
     addScored(dbList('glossaries').map(g=>({group:'Глоссарии', icon:'bookOpen', label:g.name, run:()=>{ location.hash='#/glossary/'+g.id; }})), 4);
-    addScored(dbList('files').filter(f=>!f.supersededBy).map(f=>({group:'Файлы', icon:'file', label:fileLabel(f), hint:[f.title?f.filename:'', f.description||'', f.languageCode].filter(Boolean).join(' · '), run:()=>{ location.hash='#/project/'+f.projectId+'/folder/'+f.componentId+'/files'; }})), 5);
+    addScored(vList('files').filter(f=>!f.supersededBy).map(f=>({group:'Файлы', icon:'file', label:fileLabel(f), hint:[f.title?f.filename:'', f.description||'', f.languageCode].filter(Boolean).join(' · '), run:()=>{ location.hash='#/project/'+f.projectId+'/folder/'+f.componentId+'/files'; }})), 5);
     if(q.length>=2){
-      const rows = []; const all = dbList('rows');
+      const rows = []; const all = vList('rows');
       for(let k=0;k<all.length && rows.length<8;k++){ const r = all[k]; if((r.key||'').toLowerCase().includes(q) || (r.source||'').toLowerCase().includes(q) || (r.target||'').toLowerCase().includes(q)) rows.push(r); }
       rows.forEach(r=>out.push({group:'Строки', icon:'file', label:(r.target||r.source||'').slice(0,90), hint:(r.key?r.key+' · ':'')+r.languageCode, run:()=>openRowDetail(r.id)}));
-      const iss = dbList('issues').filter(i=>(i.text||'').toLowerCase().includes(q)).slice(0,5);
+      const iss = vList('issues').filter(i=>(i.text||'').toLowerCase().includes(q)).slice(0,5);
       iss.forEach(i=>out.push({group:'Проблемы', icon:'alertTriangle', label:i.text.slice(0,90), hint:i.type+' · '+(i.languageCode||''), run:()=>{ location.hash='#/issues'; setTimeout(()=>openIssueDetail(i.id), 120); }}));
       out.push({group:'Поиск', icon:'search', label:'Искать «'+qRaw.trim()+'» во всех проблемах', run:()=>{ document.getElementById('globalSearch').value = qRaw.trim(); doGlobalSearch(); document.getElementById('globalSearch').value=''; }});
     }
@@ -7545,6 +7664,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   getSettings();
   { const ids = new Set(dbList('files').filter(f=>!f.supersededBy).map(f=>f.id)); const src = dbList('_fileSources'); if(src.some(x=>!ids.has(x.id))) dbSave('_fileSources', src.filter(x=>ids.has(x.id))); }
   lastRouteKey = routeKey();
+  guardManagerActions();
   renderMeAvatar();
   router();
   afterNav();
