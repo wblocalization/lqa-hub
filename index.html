@@ -121,6 +121,14 @@ button{font-family:inherit;}
 .top-ic{position:relative;width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);background:none;border:none;transition:background .15s ease,color .15s ease;flex-shrink:0;}
 .top-ic:hover{background:var(--bg-2);color:var(--text);}
 .top-ic .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;background:var(--crit);border-radius:50%;display:none;box-shadow:0 0 0 2px var(--surface);}
+.me-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 12px 3px 3px;cursor:pointer;font:inherit;color:var(--text);max-width:220px;flex-shrink:0;transition:border-color .15s,background .15s;}
+.me-chip:hover{border-color:var(--primary);}
+.me-chip .avatar{width:30px;height:30px;}
+.me-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;text-align:left;}
+.me-name small{display:block;font-size:11px;font-weight:500;color:var(--text-faint);}
+.me-chip.anon{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--surface));}
+.me-chip.anon .me-name{color:var(--primary);}
+@media(max-width:640px){ .me-chip{padding:2px;border:none;background:none;} .me-name{display:none;} }
 .avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
 
 .content{padding:28px 32px 64px;flex:1;width:100%;max-width:1480px;margin:0 auto;view-transition-name:page;}
@@ -528,6 +536,8 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 .notice{display:flex;align-items:center;gap:12px;background:var(--med-bg);color:var(--text);border:1px solid color-mix(in srgb,var(--med) 30%,transparent);border-radius:var(--r-md);padding:10px 12px 10px 16px;margin-bottom:20px;font-size:13px;}
 .notice > svg{color:var(--med);}
 .notice span{flex:1;}
+.who-notice{background:color-mix(in srgb,var(--primary) 7%,var(--surface));border-color:color-mix(in srgb,var(--primary) 25%,transparent);}
+.who-notice > svg{color:var(--primary);}
 .kpi-ic{width:34px;height:34px;border-radius:10px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
 .kpi.crit .kpi-ic{background:var(--crit-bg);color:var(--crit);} .kpi.ok .kpi-ic{background:var(--ok-bg);color:var(--ok);}
 .kpi.ok{box-shadow:inset 3px 0 0 var(--ok),var(--shadow-sm);}
@@ -687,7 +697,7 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
       <button type="button" class="top-ic mob-search" title="Поиск и команды" onclick="openPalette()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
       <button type="button" class="top-ic sync-badge" id="syncBadge" style="display:none;" onclick="syncNow(true)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="sync-dot"></span></button>
       <button type="button" class="top-ic" title="Уведомления" onclick="toggleNotifCenter()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="dot" id="notifDot"></span></button>
-      <button type="button" class="avatar" id="meAvatar" onclick="openWhoAmI()" style="border:none;cursor:pointer;">?</button>
+      <button type="button" class="me-chip" id="meChip" onclick="openWhoAmI()"><span class="avatar" id="meAvatar">?</span><span class="me-name" id="meName">Кто ты?</span></button>
     </header>
     <main class="content" id="content"></main>
   </div>
@@ -1207,7 +1217,9 @@ function applyRemoteChanges(changes){
       (ch.upserts||[]).forEach(rec=>{
         const id = String(rec.id);
         let incoming = rec;
-        if(t==='settings'){ const local = idx.has(id) ? arr[idx.get(id)] : {}; incoming = Object.assign({}, rec); SYNC_LOCAL_SETTINGS.forEach(k=>{ if(local && k in local) incoming[k] = local[k]; }); }
+        if(t==='settings'){ const local = idx.has(id) ? arr[idx.get(id)] : {}; incoming = Object.assign({}, rec); SYNC_LOCAL_SETTINGS.forEach(k=>{ if(local && k in local) incoming[k] = local[k]; });
+          // a teammate who never set up Google sign-in must not switch it off for everyone
+          if(local && local.googleClientId && !incoming.googleClientId) incoming.googleClientId = local.googleClientId; }
         const h = syncHash(t, incoming);
         if(idx.has(id)){
           const cur = arr[idx.get(id)], curH = syncHash(t, cur);
@@ -2370,7 +2382,7 @@ function toggleNav(open){
 }
 
 function router(){
-  renderSidebar();
+  renderSidebar(); renderMeAvatar();
   const hash = location.hash || '#/';
   const parts = hash.replace(/^#\//,'').split('/').filter(Boolean);
   const content = document.getElementById('content');
@@ -2477,6 +2489,7 @@ function openIssuesForLanguage(code){
 function greeting(){ const h = new Date().getHours(); return h<5 ? 'Доброй ночи' : h<12 ? 'Доброе утро' : h<18 ? 'Добрый день' : 'Добрый вечер'; }
 function renderDashboard(el){
   setCrumbs(['Главная']);
+  if(!getMe()) setTimeout(renderGoogleButtons, 0);
   const projects = dbList('projects');
   const rows = dbList('rows');
   const issues = dbList('issues');
@@ -2520,6 +2533,7 @@ function renderDashboard(el){
         <div><b data-count="${Math.round(quality*100)}" data-suffix="%">${Math.round(quality*100)}%</b><span>качество</span></div>
       </div>
     </section>
+    ${getMe() ? '' : `<div class="notice who-notice">${icon('user',16)}<span><b>Кто ты?</b> ${googleEnabled() ? 'Войди через Google или выбери себя из списка' : 'Выбери себя из списка'} — платформа соберёт твои задачи в «Мои задачи» и подпишет комментарии.</span>${googleEnabled() ? '<div class="gsi-btn"></div>' : ''}<button class="btn sm" onclick="openWhoAmI()">Выбрать себя</button></div>`}
     ${needBackup ? `<div class="notice">${icon('download',16)}<span>${last?'Резервной копии не было '+timeAgo(last).replace(' назад','')+'.':'Резервная копия ещё не делалась.'} Все данные хранятся только в этом браузере — скачай копию, это 2 секунды.</span><button class="btn sm" onclick="downloadBackup()">Скачать копию</button></div>` : ''}
     <div class="grid grid-4 stagger" style="margin-bottom:24px;">
       <div class="kpi"><div class="kpi-ic">${icon('bookOpen',18)}</div><div class="num" data-count="${rows.length}">${rows.length.toLocaleString('ru-RU')}</div><div class="lbl">Проверено строк</div></div>
@@ -6453,6 +6467,9 @@ function renderMeAvatar(){
   el.style.background = me ? `linear-gradient(135deg,${folderColor(me)},${folderColor(me+'x')})` : '';
   const g = googleIdentity();
   if(me && g && g.picture){ el.style.background = `center/cover no-repeat url("${g.picture.replace(/"/g,'')}")`; el.textContent = ''; el.title = me+' · '+g.email+' — сменить'; }
+  const chip = document.getElementById('meChip'), nm = document.getElementById('meName');
+  if(chip){ chip.classList.toggle('anon', !me); chip.title = el.title; }
+  if(nm) nm.innerHTML = me ? esc(me.split(' ')[0])+'<small>'+esc(ROLE_LABELS[getRole()||roleOf(me)]||'')+'</small>' : (googleEnabled() ? 'Войти' : 'Кто ты?');
 }
 const ROLE_KEY = 'lqa_role';
 function getRole(){ try{ return localStorage.getItem(ROLE_KEY) || ''; }catch(e){ return ''; } }
@@ -6482,7 +6499,8 @@ function openWhoAmI(){
   const g = googleIdentity();
   const gBlock = !googleEnabled() ? '' : g ? `<div class="gsi-row">${g.picture?`<img src="${esc(g.picture)}" alt="" referrerpolicy="no-referrer">`:''}<div style="min-width:0;flex:1;"><div style="font-weight:600;">${esc(g.email)}</div><div class="hint" style="margin:0;">${(getSettings().googleAccounts||{})[g.email] ? 'Выбери другого человека, если связано неверно' : 'Выбери себя — это запомнится для этой почты на всех устройствах'}</div></div><button type="button" class="btn ghost sm" data-gout>Выйти</button></div>`
     : `<div class="gsi-row"><div class="gsi-btn"></div><span class="hint" style="margin:0;">или выбери себя из списка</span></div>`;
-  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">${googleEnabled() ? 'Войди через Google — в следующий раз платформа узнает тебя сама.' : 'Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.'}</div>${gBlock}
+  const gOff = googleEnabled() ? '' : `<div class="hint" style="margin:8px 0 0;">Вход через Google не настроен: <a class="link" href="#/settings" data-gset>Настройки → Вход через Google</a>, вставь Client ID.</div>`;
+  uiDialog(`<h3>Кто ты?</h3><div class="dialog-text">${googleEnabled() ? 'Войди через Google — в следующий раз платформа узнает тебя сама.' : 'Нужно только этому браузеру: по имени платформа соберёт твои задачи и подпишет комментарии.'}</div>${gBlock}${gOff}
     <div class="subtabbar" style="margin:14px 0 6px;" id="roleTabs">${Object.entries(ROLE_LABELS).map(([k,l])=>`<button type="button" class="subtabbtn ${k===role?'active':''}" data-role="${k}">${l}</button>`).join('')}</div>
     <input type="text" id="peopleSearch" placeholder="Поиск по имени" style="width:100%;margin-top:8px;${role==='other'?'display:none;':''}">
     <div id="peopleList" style="max-height:46vh;overflow:auto;margin-top:4px;">${listHtml(role)}</div>
@@ -6501,6 +6519,7 @@ function openWhoAmI(){
     search.oninput = ()=>{ list.innerHTML = listHtml(role, search.value); wire(); };
     ok.onclick = ()=>{ const v = (root.querySelector('#meOther')||{}).value; if(!v || !v.trim()){ toast('Впиши имя'); return; } close({name:v.trim(), role:'other'}); };
     const reset = root.querySelector('[data-reset]'); if(reset) reset.onclick = ()=>close({name:'', role:''});
+    const gset = root.querySelector('[data-gset]'); if(gset) gset.onclick = ()=>close(null);
     const gout = root.querySelector('[data-gout]'); if(gout) gout.onclick = ()=>close({name:'', role:''});
     renderGoogleButtons();
     wire(); (role==='other' ? root.querySelector('#meOther') : search).focus();
@@ -6902,7 +6921,7 @@ const TOUR_STEPS = [
   {sel:'.side-link[href="#/projects"]', title:'Проекты и файлы', text:'Создай проект, добавь папки (Web, iOS, checkout…) и загрузи .po, .json или .csv — техническая проверка запустится сама. Повторная загрузка того же файла покажет, что исправлено и что появилось.'},
   {sel:'.side-link[href="#/issues"]', title:'Проблемы', text:'Все найденные проблемы в одной таблице. Листай стрелками, Enter — открыть, F — ложное срабатывание, A / R — подтвердить или опровергнуть.'},
   {sel:'.side-link[href="#/visual"]', title:'Визуальная проверка', text:'Скриншоты и видео интерфейса: выдели проблему рамкой прямо на картинке, сравни с русским оригиналом, скачай отчёт для команды или запусти ИИ.'},
-  {sel:'#meAvatar', title:'Кто ты?', text:'Нажми на кружок и выбери своё имя — тогда в «Мои задачи» соберётся всё, что назначено тебе, а комментарии будут подписаны.'},
+  {sel:'#meChip', title:'Кто ты?', text:'Нажми сюда и выбери своё имя — тогда в «Мои задачи» соберётся всё, что назначено тебе, а комментарии будут подписаны.'},
   {sel:'.side-link[href="#/settings"]', title:'Настройки', text:'Правила проверки, резервная копия, командное хранилище и ИИ. А клавиша «?» в любой момент покажет все горячие клавиши.'},
 ];
 let tourStep = -1;
