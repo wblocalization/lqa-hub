@@ -284,6 +284,11 @@ tr.clickable{cursor:pointer;}
 tr.row-selected td{background:var(--primary-bg)!important;}
 td.nowrap,th.nowrap{white-space:nowrap;}
 td.cell-text{min-width:200px;max-width:320px;word-break:break-word;line-height:1.45;}
+td.cell-key{cursor:copy;}
+td.cell-key:hover{color:var(--primary);}
+.key-copy{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;padding:5px 10px;font:500 13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:copy;text-align:left;word-break:break-all;}
+.key-copy:hover{border-color:var(--primary);color:var(--primary);}
+.key-copy svg{flex-shrink:0;opacity:.7;}
 td.cell-key{max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-soft);}
 td.cell-go{width:36px;padding-left:0;color:var(--text-faint);text-align:right;}
 tr.clickable:hover td.cell-go{color:var(--primary);}
@@ -2300,6 +2305,7 @@ const ICONS = {
   command: '<path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 0 0 0-6z"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
   moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   chevronDown: '<polyline points="6 9 12 15 18 9"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
@@ -3759,7 +3765,7 @@ function openRowDetail(rowId){
   const r = dbGet('rows', rowId);
   const c = dbGet('components', r.componentId);
   const issues = dbQuery('issues', i=>i.rowId===rowId);
-  openModal(`<h3>Строка ${esc(r.key||rowId)}</h3>
+  openModal(`<h3>Строка</h3>${r.key?keyCopyHtml(r.key):''}
     <div class="hint">${esc(c?c.name:'—')} · ${esc(r.languageCode)}</div>
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;">
       <div><div class="hint">Исходный текст</div><div class="mono" style="padding:8px 10px;background:var(--bg);border-radius:7px;">${highlightTokens(r.source)}</div></div>
@@ -3969,7 +3975,7 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
       return `<tr class="clickable ${st.selected.has(i.id)?'row-selected':''} ${kbFocusId===i.id?'kb-focus':''}" data-id="${i.id}" data-kind="issue" onclick="if(!event.target.closest('input,button,a')){kbFocusId='${i.id}';kbApplyFocus(false);openIssueDetail('${i.id}');}">
         <td><input type="checkbox" class="${key}_chk" value="${i.id}" ${st.selected.has(i.id)?'checked':''} onchange="toggleOneIssue('${key}', '${i.id}', this.checked, this)"></td>
         <td><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span></td>
-        <td class="mono cell-key" title="${esc(r?r.key||'':'')}">${esc(r?r.key||'—':'—')}</td>
+        <td class="mono cell-key" title="${esc(r&&r.key?r.key+' — нажми, чтобы скопировать':'')}" ${r&&r.key?`data-k="${esc(r.key)}" onclick="event.stopPropagation();copyText(this.dataset.k,'Ключ скопирован')"`:''}>${esc(r?r.key||'—':'—')}</td>
         ${i.visual && !r ? `<td class="cell-text" colspan="2">${visualIssueCell(i)}</td>` : `<td class="mono cell-text">${r?renderFieldWithHighlight(r.source, i, 'source'):''}</td>
         <td class="mono cell-text">${r?renderFieldWithHighlight(r.target, i, 'target'):''}</td>`}
         <td><span class="pill type">${esc(i.type)}</span></td>
@@ -4098,7 +4104,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
       const nearestDeadline = rowIssues.map(i=>i.deadline).find(Boolean);
       return `<tr class="clickable ${st.selected.has(r.id)?'row-selected':''} ${kbFocusId===r.id?'kb-focus':''}" data-id="${r.id}" data-kind="row" onclick="if(!event.target.closest('input,button,a,.pill')){kbFocusId='${r.id}';kbApplyFocus(false);openRowDetail('${r.id}');}">
         <td><input type="checkbox" class="${key}_chk" value="${r.id}" ${st.selected.has(r.id)?'checked':''} onchange="toggleOneIssue('${key}', '${r.id}', this.checked, this)"></td>
-        <td class="mono cell-key" title="${esc(r.key||'')}">${esc(r.key||'—')}</td>
+        <td class="mono cell-key" title="${esc(r.key?r.key+' — нажми, чтобы скопировать':'')}" ${r.key?`data-k="${esc(r.key)}" onclick="event.stopPropagation();copyText(this.dataset.k,'Ключ скопирован')"`:''}>${esc(r.key||'—')}</td>
         <td>${esc(r.languageCode)}</td>
         <td>${folderBadge(comp)}</td>
         <td class="mono cell-text">${primary?renderFieldWithHighlight(r.source, primary, 'source'):highlightTokens(r.source)}</td>
@@ -4557,7 +4563,7 @@ function openIssueDetail(issueId){
   const decidedEntry = [...(i.history||[])].reverse().find(h=>['Подтвердить','Опровергнуть','Исправлено','Ложное срабатывание'].includes(h.action));
   openDetailPanel(`<button class="detail-panel-close" onclick="closeDetailPanel()">×</button>
     <div class="row" style="gap:8px;margin-bottom:2px;"><span class="pill type">${esc(i.type)}</span><span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span><span class="pill ${statusClass(i.status)}">${esc(i.status)}</span>${i.confidence==='medium'?'<span class="pill sev-medium">Возможное несоответствие</span>':''}</div>
-    <div class="hint" style="margin-top:8px;">${esc(proj?proj.name:'—')} · ${esc(comp?comp.name:'—')} · ${esc(i.languageCode)}${file?' · '+esc(file.filename):''}${r&&r.key?' · ключ: '+esc(r.key):''}</div>
+    <div class="hint" style="margin-top:8px;">${esc(proj?proj.name:'—')} · ${esc(comp?comp.name:'—')} · ${esc(i.languageCode)}${file?' · '+esc(file.filename):''}</div>${r&&r.key?`<div style="margin-top:8px;">${keyCopyHtml(r.key)}</div>`:''}
     <div class="hint" style="margin-top:4px;">Обнаружено: ${esc(detectionSourceLabel(i))} · ${fmtDate(i.createdAt)}${sentEntry?' · На проверке с '+fmtDate(sentEntry.ts)+(sentEntry.reviewer?' → '+esc(sentEntry.reviewer):''):''}${decidedEntry?' · Решение: '+fmtDate(decidedEntry.ts)+(decidedEntry.reviewer?' ('+esc(decidedEntry.reviewer)+')':''):''}</div>
     <div style="margin-top:4px;">Дедлайн: ${formatDeadline(i.deadline)}</div>
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
@@ -5774,6 +5780,8 @@ async function downloadExtensionZip(){
     toast('Не получилось собрать архив ('+e.message+'). Скачай всю платформу архивом с GitHub и возьми из него папку extension.', {duration:10000, action:{label:'Скачать с GitHub', fn:()=>window.open('https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip','_blank')}});
   }finally{ if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.label; } }
 }
+// the whole string key, wrapped instead of cut off; a click copies it
+function keyCopyHtml(key){ return `<button type="button" class="key-copy" title="Скопировать ключ" data-k="${esc(key)}" onclick="event.stopPropagation();copyText(this.dataset.k,'Ключ скопирован')">${esc(key)}${icon('copy',14)}</button>`; }
 function copyText(text, msg){
   const done = ()=>toast(msg||'Скопировано');
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, ()=>fallback()); else fallback();
