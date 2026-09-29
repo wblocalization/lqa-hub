@@ -3139,7 +3139,7 @@ async function deleteFiles(ids){
   router();
 }
 function fileChkHtml(f){ return `<input type="checkbox" class="file-chk" value="${f.id}" onchange="fileSelChanged(this)">`; }
-function fileBulkBarHtml(){ return `<button class="btn danger sm file-bulk-del" style="display:none;" onclick="deleteSelectedFiles(this)">${icon('trash',14)}Удалить выбранные</button>`; }
+function fileBulkBarHtml(){ return `<div class="row" style="gap:6px;"><button class="btn secondary sm" title="Запустить проверку заново для всех файлов списка — после изменения правил" onclick="rerunListedFiles(this)">${icon('check',14)}Перепроверить все</button><button class="btn danger sm file-bulk-del" style="display:none;" onclick="deleteSelectedFiles(this)">${icon('trash',14)}Удалить выбранные</button></div>`; }
 function fileSelChanged(el){
   const card = el.closest('.card'), n = card.querySelectorAll('.file-chk:checked').length, b = card.querySelector('.file-bulk-del');
   if(b){ b.style.display = n ? '' : 'none'; b.lastChild.textContent = 'Удалить выбранные: '+n; }
@@ -3569,6 +3569,24 @@ async function handlePoFiles(projectId, items){
   status.textContent = '';
   presetStringsTypeFilterFromOverride('projTabStrings', checkOverride);
   location.hash = '#/project/'+projectId+'/content/strings';
+}
+// every current file of the list at once — after the rules change, instead of «Перезапустить проверку» one by one
+async function rerunListedFiles(btn){
+  const ids = new Set([...btn.closest('.card').querySelectorAll('.file-chk')].map(c=>c.value));
+  const files = dbList('files').filter(f=>ids.has(f.id) && !f.supersededBy); if(!files.length) return;
+  btn.disabled = true;
+  const byProject = {}; files.forEach(f=>(byProject[f.projectId] = byProject[f.projectId]||[]).push(f));
+  let n = 0;
+  for(const [projectId, list] of Object.entries(byProject)){
+    const fileSet = new Set(list.map(f=>f.id)), rowIds = dbList('rows').filter(r=>fileSet.has(r.fileId)).map(r=>r.id);
+    await runFullCheckForProject(projectId, rowIds, null, (done, total)=>{ btn.lastChild.textContent = 'Проверяю… '+Math.round(done*100/Math.max(1,total))+'%'; });
+    list.forEach(f=>{
+      const fr = dbQuery('rows', r=>r.fileId===f.id).map(r=>r.id), set = new Set(fr);
+      dbUpsert('runs', {id:uid(), projectId:f.projectId, componentId:f.componentId, languageCode:f.languageCode, fileId:f.id, rowCount:fr.length, issueCount:dbQuery('issues', i=>set.has(i.rowId)).length, quality:rowsQuality(fr), createdAt:nowISO()});
+    });
+    n += list.length;
+  }
+  toast('Перепроверено файлов: '+n); router();
 }
 async function rerunFileCheck(fileId){
   const file = dbGet('files', fileId);
@@ -6783,7 +6801,7 @@ const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addPr
   'addComponent','saveComponent','renameComponent','deleteComponent','uploadProjectPendingFiles','uploadFolderPendingFiles','addProjectPendingFiles','addFolderPendingFiles',
   'editFileMeta','deleteFile','rerunFileCheck','startSample','deleteSample','editVendor','openVendorScale','exportVendorReport','importVendorsFromFile',
   'openVisualSessionModal','saveVisualSession','deleteVisualSession','addShotFiles','deleteShot','openCrawlModal','stopCrawl',
-  'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','deleteRun','clearRuns','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
+  'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','rerunListedFiles','deleteRun','clearRuns','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
   'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount'];
 function guardManagerActions(){
   MANAGER_ACTIONS.forEach(name=>{
