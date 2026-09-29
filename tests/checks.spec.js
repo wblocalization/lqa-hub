@@ -81,3 +81,15 @@ test('другой порядок переменных — не ошибка; п
   expect(issues.filter(i => i.key === 'empty').map(i => i.type)).toEqual(['Не переведено']);
   expectNoErrors(errors);
 });
+
+test('ссылки и теги не проверяются: «wb» в адресе — не ребрендинг, цифры адреса — не числа', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['az'] });
+  const src = 'Нажимая, я соглашаюсь с <a href=\'https://wb-bank.ru/docs/dkbo_fl.pdf\'>Договором</a> и <a href=\'https://static-basket-02.wbbasket.ru/vol30/KDBO_fiz_wb_bank\'>Порядком</a>';
+  const tgt = 'Mən <a href="https://wb-bank.ru/docs/dkbo_fl.pdf">Müqavilə</a> və <a href="https://static-basket-02.wbbasket.ru/vol30/KDBO_fiz_wb_bank">Qaydası</a> ilə razılaşıram';
+  await uploadPo(page, { lang: 'az', text: po('az', [['link', src, tgt], ['real', 'Кошелёк WB', 'WB Pul kisəsi']]) });
+  const issues = await issuesByKey(page);
+  expect(issues.filter(i => i.key === 'link')).toEqual([]);
+  expect(issues.filter(i => i.key === 'real').map(i => i.type)).toContain('Ребрендинг');
+  expectNoErrors(errors);
+});
