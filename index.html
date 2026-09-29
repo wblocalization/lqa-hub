@@ -1409,7 +1409,7 @@ function parseLengthRules(text){
    "12 990", "12,990", "12.990" and "12990" are the same number; "4,5" and "4.5" too. Only the
    numbers themselves are compared (as a multiset), so reordering in the sentence is fine. */
 function extractNumbers(str){
-  const vis = visibleText(str).replace(/\{[^{}]*\}/g,' ');
+  const vis = visibleText(maskMarkup(str)).replace(/\{[^{}]*\}/g,' ');
   const out = [];
   (vis.match(/\d(?:[\d    .,']*\d)?/g)||[]).forEach(raw=>{
     let t = raw.replace(/[    ']/g,'');
@@ -1541,6 +1541,10 @@ function ignoreRulesCardHtml(){
 
 const REBRAND_TERMS = ['WB','ВБ','RWB','РВБ','Wildberries','Вайлдберриз'];
 const REBRAND_LANGUAGES = ['az']; // languages currently following the WB→N11 rebrand rule
+// links, e-mails and whole HTML tags (with their href="…") are not text a reader sees: checks that look
+// for words or numbers blank them out — same length, so positions in the string stay the same
+const MARKUP_URL_RE = /<\/?[a-zA-Z][^<>]*>|https?:\/\/[^\s"'<>«»]+|www\.[^\s"'<>«»]+|[\w.+-]+@[\w-]+\.[\w.-]+/g;
+function maskMarkup(str){ return String(str||'').replace(MARKUP_URL_RE, m=>' '.repeat(m.length)); }
 function isUrlOrEmailContext(text, matchStart, matchEnd){
   // a brand mention that's part of an actual URL or email address (a real domain like
   // wildberries.ru, or inside an href="...") legitimately keeps its real address — only
@@ -1553,6 +1557,7 @@ function isUrlOrEmailContext(text, matchStart, matchEnd){
 }
 function findRebrandingTerms(text){
   if(!text) return [];
+  text = maskMarkup(text);
   const found = [];
   REBRAND_TERMS.forEach(term=>{
     const re = new RegExp('(?<![\\p{L}\\p{N}])'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])', 'giu');
@@ -1611,7 +1616,9 @@ function findHighlightRange(str, text, caseInsensitive){
   if(!str || !text) return null;
   const hay = caseInsensitive ? str.toLowerCase() : str;
   const needle = caseInsensitive ? text.toLowerCase() : text;
-  const idx = hay.indexOf(needle);
+  // a word found in the visible text is highlighted there, not inside a link that happens to contain it
+  let idx = (caseInsensitive ? maskMarkup(str).toLowerCase() : maskMarkup(str)).indexOf(needle);
+  if(idx<0) idx = hay.indexOf(needle);
   if(idx<0) return null;
   return {start: idx, end: idx+text.length};
 }
@@ -1853,7 +1860,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       if(s.checkDnt && dntTerms.length){
         dntTerms.forEach(term=>{
           if(REBRAND_LANGUAGES.includes(lang) && REBRAND_TERMS.some(b=>b.toLowerCase()===term.toLowerCase())) return; // rebrand rule owns these
-          if(hasWholeTerm(src, term) && !hasWholeTerm(tgt, term))
+          if(hasWholeTerm(maskMarkup(src), term) && !hasWholeTerm(maskMarkup(tgt), term))
             push('Не переводить','Средняя','«'+term+'» из списка «Не переводить» пропал из перевода или переведён', {highlightField:'source', highlightText:term, expectedText:term});
         });
       }
@@ -2077,7 +2084,7 @@ async function runGlossaryCheck(projectId, override, onProgress){
   for(let start=0; start<rows.length; start+=CHUNK){
     const chunk = rows.slice(start, start+CHUNK);
     chunk.forEach(r=>{
-      const srcLower = (r.source||'').toLowerCase(), tgtLower=(r.target||'').toLowerCase();
+      const srcLower = maskMarkup(r.source).toLowerCase(), tgtLower = maskMarkup(r.target).toLowerCase();
       if(!srcLower || !tgtLower.trim()) return;   // empty translation is reported as not translated, not as a glossary miss
       terms.forEach(term=>{
         const termLang = glossaryLangById[term.glossaryId] || term.language;
