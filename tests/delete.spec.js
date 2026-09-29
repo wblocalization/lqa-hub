@@ -47,3 +47,14 @@ test('файлы: выбрать несколько и удалить разом
   expect(await page.evaluate(() => [dbList('files').length, dbList('rows').length])).toEqual([0, 0]);
   expectNoErrors(errors);
 });
+
+test('«Перепроверить все» заново проверяет все файлы списка', async ({ page }) => {
+  const errors = await openApp(page);
+  await seed(page);
+  const before = await page.evaluate(() => dbList('issues').length);
+  await page.evaluate(() => { dbSave('issues', []); location.hash = '#/project/p0/content/files'; });
+  await page.click('button:has-text("Перепроверить все")');
+  await expect.poll(() => page.evaluate(() => dbList('issues').length)).toBe(before);
+  expect(await page.evaluate(() => dbList('runs').length)).toBeGreaterThanOrEqual(4);
+  expectNoErrors(errors);
+});
