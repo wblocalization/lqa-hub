@@ -7029,7 +7029,7 @@ const isDocLink = v=>/docs\.google\.com\/document\//.test(v||'');
 function styleGuidesCardHtml(s){
   const sg = s.styleGuides || {}, langs = Object.keys(sg).sort();
   return `<div class="card" id="styleGuidesCard"><h3 style="margin-bottom:4px;">Редполитики</h3>
-    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Ссылка на Google Документ или текст редполитики для языка. ИИ-проверка получает её вместе с глоссарием и проверяет стиль, обращение и оформление. Документ читает backend: открой его на чтение для аккаунта, от которого развёрнут скрипт.</div>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Ссылка на Google Документ, файл (.docx, .txt) или текст редполитики для языка. ИИ-проверка получает её вместе с глоссарием и проверяет стиль, обращение и оформление. Документ читает backend: открой его на чтение для аккаунта, от которого развёрнут скрипт.</div>
     ${langs.length ? `<div class="table-wrap"><table><thead><tr><th>Язык</th><th>Редполитика</th><th></th></tr></thead><tbody>
       ${langs.map(c=>`<tr><td>${languageFlag(c)} ${esc(languageLabel(c))}</td>
         <td>${isDocLink(sg[c]) ? `<a href="${esc(sg[c])}" target="_blank" rel="noopener">Google Документ</a>` : `текст, ${sg[c].length} ${plural(sg[c].length,'символ','символа','символов')}`}
@@ -7049,8 +7049,22 @@ function editStyleGuide(lang){
     <label class="field">Язык<select id="sgLang" ${lang?'disabled':''}>${codes.map(c=>`<option value="${esc(c)}" ${c===lang?'selected':''}>${esc(languageLabel(c))} (${esc(c)})</option>`).join('')}</select></label>
     <label class="field" style="margin-top:10px;">Ссылка на Google Документ или сам текст
       <textarea id="sgValue" style="min-height:140px;" placeholder="https://docs.google.com/document/d/…">${esc(lang ? sg[lang]||'' : '')}</textarea></label>
+    <label class="field" style="margin-top:10px;">…или загрузи файл (.docx, .txt, .md)<input type="file" id="sgFile" accept=".docx,.txt,.md"></label>
+    <div class="hint" id="sgFileStatus" style="margin:4px 0 0;"></div>
     <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
-  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({lang:root.querySelector('#sgLang').value, value:root.querySelector('#sgValue').value.trim()}); })
+  (root, close)=>{
+    root.querySelector('[data-ok]').onclick = ()=>close({lang:root.querySelector('#sgLang').value, value:root.querySelector('#sgValue').value.trim()});
+    root.querySelector('#sgFile').onchange = async e=>{
+      const f = e.target.files[0], st = root.querySelector('#sgFileStatus'); if(!f) return;
+      st.textContent = 'Читаю файл…';
+      try{
+        const text = await readStyleGuideFile(f);
+        if(!text) throw new Error('в файле нет текста');
+        root.querySelector('#sgValue').value = text;
+        st.textContent = '✓ '+f.name+': '+text.length+' '+plural(text.length,'символ','символа','символов')+(text.length>30000?' — ИИ увидит первые 30 000':'');
+      }catch(err){ st.textContent = 'Не получилось прочитать: '+err.message; }
+    };
+  })
   .then(v=>{
     if(!v) return;
     const all = Object.assign({}, getSettings().styleGuides||{});
@@ -7059,6 +7073,20 @@ function editStyleGuide(lang){
     toast(v.value ? 'Редполитика для '+languageLabel(v.lang)+' сохранена' : 'Редполитика удалена');
     if(v.value && getSettings().aiEndpointUrl) setTimeout(()=>checkStyleGuide(v.lang), 0);
   });
+}
+// .docx — the paragraphs of word/document.xml; .txt/.md — as is
+async function readStyleGuideFile(file){
+  if(!/\.docx$/i.test(file.name)) return (await file.text()).replace(/\r\n?/g, '\n').trim();
+  if(!await ensureJSZip()) throw new Error('не загрузилась библиотека для .docx — проверь интернет');
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const xmlFile = zip.file('word/document.xml'); if(!xmlFile) throw new Error('это не похоже на .docx');
+  const doc = new DOMParser().parseFromString(await xmlFile.async('string'), 'application/xml');
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  return [...doc.getElementsByTagNameNS(W, 'p')].map(p=>{
+    let line = '';
+    p.querySelectorAll('*').forEach(n=>{ if(n.namespaceURI!==W) return; if(n.localName==='t') line += n.textContent; else if(n.localName==='tab') line += '\t'; else if(n.localName==='br') line += '\n'; });
+    return (p.getElementsByTagNameNS(W, 'numPr').length ? '• ' : '') + line;
+  }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 function deleteStyleGuide(lang){
   if(!isManager()) return;
@@ -7541,7 +7569,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-01.4';
+const APP_VERSION = '2026-10-01.5';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;

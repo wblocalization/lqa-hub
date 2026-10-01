@@ -91,3 +91,25 @@ test('редполитика: ссылка на документ в Настро
   expect(Object.keys(ai.styleGuides)).toEqual(['kk']);
   expectNoErrors(errors);
 });
+
+test('редполитика из файла .docx: текст абзацев и списков попадает в настройки', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.addScriptTag({ path: require.resolve('jszip/dist/jszip.min.js') });
+  const JSZip = require('jszip');
+  const zip = new JSZip();
+  const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  zip.file('word/document.xml', `<?xml version="1.0"?><w:document ${W}><w:body>
+    <w:p><w:r><w:t>Редполитика KZ</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/></w:numPr></w:pPr><w:r><w:t xml:space="preserve">Обращаемся на </w:t></w:r><w:r><w:t>«сіз»</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Тенге</w:t><w:tab/><w:t>₸</w:t></w:r></w:p></w:body></w:document>`);
+  const buffer = await zip.generateAsync({ type: 'nodebuffer' });
+  await page.evaluate(() => { setIdentity(MANAGERS[0], 'manager'); location.hash = '#/settings'; });
+  await page.click('#styleGuidesCard button:has-text("Добавить редполитику")');
+  await page.selectOption('#sgLang', 'kk');
+  await page.setInputFiles('#sgFile', { name: 'редполитика.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer });
+  await expect(page.locator('#sgFileStatus')).toContainText('✓ редполитика.docx');
+  await page.click('.dialog [data-ok]');
+  expect(await page.evaluate(() => getSettings().styleGuides.kk)).toBe('Редполитика KZ\n• Обращаемся на «сіз»\nТенге\t₸');
+  await expect(page.locator('#styleGuidesCard')).toContainText('текст, ');
+  expectNoErrors(errors);
+});
