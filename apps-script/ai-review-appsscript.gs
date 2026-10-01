@@ -8,6 +8,7 @@
  *   - 'ping'    — проверка подключения из Настроек платформы;
  *   - 'visual'  — проверка одного скриншота (картинка → проблемы с рамками);
  *   - 'summary' — общий вывод по сессии скриншотов (список проблем → короткий разбор);
+ *   - 'styleguide' — прочитать редполитику (ссылка на Google Документ или текст) и сказать, сколько вышло;
  *   - 'sync'    — командное хранилище: браузер отправляет свои изменения и получает чужие.
  *                 Данные лежат на Google Диске в папке «LQA Hub — данные» (или DATA_FOLDER_ID).
  *   - без mode  — проверка пачки строк перевода (как раньше).
@@ -57,6 +58,10 @@ function doPost(e) {
     }
     if (req.mode === 'access') {
       return json_(access_(req, cfg, who));
+    }
+    if (req.mode === 'styleguide') {
+      var guide = styleGuideText_(req.styleGuide);
+      return json_({ ok: true, chars: guide.length, preview: guide.slice(0, 300) });
     }
     if (req.mode === 'sync') {
       return json_(sync_(req));
@@ -177,7 +182,8 @@ function reviewScreenshot_(cfg, req) {
     '- expected — как должно быть (пустая строка, если не знаешь);',
     '- box — рамка вокруг проблемного места в долях от размера картинки: x, y — левый верхний угол, w, h — ширина и высота, всё от 0 до 1.',
     glossary ? '\nУтверждённые термины глоссария (термин → перевод):\n' + glossary : '',
-    req.instructions ? '\nДополнительно: ' + req.instructions : ''
+    req.instructions ? '\nДополнительно: ' + req.instructions : '',
+    styleGuidesPrompt_(req.styleGuides, [req.language])
   ].join('\n');
 
   var schema = {
@@ -221,6 +227,43 @@ function clampBox_(b) {
   // some models answer in percent — normalise that too
   if ([b.x, b.y, b.w, b.h].some(function (v) { return Number(v) > 1.5; })) b = { x: b.x / 100, y: b.y / 100, w: b.w / 100, h: b.h / 100 };
   return { x: c(b.x), y: c(b.y), w: c(b.w), h: c(b.h) };
+}
+
+/* ---------------- style guides ----------------
+   Редполитика языка — ссылка на Google Документ или просто текст. Документ читается от имени владельца
+   скрипта (ему нужен доступ на чтение) и кэшируется на 6 часов. */
+
+var STYLE_GUIDE_MAX = 30000;
+
+function styleGuideText_(value) {
+  value = String(value || '').trim();
+  if (!value) return '';
+  var m = /docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([\w-]{20,})/.exec(value);
+  if (!m) return value.slice(0, STYLE_GUIDE_MAX);
+  var cache = CacheService.getScriptCache(), key = 'sg_' + m[1];
+  var hit = cache.get(key);
+  if (hit !== null) return hit;
+  var text;
+  try {
+    text = DocumentApp.openById(m[1]).getBody().getText();
+  } catch (err) {
+    throw new Error('Не получилось открыть редполитику: дай доступ на чтение аккаунту, от которого развёрнут скрипт, ' +
+      'и проверь, что это Google Документ, а не загруженный .docx (Файл → Сохранить как Google Документ)');
+  }
+  text = text.replace(/\n{3,}/g, '\n\n').trim().slice(0, STYLE_GUIDE_MAX);
+  try { cache.put(key, text, 21600); } catch (e) {}
+  return text;
+}
+
+// {kk: 'https://docs.google.com/…', az: 'текст'} → блок для промпта по языкам, которые есть в запросе
+function styleGuidesPrompt_(guides, langs) {
+  if (!guides) return '';
+  var parts = [];
+  langs.forEach(function (lang) {
+    var text = styleGuideText_(guides[String(lang || '').toLowerCase()]);
+    if (text) parts.push('Редполитика для языка ' + lang + ' — проверяй стиль, обращение, термины и оформление по ней:\n' + text);
+  });
+  return parts.length ? '\n' + parts.join('\n\n') : '';
 }
 
 /* ---------------- team storage (sync) ----------------
@@ -379,6 +422,8 @@ function reviewRows_(cfg, req) {
     '- suggestion — исправленный перевод целиком;',
     '- confidence — уверенность от 0 до 100.',
     '',
+    styleGuidesPrompt_(req.styleGuides, uniq_(items.map(function (it) { return it.language; }))),
+    '',
     'Строки (по одной JSON-записи на строку):',
     lines
   ].join('\n');
@@ -470,6 +515,10 @@ function askOpenAI_(apiKey, model, prompt, image, schema) {
 }
 
 /* ---------------- helpers ---------------- */
+
+function uniq_(arr) {
+  return arr.filter(function (x, i) { return x && arr.indexOf(x) === i; });
+}
 
 function parseHttp_(res, who) {
   var code = res.getResponseCode();

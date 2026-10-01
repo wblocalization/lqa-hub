@@ -70,3 +70,24 @@ test('старый backend по ключу: доступ открыт, в кар
   await expect(page.locator('#authGate')).toHaveCount(0);
   expectNoErrors(errors);
 });
+
+test('редполитика: ссылка на документ в Настройках уходит в ИИ-проверку своего языка', async ({ page }) => {
+  const errors = await openApp(page);
+  const sent = [];
+  await page.route(URL, async route => {
+    const req = JSON.parse(route.request().postData() || '{}'); sent.push(req);
+    const body = req.mode === 'styleguide' ? { ok: true, chars: 42, preview: 'Обращаемся на «сіз»' } : { results: [] };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  await page.evaluate(u => { saveSettings({ aiEndpointUrl: u, aiEnabled: true }); setIdentity(MANAGERS[0], 'manager'); location.hash = '#/settings'; }, URL);
+  await page.click('#styleGuidesCard button:has-text("Добавить редполитику")');
+  await page.selectOption('#sgLang', 'kk');
+  await page.fill('#sgValue', 'https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/edit');
+  await page.click('.dialog [data-ok]');
+  await expect(page.locator('#styleGuidesCard .sg-status[data-lang=kk]')).toContainText('42 символа');
+  await expect(page.locator('#styleGuidesCard')).toContainText('Google Документ');
+  await page.evaluate(() => callAiEndpoint([{ id: 'r1', language: 'kk', source: 'a', target: 'b' }, { id: 'r2', language: 'uz', source: 'a', target: 'c' }]));
+  const ai = sent.find(r => r.items);
+  expect(Object.keys(ai.styleGuides)).toEqual(['kk']);
+  expectNoErrors(errors);
+});

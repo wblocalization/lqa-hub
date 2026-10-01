@@ -995,7 +995,7 @@ function initialsAvatar(name){
 
 function getSettings(){
   const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkLegalEntities:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
-    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{}, vendorPass:98, vendorWeights:{'Критическая':10,'Высокая':5,'Средняя':2,'Низкая':1} };
+    aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{}, styleGuides:{}, vendorPass:98, vendorWeights:{'Критическая':10,'Высокая':5,'Средняя':2,'Низкая':1} };
   let s = dbGet('settings','global');
   if(!s){
     s = Object.assign({}, DEFAULTS);
@@ -2380,7 +2380,7 @@ async function callAiEndpoint(items){
   const res = await backendFetch(s.aiEndpointUrl, {
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids a CORS preflight that Apps Script doesn't handle
-    body: JSON.stringify({model: s.aiModel || '', token: s.aiToken || '', items})
+    body: JSON.stringify({model: s.aiModel || '', token: s.aiToken || '', items, styleGuides: styleGuidesFor(items.map(it=>it.language))})
   });
   if(!res.ok) throw new Error('Backend ответил с ошибкой: HTTP ' + res.status);
   const data = await res.json();
@@ -6692,7 +6692,7 @@ async function runVisualAI(sessionId, shotIds){
     setShotStatus(`ИИ: ${done+1} из ${shots.length}…`);
     try{
       const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({mode:'visual', model:s.aiModel || '', token:s.aiToken || '', instructions:VISUAL_AI_PROMPT_HINT, image:shotImage(sh.id), language:sess.languageCode, languageName:languageLabel(sess.languageCode), page:sess.name, pageUrl:sess.pageUrl||'', glossary})});
+        body: JSON.stringify({mode:'visual', model:s.aiModel || '', token:s.aiToken || '', instructions:VISUAL_AI_PROMPT_HINT, image:shotImage(sh.id), language:sess.languageCode, languageName:languageLabel(sess.languageCode), page:sess.name, pageUrl:sess.pageUrl||'', glossary, styleGuides:styleGuidesFor([sess.languageCode])})});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
       if(data.error) throw new Error(data.error);
@@ -6941,7 +6941,7 @@ const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addPr
   'editFileMeta','deleteFile','rerunFileCheck','startSample','deleteSample','editVendor','openVendorScale','exportVendorReport','importVendorsFromFile',
   'openVisualSessionModal','saveVisualSession','deleteVisualSession','addShotFiles','deleteShot','openCrawlModal','stopCrawl',
   'bulkDeleteIssues','deleteAllFiltered','deleteRowsOrIssues','deleteFiles','deleteSelectedFiles','rerunListedFiles','deleteRun','clearRuns','bulkSendToReview','openSendToReviewModal','confirmSendToReview','passToVisualCheck','confirmPassToVisualCheck',
-  'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount'];
+  'openIgnoreRuleDialog','deleteIgnoreRule','deleteGlossary','doExport','exportPeriodReportXlsx','pickBackupFile','saveSettingsForm','saveGoogleClientId','unlinkGoogleAccount','editStyleGuide','deleteStyleGuide'];
 function guardManagerActions(){
   MANAGER_ACTIONS.forEach(name=>{
     const fn = window[name];
@@ -6990,7 +6990,7 @@ async function loadBackendAccess(){
   if(data && data.auth==='google' && !data.error) data = await call({mode:'access', action:'get'});
   if(!document.getElementById('accessBody')) return;
   if(!data){ box.innerHTML = accessSetupHint('Backend не ответил.'); return; }
-  if(data.error){ box.innerHTML = `<div class="hint" style="margin:0;color:var(--danger);">${esc(data.error)}</div>`; return; }
+  if(data.error){ box.innerHTML = `<div class="hint" style="margin:0;color:var(--crit);">${esc(data.error)}</div>`; return; }
   if(data.auth!=='google'){ box.innerHTML = accessSetupHint('Сейчас доступ по общему ключу — кто знает адрес и ключ, тот видит данные.'); return; }
   const admins = data.admins||[], allowed = data.allowed||[];
   box.innerHTML = `<div class="hint" style="margin:0 0 10px;">Администраторы (задаются в свойствах скрипта, всегда имеют доступ): ${admins.map(e=>`<span class="pill type" style="margin:2px;">${esc(e)}</span>`).join('')}</div>
@@ -7016,6 +7016,65 @@ async function saveBackendAccess(){
   if(!data || data.error){ toast(data && data.error || 'Backend не ответил'); return; }
   toast('Список доступа сохранён: '+(data.allowed||[]).length+' '+plural((data.allowed||[]).length,'почта','почты','почт'));
   loadBackendAccess();
+}
+/* ---------- style guides (редполитики) ----------
+   One per language: a link to a Google Doc or the text itself. The backend reads the doc (as the script
+   owner) and passes it to the AI together with the glossary, so the AI checks style against it too. */
+function styleGuidesFor(langs){
+  const all = getSettings().styleGuides || {}, out = {};
+  langs.forEach(l=>{ const k = String(l||'').toLowerCase(); if(all[k]) out[k] = all[k]; });
+  return Object.keys(out).length ? out : undefined;
+}
+const isDocLink = v=>/docs\.google\.com\/document\//.test(v||'');
+function styleGuidesCardHtml(s){
+  const sg = s.styleGuides || {}, langs = Object.keys(sg).sort();
+  return `<div class="card" id="styleGuidesCard"><h3 style="margin-bottom:4px;">Редполитики</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Ссылка на Google Документ или текст редполитики для языка. ИИ-проверка получает её вместе с глоссарием и проверяет стиль, обращение и оформление. Документ читает backend: открой его на чтение для аккаунта, от которого развёрнут скрипт.</div>
+    ${langs.length ? `<div class="table-wrap"><table><thead><tr><th>Язык</th><th>Редполитика</th><th></th></tr></thead><tbody>
+      ${langs.map(c=>`<tr><td>${languageFlag(c)} ${esc(languageLabel(c))}</td>
+        <td>${isDocLink(sg[c]) ? `<a href="${esc(sg[c])}" target="_blank" rel="noopener">Google Документ</a>` : `текст, ${sg[c].length} ${plural(sg[c].length,'символ','символа','символов')}`}
+          <div class="hint sg-status" data-lang="${esc(c)}" style="margin:2px 0 0;"></div></td>
+        <td style="text-align:right;white-space:nowrap;">
+          ${s.aiEndpointUrl ? `<button class="btn ghost sm" data-lang="${esc(c)}" onclick="checkStyleGuide(this.dataset.lang)">Проверить</button>` : ''}
+          <button class="btn ghost sm" data-lang="${esc(c)}" onclick="editStyleGuide(this.dataset.lang)">${icon('edit',14)}Изменить</button>
+          <button class="btn ghost sm" data-lang="${esc(c)}" onclick="deleteStyleGuide(this.dataset.lang)">Удалить</button></td></tr>`).join('')}
+    </tbody></table></div>` : ''}
+    <div class="row" style="margin-top:12px;"><button class="btn secondary" onclick="editStyleGuide('')">Добавить редполитику</button></div></div>`;
+}
+function editStyleGuide(lang){
+  if(!isManager()) return;
+  const sg = getSettings().styleGuides || {};
+  const codes = [...new Set([...dbList('projects').flatMap(p=>(p.languages||[]).map(l=>l.code)), ...LANGUAGE_GROUPS.flatMap(g=>g.items.map(i=>i[0]))])];
+  uiDialog(`<h3>Редполитика</h3>
+    <label class="field">Язык<select id="sgLang" ${lang?'disabled':''}>${codes.map(c=>`<option value="${esc(c)}" ${c===lang?'selected':''}>${esc(languageLabel(c))} (${esc(c)})</option>`).join('')}</select></label>
+    <label class="field" style="margin-top:10px;">Ссылка на Google Документ или сам текст
+      <textarea id="sgValue" style="min-height:140px;" placeholder="https://docs.google.com/document/d/…">${esc(lang ? sg[lang]||'' : '')}</textarea></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+  (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({lang:root.querySelector('#sgLang').value, value:root.querySelector('#sgValue').value.trim()}); })
+  .then(v=>{
+    if(!v) return;
+    const all = Object.assign({}, getSettings().styleGuides||{});
+    if(v.value) all[v.lang] = v.value; else delete all[v.lang];
+    saveSettings({styleGuides:all}); router();
+    toast(v.value ? 'Редполитика для '+languageLabel(v.lang)+' сохранена' : 'Редполитика удалена');
+    if(v.value && getSettings().aiEndpointUrl) setTimeout(()=>checkStyleGuide(v.lang), 0);
+  });
+}
+function deleteStyleGuide(lang){
+  if(!isManager()) return;
+  const all = Object.assign({}, getSettings().styleGuides||{}); delete all[lang];
+  saveSettings({styleGuides:all}); router(); toast('Редполитика удалена');
+}
+async function checkStyleGuide(lang){
+  const s = getSettings(), out = document.querySelector(`.sg-status[data-lang="${CSS.escape(lang)}"]`);
+  const show = (html, color)=>{ if(out){ out.innerHTML = html; out.style.color = color||''; } };
+  show('Проверяю…');
+  let data = null;
+  try{ const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({mode:'styleguide', styleGuide:(s.styleGuides||{})[lang]||'', token:s.aiToken||''})}); data = await res.json(); }catch(e){}
+  if(!data) return show('Backend не ответил', 'var(--crit)');
+  if(data.error) return show(esc(data.error), 'var(--crit)');
+  if(typeof data.chars!=='number') return show('Backend старой версии — обнови код в Apps Script (apps-script/ai-review-appsscript.gs)', 'var(--crit)');
+  show(`✓ ИИ видит ${data.chars} ${plural(data.chars,'символ','символа','символов')}${data.chars>=30000?' (обрезано до 30 000)':''}: «${esc(data.preview.slice(0,90))}…»`, 'var(--ok)');
 }
 function editPersonLangs(name){
   if(!isManager()) return;
@@ -7482,7 +7541,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-01.3';
+const APP_VERSION = '2026-10-01.4';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -7917,6 +7976,7 @@ function renderSettingsPage(el){
     ${googleCardHtml()}
     ${teamAccessCardHtml()}
     ${backendAccessCardHtml(s)}
+    ${styleGuidesCardHtml(s)}
     ${spellCardHtml()}
     ${aiCardHtml(s)}`;
 }
