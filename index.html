@@ -246,6 +246,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:16px;he
 .file-meta>summary{cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text-soft);}
 .gsi-row{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:10px;padding:10px 12px;margin-top:12px;min-height:44px;}
 .gsi-row img{width:34px;height:34px;border-radius:50%;flex-shrink:0;}
+.auth-gate{position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg,16px);box-shadow:var(--shadow-lg);padding:32px 28px;max-width:420px;width:100%;text-align:center;}
+.auth-card h2{margin:12px 0 8px;}
+.auth-card p{color:var(--text-muted);line-height:1.6;margin:0 0 18px;}
+.auth-logo{width:52px;height:52px;border-radius:14px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--accent-soft,var(--surface-2));color:var(--accent);}
 .chip-sep{width:1px;height:22px;background:var(--border-strong);margin:0 10px 0 4px;}
 .chip-view{padding:0 4px 0 0;gap:0;}
 .chip-view>button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:100%;padding:0 6px 0 12px;}
@@ -1217,7 +1222,7 @@ function buildSyncBatches(changes){
 }
 async function syncRequest(body){
   const s = getSettings();
-  const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({mode:'sync', token:s.aiToken||''}, body))});
+  const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({mode:'sync', token:s.aiToken||''}, body))});
   if(!res.ok) throw new Error('backend ответил HTTP '+res.status);
   const data = await res.json();
   if(data.error) throw new Error(data.error);
@@ -2372,7 +2377,7 @@ function collectGlossaryForRow(row){
 async function callAiEndpoint(items){
   const s = getSettings();
   if(!s.aiEndpointUrl) throw new Error('В Настройках не указан адрес backend (Apps Script Web App URL)');
-  const res = await fetch(s.aiEndpointUrl, {
+  const res = await backendFetch(s.aiEndpointUrl, {
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids a CORS preflight that Apps Script doesn't handle
     body: JSON.stringify({model: s.aiModel || '', token: s.aiToken || '', items})
@@ -6571,7 +6576,7 @@ async function runSessionSummary(sessionId){
   if(!issues.length){ toast('В сессии пока нет проблем — сначала разметь скриншоты или запусти ИИ-проверку'); return; }
   toast('ИИ готовит вывод по странице…');
   try{
-    const res = await fetch(cfg.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    const res = await backendFetch(cfg.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({mode:'summary', model:cfg.aiModel||'', token:cfg.aiToken||'', language:s.languageCode, languageName:languageLabel(s.languageCode), page:s.name, shots:shots.length,
         findings: issues.map(i=>({type:i.type, severity:i.severity, text:i.text, found:i.highlightText||'', expected:i.expectedText||'', status:i.status, screen:(dbGet('visualShots', i.shotId)||{}).name||''}))})});
     if(!res.ok) throw new Error('HTTP '+res.status);
@@ -6686,7 +6691,7 @@ async function runVisualAI(sessionId, shotIds){
   for(const sh of shots){
     setShotStatus(`ИИ: ${done+1} из ${shots.length}…`);
     try{
-      const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({mode:'visual', model:s.aiModel || '', token:s.aiToken || '', instructions:VISUAL_AI_PROMPT_HINT, image:shotImage(sh.id), language:sess.languageCode, languageName:languageLabel(sess.languageCode), page:sess.name, pageUrl:sess.pageUrl||'', glossary})});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
@@ -6968,6 +6973,50 @@ function teamAccessCardHtml(){
         return `<tr><td>${initialsAvatar(n)}</td><td>${langs.length ? langs.map(c=>`<span class="pill type" style="margin:2px;">${languageFlag(c)} ${esc(c)}</span>`).join('') : '<span class="hint" style="margin:0;">все языки</span>'}</td><td style="text-align:right;"><button class="btn ghost sm" data-person="${esc(n)}" onclick="editPersonLangs(this.dataset.person)">${icon('edit',14)}Языки</button></td></tr>`; }).join('')}
     </tbody></table></div></div>`;
 }
+function backendAccessCardHtml(s){
+  if(!s.aiEndpointUrl) return '';
+  setTimeout(loadBackendAccess, 0);
+  return `<div class="card" id="accessCard"><h3 style="margin-bottom:4px;">Доступ по Google-почтам</h3>
+    <div class="hint" style="margin:0 0 14px;max-width:760px;line-height:1.6;">Командное хранилище и ИИ-проверка отвечают только почтам из этого списка. Остальные видят экран входа и не получают данные команды.</div>
+    <div id="accessBody"><div class="hint" style="margin:0;">Загружаю список…</div></div></div>`;
+}
+async function loadBackendAccess(){
+  const box = document.getElementById('accessBody'); if(!box) return;
+  const s = getSettings();
+  const call = async body=>{ try{ const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({token:s.aiToken||''}, body))}); return await res.json(); }catch(e){ return null; } };
+  // an older backend does not know mode 'access' (it would run an AI review), so ask with a ping first
+  let data = await call({mode:'ping'});
+  if(data && !data.error && !data.auth){ if(document.getElementById('accessBody')) box.innerHTML = accessSetupHint('Backend старой версии — доступ по общему ключу.'); return; }
+  if(data && data.auth==='google' && !data.error) data = await call({mode:'access', action:'get'});
+  if(!document.getElementById('accessBody')) return;
+  if(!data){ box.innerHTML = accessSetupHint('Backend не ответил.'); return; }
+  if(data.error){ box.innerHTML = `<div class="hint" style="margin:0;color:var(--danger);">${esc(data.error)}</div>`; return; }
+  if(data.auth!=='google'){ box.innerHTML = accessSetupHint('Сейчас доступ по общему ключу — кто знает адрес и ключ, тот видит данные.'); return; }
+  const admins = data.admins||[], allowed = data.allowed||[];
+  box.innerHTML = `<div class="hint" style="margin:0 0 10px;">Администраторы (задаются в свойствах скрипта, всегда имеют доступ): ${admins.map(e=>`<span class="pill type" style="margin:2px;">${esc(e)}</span>`).join('')}</div>
+    ${data.admin ? `<label class="field">Почты команды — по одной в строке
+      <textarea id="accessList" class="mono" style="min-height:140px;" placeholder="name.surname@gmail.com">${esc(allowed.join('\n'))}</textarea></label>
+      <div class="row" style="margin-top:12px;"><button class="btn" onclick="saveBackendAccess()">Сохранить список</button></div>`
+    : `<div class="hint" style="margin:0 0 6px;">В списке ${allowed.length} ${plural(allowed.length,'почта','почты','почт')}. Менять список могут только администраторы.</div>`}`;
+}
+function accessSetupHint(lead){
+  return `<div class="hint" style="margin:0;line-height:1.7;">${esc(lead)} Чтобы пускать только по Google-почтам:<ol style="margin:6px 0 0;padding-left:18px;">
+    <li>Обнови код в Apps Script из <span class="mono">apps-script/ai-review-appsscript.gs</span>.</li>
+    <li>В «Настройках проекта» → «Свойства скрипта» добавь <span class="mono">ADMIN_EMAILS</span> (твоя почта, можно несколько через запятую) и <span class="mono">GOOGLE_CLIENT_ID</span> (тот же Client ID, что в карточке «Вход через Google»).</li>
+    <li>«Развернуть» → «Управление развёртываниями» → новая версия. Адрес не меняется.</li>
+    <li>Обнови эту страницу и добавь почты команды здесь.</li></ol></div>`;
+}
+async function saveBackendAccess(){
+  const s = getSettings(), ta = document.getElementById('accessList'); if(!ta) return;
+  const allowed = [...new Set(ta.value.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];
+  const bad = allowed.filter(e=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  if(bad.length){ toast('Не похоже на почту: '+bad.join(', ')); return; }
+  let data = null;
+  try{ const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({mode:'access', action:'set', allowed, token:s.aiToken||''})}); data = await res.json(); }catch(e){}
+  if(!data || data.error){ toast(data && data.error || 'Backend не ответил'); return; }
+  toast('Список доступа сохранён: '+(data.allowed||[]).length+' '+plural((data.allowed||[]).length,'почта','почты','почт'));
+  loadBackendAccess();
+}
 function editPersonLangs(name){
   if(!isManager()) return;
   const cur = new Set(((getSettings().personLangs||{})[name])||[]);
@@ -7043,8 +7092,14 @@ function setAccountRole(email, role){
 function onGoogleCredential(resp){
   let p; try{ p = decodeJwtPayload(resp.credential); }catch(e){ toast('Не получилось прочитать ответ Google'); return; }
   if(!p.email){ toast('Google не передал почту'); return; }
-  const g = {email:String(p.email).toLowerCase(), name:p.name||'', picture:p.picture||''};
-  try{ localStorage.setItem(GOOGLE_KEY, JSON.stringify(g)); }catch(e){}
+  const g = {email:String(p.email).toLowerCase(), name:p.name||'', picture:p.picture||'', cred:resp.credential, exp:(+p.exp||0)*1000};
+  const prev = googleIdentity();
+  try{ localStorage.setItem(GOOGLE_KEY, JSON.stringify(g)); localStorage.removeItem(DENIED_KEY); }catch(e){}
+  applyAuthGate();
+  // a silent re-sign-in for the backend (the token lives an hour): nothing else to do
+  if(idRefreshWaiter && prev && prev.email===g.email){ const w = idRefreshWaiter; idRefreshWaiter = null; w(true); return; }
+  if(idRefreshWaiter){ const w = idRefreshWaiter; idRefreshWaiter = null; w(true); }
+  if(syncEnabled()) scheduleSync(300);
   closeDialogIfOpen();
   const known = (getSettings().googleAccounts||{})[g.email];
   if(known && known.name){
@@ -7060,6 +7115,67 @@ function onGoogleCredential(resp){
   openWhoAmI();
 }
 function closeDialogIfOpen(){ const root = document.getElementById('dialogRoot'); if(root && root.innerHTML){ const c = root.querySelector('[data-cancel]'); if(c) c.click(); } }
+/* ---------- access by approved Google accounts ----------
+   When the backend runs with ADMIN_EMAILS it answers only requests carrying a fresh Google sign-in
+   (ID token) of an approved e-mail. Every call goes through backendFetch: it attaches the token, renews it
+   silently when it has expired, and remembers that the team works in this mode — then the hub shows a
+   sign-in screen instead of data until the person signs in with an approved account. */
+const AUTH_KEY = 'lqa_auth', DENIED_KEY = 'lqa_denied';
+let idRefreshWaiter = null;
+function refreshIdToken(){
+  if(!gsiReady || !window.google) return Promise.resolve(false);
+  return new Promise(res=>{
+    const done = ok=>{ if(idRefreshWaiter===done) idRefreshWaiter = null; res(ok); };
+    idRefreshWaiter = done;
+    try{ google.accounts.id.prompt(); }catch(e){ done(false); }
+    setTimeout(()=>done(false), 8000);
+  });
+}
+async function currentIdToken(){
+  let g = googleIdentity(); if(!g || !g.cred) return null;
+  if(g.exp && g.exp < Date.now()+60000){ await refreshIdToken(); g = googleIdentity(); }
+  return g && g.cred && (!g.exp || g.exp > Date.now()) ? g.cred : null;
+}
+function noteBackendAuth(data){
+  if(!data) return;
+  try{
+    if(data.auth==='google') localStorage.setItem(AUTH_KEY, 'google');
+    else if(data.auth==='token') localStorage.removeItem(AUTH_KEY);
+    if(data.code==='not_allowed') localStorage.setItem(DENIED_KEY, data.email||'');
+    else if(data.ok || data.changes || data.results || data.findings || data.allowed) localStorage.removeItem(DENIED_KEY);
+  }catch(e){}
+  // a teammate who opens the hub for the first time gets the sign-in setup from the backend
+  if(data.clientId && !googleEnabled()){ saveSettings({googleClientId:data.clientId}); initGoogleSignIn(); }
+  applyAuthGate();
+}
+async function backendFetch(url, opts){
+  const send = async ()=>{ const body = JSON.parse(opts.body||'{}'); const t = await currentIdToken(); if(t) body.idToken = t; return fetch(url, Object.assign({}, opts, {body:JSON.stringify(body)})); };
+  let res = await send(), text = await res.text(), data = null;
+  try{ data = JSON.parse(text); }catch(e){}
+  noteBackendAuth(data);
+  if(data && (data.code==='auth_expired' || data.code==='auth_required') && googleIdentity() && await refreshIdToken()){
+    res = await send(); text = await res.text();
+    try{ data = JSON.parse(text); noteBackendAuth(data); }catch(e){}
+  }
+  return new Response(text, {status:res.status, headers:{'Content-Type':'application/json'}});
+}
+function authRequired(){ try{ return localStorage.getItem(AUTH_KEY)==='google'; }catch(e){ return false; } }
+function applyAuthGate(){
+  let gate = document.getElementById('authGate');
+  const g = googleIdentity(); let denied = null; try{ denied = localStorage.getItem(DENIED_KEY); }catch(e){}
+  const blocked = authRequired() && (!g || (denied!==null && denied===g.email));
+  if(!blocked){ if(gate) gate.remove(); return; }
+  if(!gate){ gate = document.createElement('div'); gate.id = 'authGate'; gate.className = 'auth-gate'; document.body.appendChild(gate); }
+  gate.innerHTML = `<div class="auth-card">
+    <div class="auth-logo">${icon('globe',26)}</div>
+    <h2>LQA Hub</h2>
+    ${g ? `<p>Почты <b>${esc(g.email)}</b> нет в списке доступа команды. Попроси менеджера добавить её: Настройки → Доступ.</p>
+      <button class="btn secondary" onclick="googleSignOut();applyAuthGate()">Войти другой почтой</button>`
+    : googleEnabled() ? `<p>Доступ только для команды — войди через Google почтой, которую добавил менеджер.</p><div class="gsi-btn" style="display:inline-block;"></div>`
+    : `<p>Доступ только для команды по Google-почтам, но вход через Google в этом браузере ещё не настроен. Обнови страницу через минуту или попроси менеджера прислать Client ID.</p>`}
+  </div>`;
+  renderGoogleButtons();
+}
 function googleSignOut(){
   const g = googleIdentity();
   try{ localStorage.removeItem(GOOGLE_KEY); }catch(e){}
@@ -7366,7 +7482,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-01.2';
+const APP_VERSION = '2026-10-01.3';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -7800,6 +7916,7 @@ function renderSettingsPage(el){
     ${ignoreRulesCardHtml()}
     ${googleCardHtml()}
     ${teamAccessCardHtml()}
+    ${backendAccessCardHtml(s)}
     ${spellCardHtml()}
     ${aiCardHtml(s)}`;
 }
@@ -7861,10 +7978,11 @@ async function testAiBackend(){
   if(!s.aiEndpointUrl){ out.textContent = 'Сначала вставь адрес backend'; return; }
   out.style.color = 'var(--text-faint)'; out.textContent = 'Проверяю…';
   try{
-    const res = await fetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({mode:'ping', model:s.aiModel||'', token:s.aiToken||''})});
+    const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({mode:'ping', model:s.aiModel||'', token:s.aiToken||''})});
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     out.style.color = 'var(--ok)';
+    if(data.auth==='google'){ out.textContent = '✓ Подключено · доступ по Google-почтам · вы вошли как '+(data.email||'—')+(data.admin?' (администратор)':''); return; }
     // aiKey comes from newer scripts only; older ones don't report it, so keep the old wording there
     out.textContent = data.aiKey===false
       ? '✓ Подключено · ИИ не настроен: в скрипте нет ключа API. Командное хранилище работает и без него'
@@ -8047,6 +8165,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';
   maybeStartTour();
   initGoogleSignIn();
+  applyAuthGate();
   if(/^https?:$/.test(location.protocol)) fetchLatestExtVersion();
 })();
 </script>
