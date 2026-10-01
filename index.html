@@ -985,7 +985,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkLegalEntities:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{}, vendorPass:98, vendorWeights:{'Критическая':10,'Высокая':5,'Средняя':2,'Низкая':1} };
   let s = dbGet('settings','global');
   if(!s){
@@ -1555,6 +1555,44 @@ function isUrlOrEmailContext(text, matchStart, matchEnd){
   if(/(https?:\/\/|www\.|@|\/\/)[\w.-]*$/i.test(before)) return true; // preceded by protocol, www., or @
   return false;
 }
+/* ---------- legal entities of WB ----------
+   Company names in az and en must be written exactly as in the team's table, otherwise the string fails CI and
+   doesn't get into the build. Machine translation gets them wrong most often (WB/VB swapped, «In Parts» in az,
+   capitals, «ООО» left in). The source is recognised by «ООО/МКК «…»», the translation is compared character for
+   character; a wrong spelling found in the translation is replaced automatically. */
+const LEGAL_ENTITIES = [
+  {name:'ВБ Банк', ru:'ВБ\\s*Банк', core:'(?:VB|WB|ВБ)\\s*Bank\\w*|(?:VB|WB|ВБ)\\s*Банк\\w*',
+    az:['VB Bank MMC'], en:['WB Bank LLC','LLC "WB Bank"']},
+  {name:'Вайлдберриз Банк', ru:'Вайлдберриз\\s*Банк', core:'(?:Vayld?berri[zs]|Wildberries|Вайлдберриз)\\s*(?:Bank\\w*|Банк\\w*)',
+    az:['«Vayldberriz Bank» MMC'], en:['Wildberries Bank LLC']},
+  {name:'РВБ', ru:'РВБ', core:'RVB|RWB|РВБ',
+    az:['MMC «RVB»','"RVB" MMC'], en:['RWB LLC']},
+  {name:'ВБ Частями', ru:'ВБ\\s*Частями', core:'(?:VB|WB|ВБ)\\s*(?:[ÇC]h?ast[iy]?y?ami|Частями|In\\s*Parts|Hiss[əe]\\w*)',
+    az:['«VB Çastyami» MMC','MMC «VB Çastyami»'], en:['WB In Parts LLC']},
+  {name:'ВБ Платежные технологии', ru:'ВБ\\s*Плат[её]жные\\s*технологии', core:'(?:VB|WB|ВБ)\\s*(?:Platyo?jn\\w*\\s*texnolog\\w*|Payment\\s*Technolog\\w*|Плат[её]жные\\s*технологии|[ÖO]d[əe]ni[şs]\\s*texnologiya\\w*)',
+    az:['«VB Platyojnıye texnologii» MKK MMC'], en:['MCC WB Payment Technologies LLC']},
+];
+const LEGAL_FORM = '(?:MMC|LLC|MKK|MCC|ООО|OOO|МКК|MChJ)';
+LEGAL_ENTITIES.forEach(e=>{
+  e.srcRe = new RegExp('(?:ООО|МКК)(?:\\s*МКК)?\\s*[«"“]\\s*'+e.ru+'\\s*[»"”]', 'i');
+  e.tgtRe = new RegExp('(?:'+LEGAL_FORM+'\\s*){0,2}[«"“]?\\s*(?:'+e.core+')\\s*[»"”]?(?:\\s*'+LEGAL_FORM+'){0,2}', 'gi');
+});
+// → [{entity, expected, wrong (text found in the translation or null), fixed (translation after replacement or null)}]
+function legalEntityIssues(src, tgt, lang){
+  const l = baseLang(lang); if(l!=='az' && l!=='en') return [];
+  const out = []; let text = String(tgt||'');
+  LEGAL_ENTITIES.forEach(e=>{
+    if(!e.srcRe.test(src||'')) return;
+    const ok = e[l]; if(ok.some(v=>text.includes(v))) return;
+    let wrong = null;
+    const masked = maskMarkup(text);
+    const m = new RegExp(e.tgtRe.source, 'i').exec(masked);
+    if(m && m[0].trim()){ const start = m.index + (m[0].length - m[0].trimStart().length); wrong = text.slice(start, m.index + m[0].trimEnd().length);
+      text = text.slice(0, start) + ok[0] + text.slice(start + wrong.length); }
+    out.push({entity:e.name, expected:ok[0], wrong, fixed: wrong ? text : null});
+  });
+  return out;
+}
 function findRebrandingTerms(text){
   if(!text) return [];
   text = maskMarkup(text);
@@ -1749,13 +1787,14 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
   const dntTerms = parseDntTerms(s.dntTerms);
   const lengthRules = parseLengthRules(s.lengthRules);
   const customLangRules = parseCustomLangRules(s.customLangRules);
+  let rowsChanged = false;   // legal-entity names fixed in place
   const CHUNK = 1500;
   for(let start=0; start<rowIds.length; start+=CHUNK){
     const chunk = rowIds.slice(start, start+CHUNK);
     chunk.forEach(rowId=>{
       const r = rowsById[rowId];
       if(!r) return;
-      const src = r.source||'', tgt = r.target||'';
+      const src = r.source||''; let tgt = r.target||'';
       const srcTrim = src.trim(), tgtTrim = tgt.trim();
       const push = (type, severity, text, extra) => issues.push(Object.assign({
         id: uid(), rowId: r.id, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode,
@@ -1800,6 +1839,18 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       if(s.checkLength && srcTrim.length>=3 && tgtTrim.length>0){
         const ratio = tgtTrim.length/srcTrim.length;
         if(ratio > (s.lengthRatio||1.6)) push('Длина','Средняя','Перевод заметно длиннее исходного (×'+ratio.toFixed(2)+') — может не влезть в интерфейс');
+      }
+      if(s.checkLegalEntities && tgtTrim){
+        legalEntityIssues(src, tgt, r.languageCode).forEach(x=>{
+          if(x.fixed){
+            // replaced right away: the issue stays as a record of what was changed, already resolved
+            r.targetHistory = (r.targetHistory||[]).concat([{ts:nowISO(), how:'auto', from:tgt, to:x.fixed, issueType:'Юрлицо'}]).slice(-50);
+            push('Юрлицо','Критическая','Юрлицо «'+x.entity+'» было написано не по таблице: «'+x.wrong+'». Заменено автоматически на «'+x.expected+'»',
+              {highlightField:'target', highlightText:x.expected, expectedText:x.expected, manual:true, autoFixed:true, status:'Принята после исправления',
+               history:[{ts:nowISO(), action:'Обнаружена (техническая проверка)'}, {ts:nowISO(), action:'Исправлено автоматически', oldTarget:tgt, newTarget:x.fixed}]});
+            tgt = x.fixed; r.target = tgt; if(r.targetForms) r.targetForms[0] = tgt; rowsChanged = true;
+          } else push('Юрлицо','Критическая','Юрлицо «'+x.entity+'» не найдено в переводе в написании из таблицы. Должно быть: «'+x.expected+'»', {expectedText:x.expected});
+        });
       }
       if(s.checkRebranding && REBRAND_LANGUAGES.includes((r.languageCode||'').toLowerCase())){
         const found = findRebrandingTerms(tgt);
@@ -1868,6 +1919,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
     if(onProgress) onProgress(Math.min(start+CHUNK, rowIds.length), rowIds.length, 'tech');
     if(start+CHUNK < rowIds.length) await yieldToUI(); // let the tab repaint/respond between chunks instead of freezing solid
   }
+  if(rowsChanged) dbSave('rows', allRows);
   dbSave('issues', issues);
 }
 
@@ -2145,7 +2197,7 @@ async function runFullCheckForProject(projectId, newRowIds, override, onProgress
 }
 // checks grouped by how much a miss costs, so a whole level can be switched on at once
 const CHECK_GROUPS = [
-  {title:'Критичные', hint:'ломают приложение или экран', items:[['Vars','checkVars',"Переменные ({{name}}, %s, {0}, ${var})"],['Tags','checkTags','HTML/XML разметка'],['Breaks','checkBreaks','Переносы строк (\\n)'],['Plurals','checkPlurals','Формы множественного числа'],['Limits','checkLimits','Лимиты длины по ключам']]},
+  {title:'Критичные', hint:'ломают приложение или экран', items:[['LegalEntities','checkLegalEntities','Юрлица WB в az и en (неверное написание заменяется само)'],['Vars','checkVars',"Переменные ({{name}}, %s, {0}, ${var})"],['Tags','checkTags','HTML/XML разметка'],['Breaks','checkBreaks','Переносы строк (\\n)'],['Plurals','checkPlurals','Формы множественного числа'],['Limits','checkLimits','Лимиты длины по ключам']]},
   {title:'Важные', hint:'смысл, бренд, термины, формат', items:[['Rebranding','checkRebranding','WB→N11 (только AZ)'],['Glossary','checkGlossary','Соответствие глоссарию'],['Dnt','checkDnt','Бренды «Не переводить»'],['Numbers','checkNumbers','Числа'],['Locale','checkLocale','Формат под страну (валюта, кавычки)'],['Script','checkScript','Алфавит языка'],['LangRules','checkLangRules','Правила языка'],['Consistency','checkConsistency','Согласованность между папками']]},
   {title:'Оформление и стиль', hint:'пробелы, знаки, длина, опечатки', items:[['Spaces','checkSpaces','Пробелы'],['Punct','checkPunct','Пунктуация'],['Length','checkLength','Подозрительная длина'],['Spelling','checkSpelling','Орфография (словари)'],['Untranslated','checkUntranslated','Перевод совпадает с исходным текстом']]},
 ];
@@ -2176,7 +2228,7 @@ function checkSettingsFieldsHtml(prefix, collapsed){
 const CHECK_TYPE_LABELS = {
   checkVars:'Переменные', checkTags:'Разметка', checkBreaks:'Перенос строки', checkSpaces:'Пробелы',
   checkPunct:'Пунктуация', checkLength:'Длина', checkUntranslated:'Не переведено',
-  checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг',
+  checkGlossary:'Терминология', checkConsistency:'Согласованность', checkRebranding:'Ребрендинг', checkLegalEntities:'Юрлицо',
   checkPlurals:'Множественное число', checkLocale:'Формат под страну', checkDnt:'Не переводить',
   checkScript:'Не тот алфавит', checkLimits:'Лимит длины', checkNumbers:'Числа', checkLangRules:'Правила языка', checkSpelling:'Орфография'
 };
@@ -2217,6 +2269,7 @@ function readCheckSettingsOverride(prefix){
     checkConsistency: get('Consistency').checked,
     checkGlossary: get('Glossary').checked,
     checkRebranding: get('Rebranding').checked,
+    checkLegalEntities: get('LegalEntities') ? get('LegalEntities').checked : getSettings().checkLegalEntities,
     checkPlurals: get('Plurals').checked,
     checkLocale: get('Locale').checked,
     checkDnt: get('Dnt').checked,
@@ -3794,8 +3847,8 @@ function rowHistoryHtml(r){
   const first = r.firstSeenAt || (file && file.uploadedAt);
   if(!hist.length) return first ? `<div class="hint" style="margin-top:12px;">Перевод не менялся с ${fmtDate(first)}${file?' · файл '+esc(file.filename):''}</div>` : '';
   return `<div style="margin-top:14px;"><div class="hint" style="margin-bottom:6px;">История перевода · ${hist.length} ${plural(hist.length,'изменение','изменения','изменений')}</div>
-    <div class="rhist">${hist.map(h=>`<div class="rhist-item ${h.how==='fix'?'fix':''}">
-      <div class="rhist-meta"><b>${h.how==='fix'?'Исправлено в платформе':'Новая версия файла'}</b> · ${fmtDate(h.ts)}${h.by?' · '+esc(h.by):''}${h.file?` · <span class="mono">${esc(h.file)}</span>`:''}${h.issueType?' · '+esc(h.issueType):''}</div>
+    <div class="rhist">${hist.map(h=>`<div class="rhist-item ${h.how==='fix'||h.how==='auto'?'fix':''}">
+      <div class="rhist-meta"><b>${h.how==='fix'?'Исправлено в платформе':h.how==='auto'?'Исправлено автоматически'+(h.issueType?' · '+esc(h.issueType):''):'Новая версия файла'}</b> · ${fmtDate(h.ts)}${h.by?' · '+esc(h.by):''}${h.file?` · <span class="mono">${esc(h.file)}</span>`:''}${h.issueType?' · '+esc(h.issueType):''}</div>
       <div class="rhist-diff mono">${wordDiffHtml(h.from, h.to)}</div>
       ${h.sourceFrom!==undefined?`<div class="hint" style="margin:4px 0 0;">Исходный текст тоже изменился: ${wordDiffHtml(h.sourceFrom, r.source)}</div>`:''}
       ${h.comment?`<div class="hint" style="margin:4px 0 0;">«${esc(h.comment)}»</div>`:''}
@@ -4363,7 +4416,7 @@ function downloadPoFile(text, filename){
 function correctedPoFor(file){
   const rows = dbList('rows').filter(r=>r.fileId===file.id);
   const src = dbGet('_fileSources', file.id);
-  const fixedIds = new Set(rows.filter(r=>(r.targetHistory||[]).some(h=>h.how==='fix')).map(r=>r.id));
+  const fixedIds = new Set(rows.filter(r=>(r.targetHistory||[]).some(h=>h.how==='fix' || h.how==='auto')).map(r=>r.id));
   if(!src || !/\.pot?$/i.test(file.filename)) return {text:generatePoFromRows(rows), changed:fixedIds.size, exact:false, rows:rows.length};
   const byKey = new Map(rows.map(r=>[(r.key||'')+'\u0001'+r.source, r]));
   const crlf = src.text.includes('\r\n');
@@ -7621,6 +7674,7 @@ function renderSettingsPage(el){
         <label class="checkrow"><input type="checkbox" id="sConsistency" ${s.checkConsistency?'checked':''}> Согласованность между папками</label>
         <label class="checkrow"><input type="checkbox" id="sGlossary" ${s.checkGlossary?'checked':''}> Соответствие глоссарию</label>
         <label class="checkrow"><input type="checkbox" id="sRebranding" ${s.checkRebranding?'checked':''}> WB→N11 (только AZ)</label>
+        <label class="checkrow"><input type="checkbox" id="sLegalEntities" ${s.checkLegalEntities?'checked':''}> Юрлица WB в az и en (с автозаменой)</label>
         <label class="checkrow"><input type="checkbox" id="sPlurals" ${s.checkPlurals?'checked':''}> Формы множественного числа (1 товар / 2 товара / 5 товаров)</label>
         <label class="checkrow"><input type="checkbox" id="sLocale" ${s.checkLocale?'checked':''}> Формат под страну: валюта ₽ в чужом языке, кавычки</label>
         <label class="checkrow"><input type="checkbox" id="sDnt" ${s.checkDnt?'checked':''}> Бренды и названия «Не переводить»</label>
@@ -7673,6 +7727,7 @@ function saveSettingsForm(){
     checkConsistency: document.getElementById('sConsistency').checked,
     checkGlossary: document.getElementById('sGlossary').checked,
     checkRebranding: document.getElementById('sRebranding').checked,
+    checkLegalEntities: document.getElementById('sLegalEntities').checked,
     checkPlurals: document.getElementById('sPlurals').checked,
     checkLocale: document.getElementById('sLocale').checked,
     checkDnt: document.getElementById('sDnt').checked,
