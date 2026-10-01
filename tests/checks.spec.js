@@ -93,3 +93,31 @@ test('ссылки и теги не проверяются: «wb» в адрес
   expect(issues.filter(i => i.key === 'real').map(i => i.type)).toContain('Ребрендинг');
   expectNoErrors(errors);
 });
+
+test('юрлица WB в az и en: неверное написание заменяется на написание из таблицы', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['az', 'en'] });
+  await uploadPo(page, { lang: 'az', text: po('az', [
+    ['ok', 'Услуги оказывает ООО «ВБ Банк»', 'Xidmətləri VB Bank MMC göstərir'],
+    ['wb', 'Услуги оказывает ООО «ВБ Банк»', 'Xidmətləri WB Bank MMC göstərir'],
+    ['parts', 'Оплата через ООО «ВБ Частями»', 'VB In Parts LLC vasitəsilə ödəniş'],
+    ['caps', 'Партнёр — ООО «РВБ»', 'Tərəfdaş — MMC «rvb»'],
+    ['brand', 'Кошелёк ВБ Банка', 'VB Bank pul kisəsi'],
+  ]) });
+  await uploadPo(page, { lang: 'en', text: po('en', [
+    ['en1', 'Договор с ООО «ВБ Банк»', 'Agreement with VB Bank MMC'],
+    ['en2', 'Сервис МКК «ВБ Платежные технологии»', 'Service of WB PAYMENT TECHNOLOGIES LLC'],
+  ]) });
+  const rows = await page.evaluate(() => Object.fromEntries(dbList('rows').map(r => [r.key, r.target])));
+  expect(rows.ok).toBe('Xidmətləri VB Bank MMC göstərir');
+  expect(rows.wb).toBe('Xidmətləri VB Bank MMC göstərir');
+  expect(rows.parts).toBe('«VB Çastyami» MMC vasitəsilə ödəniş');
+  expect(rows.caps).toBe('Tərəfdaş — MMC «RVB»');
+  expect(rows.brand).toBe('VB Bank pul kisəsi');                       // не юрлицо в исходнике — не трогаем
+  expect(rows.en1).toBe('Agreement with WB Bank LLC');
+  expect(rows.en2).toBe('Service of MCC WB Payment Technologies LLC');
+  const issues = (await issuesByKey(page)).filter(i => i.type === 'Юрлицо');
+  expect(issues.map(i => i.key).sort()).toEqual(['caps', 'en1', 'en2', 'parts', 'wb']);
+  expect(issues.every(i => i.status === 'Принята после исправления')).toBe(true);
+  expectNoErrors(errors);
+});
