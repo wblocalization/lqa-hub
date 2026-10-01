@@ -8,6 +8,7 @@
  *   - 'ping'    — проверка подключения из Настроек платформы;
  *   - 'visual'  — проверка одного скриншота (картинка → проблемы с рамками);
  *   - 'summary' — общий вывод по сессии скриншотов (список проблем → короткий разбор);
+ *   - 'styleguide' — прочитать редполитику (ссылка на Google Документ или текст) и сказать, сколько вышло;
  *   - 'sync'    — командное хранилище: браузер отправляет свои изменения и получает чужие.
  *                 Данные лежат на Google Диске в папке «LQA Hub — данные» (или DATA_FOLDER_ID).
  *   - без mode  — проверка пачки строк перевода (как раньше).
@@ -20,6 +21,11 @@
  *   ACCESS_TOKEN       необязательно, но очень желательно: тот же текст вписывается
  *                      в Настройках платформы, без него backend не отвечает чужим
  *   DATA_FOLDER_ID     необязательно: id папки Google Диска для командного хранилища
+ *   ADMIN_EMAILS       необязательно: почты администраторов через запятую. Если задано, данные отдаются
+ *                      только тем, кто вошёл через Google с почтой из списка доступа (ключ доступа
+ *                      тогда не нужен). Список доступа администраторы ведут в хабе: Настройки → Доступ
+ *   GOOGLE_CLIENT_ID   Client ID входа через Google (тот же, что в хабе) — вход из чужих приложений не примется
+ *   ALLOWED_EMAILS     список доступа; заполняется из хаба, вручную менять не нужно
  *
  * Командное хранилище работает и без ключа ИИ — PROVIDER/ключи нужны только для ИИ-проверок.
  */
@@ -37,11 +43,25 @@ function doPost(e) {
   try {
     var req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     var cfg = readConfig_();
-    if (cfg.accessToken && req.token !== cfg.accessToken) {
+    var who = null;
+    if (cfg.admins.length) {
+      // access by approved Google accounts: the sign-in Google gave the browser is checked with Google itself
+      who = verifyGoogleSignIn_(req.idToken, cfg);
+      if (who.error) return json_({ error: who.error, code: who.code, auth: 'google', clientId: cfg.clientId });
+      if (!isAllowed_(who.email, cfg)) return json_({ error: 'Почты ' + who.email + ' нет в списке доступа — попроси менеджера добавить её', code: 'not_allowed', auth: 'google', email: who.email, clientId: cfg.clientId });
+    } else if (cfg.accessToken && req.token !== cfg.accessToken) {
       return json_({ error: 'Неверный ключ доступа — проверь поле «Ключ доступа» в Настройках платформы' });
     }
     if (req.mode === 'ping') {
-      return json_({ ok: true, provider: cfg.provider, model: pickModel_(cfg, req.model), aiKey: !!cfg.apiKey, sync: true });
+      return json_({ ok: true, provider: cfg.provider, model: pickModel_(cfg, req.model), aiKey: !!cfg.apiKey, sync: true,
+        auth: cfg.admins.length ? 'google' : 'token', email: who ? who.email : null, admin: who ? isAdmin_(who.email, cfg) : false });
+    }
+    if (req.mode === 'access') {
+      return json_(access_(req, cfg, who));
+    }
+    if (req.mode === 'styleguide') {
+      var guide = styleGuideText_(req.styleGuide);
+      return json_({ ok: true, chars: guide.length, preview: guide.slice(0, 300) });
     }
     if (req.mode === 'sync') {
       return json_(sync_(req));
@@ -62,6 +82,47 @@ function doGet() {
   return json_({ ok: true, message: 'LQA Hub AI backend работает. Платформа обращается сюда POST-запросами.' });
 }
 
+/* ---------------- access by Google account ----------------
+   With ADMIN_EMAILS set, every request must carry the ID token Google gave the browser at sign-in.
+   The token is checked by Google's tokeninfo endpoint (signature, expiry, audience = our Client ID),
+   then the e-mail is looked up in the approved list. Admins are always allowed and edit the list. */
+
+function emailList_(v) {
+  return String(v || '').split(/[\s,;]+/).map(function (x) { return x.trim().toLowerCase(); }).filter(function (x) { return x.indexOf('@') > 0; });
+}
+function allowedEmails_() { return emailList_(PropertiesService.getScriptProperties().getProperty('ALLOWED_EMAILS')); }
+function isAdmin_(email, cfg) { return cfg.admins.indexOf(String(email || '').toLowerCase()) >= 0; }
+function isAllowed_(email, cfg) { return isAdmin_(email, cfg) || allowedEmails_().indexOf(String(email || '').toLowerCase()) >= 0; }
+
+function verifyGoogleSignIn_(idToken, cfg) {
+  if (!idToken) return { error: 'Войди через Google — доступ к данным только по одобренным почтам', code: 'auth_required' };
+  var cache = CacheService.getScriptCache();
+  var key = 'idt_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, idToken)).slice(0, 40);
+  var hit = cache.get(key);
+  if (hit) return JSON.parse(hit);
+  var res = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) return { error: 'Вход через Google истёк — войди ещё раз', code: 'auth_expired' };
+  var info = JSON.parse(res.getContentText());
+  if (cfg.clientId && info.aud !== cfg.clientId) return { error: 'Вход выполнен для другого приложения', code: 'auth_required' };
+  if (String(info.email_verified) !== 'true' || !info.email) return { error: 'Google не подтвердил почту', code: 'auth_required' };
+  var left = Number(info.exp) - Math.floor(Date.now() / 1000);
+  if (!(left > 0)) return { error: 'Вход через Google истёк — войди ещё раз', code: 'auth_expired' };
+  var who = { email: String(info.email).toLowerCase() };
+  cache.put(key, JSON.stringify(who), Math.max(1, Math.min(left, 600)));
+  return who;
+}
+
+// {action:'get'} — the list and who is asking; {action:'set', allowed:[…]} — admins only
+function access_(req, cfg, who) {
+  if (!cfg.admins.length) return { auth: 'token', admins: [], allowed: [], admin: false };
+  if (req.action === 'set') {
+    if (!isAdmin_(who.email, cfg)) return { error: 'Менять список может только администратор (ADMIN_EMAILS в свойствах скрипта)' };
+    var list = emailList_((req.allowed || []).join(','));
+    PropertiesService.getScriptProperties().setProperty('ALLOWED_EMAILS', list.join(','));
+  }
+  return { auth: 'google', admins: cfg.admins, allowed: allowedEmails_(), email: who.email, admin: isAdmin_(who.email, cfg) };
+}
+
 /* ---------------- config ---------------- */
 
 function readConfig_() {
@@ -73,7 +134,10 @@ function readConfig_() {
     provider: provider,
     apiKey: String(key || '').trim(),
     model: String(p.getProperty('MODEL') || '').trim(),
-    accessToken: String(p.getProperty('ACCESS_TOKEN') || '').trim()
+    accessToken: String(p.getProperty('ACCESS_TOKEN') || '').trim(),
+    // ADMIN_EMAILS turns on access by Google accounts; the approved list itself is edited from the hub
+    admins: emailList_(p.getProperty('ADMIN_EMAILS')),
+    clientId: String(p.getProperty('GOOGLE_CLIENT_ID') || '').trim()
   };
 }
 
@@ -118,7 +182,8 @@ function reviewScreenshot_(cfg, req) {
     '- expected — как должно быть (пустая строка, если не знаешь);',
     '- box — рамка вокруг проблемного места в долях от размера картинки: x, y — левый верхний угол, w, h — ширина и высота, всё от 0 до 1.',
     glossary ? '\nУтверждённые термины глоссария (термин → перевод):\n' + glossary : '',
-    req.instructions ? '\nДополнительно: ' + req.instructions : ''
+    req.instructions ? '\nДополнительно: ' + req.instructions : '',
+    styleGuidesPrompt_(req.styleGuides, [req.language])
   ].join('\n');
 
   var schema = {
@@ -162,6 +227,43 @@ function clampBox_(b) {
   // some models answer in percent — normalise that too
   if ([b.x, b.y, b.w, b.h].some(function (v) { return Number(v) > 1.5; })) b = { x: b.x / 100, y: b.y / 100, w: b.w / 100, h: b.h / 100 };
   return { x: c(b.x), y: c(b.y), w: c(b.w), h: c(b.h) };
+}
+
+/* ---------------- style guides ----------------
+   Редполитика языка — ссылка на Google Документ или просто текст. Документ читается от имени владельца
+   скрипта (ему нужен доступ на чтение) и кэшируется на 6 часов. */
+
+var STYLE_GUIDE_MAX = 30000;
+
+function styleGuideText_(value) {
+  value = String(value || '').trim();
+  if (!value) return '';
+  var m = /docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([\w-]{20,})/.exec(value);
+  if (!m) return value.slice(0, STYLE_GUIDE_MAX);
+  var cache = CacheService.getScriptCache(), key = 'sg_' + m[1];
+  var hit = cache.get(key);
+  if (hit !== null) return hit;
+  var text;
+  try {
+    text = DocumentApp.openById(m[1]).getBody().getText();
+  } catch (err) {
+    throw new Error('Не получилось открыть редполитику: дай доступ на чтение аккаунту, от которого развёрнут скрипт, ' +
+      'и проверь, что это Google Документ, а не загруженный .docx (Файл → Сохранить как Google Документ)');
+  }
+  text = text.replace(/\n{3,}/g, '\n\n').trim().slice(0, STYLE_GUIDE_MAX);
+  try { cache.put(key, text, 21600); } catch (e) {}
+  return text;
+}
+
+// {kk: 'https://docs.google.com/…', az: 'текст'} → блок для промпта по языкам, которые есть в запросе
+function styleGuidesPrompt_(guides, langs) {
+  if (!guides) return '';
+  var parts = [];
+  langs.forEach(function (lang) {
+    var text = styleGuideText_(guides[String(lang || '').toLowerCase()]);
+    if (text) parts.push('Редполитика для языка ' + lang + ' — проверяй стиль, обращение, термины и оформление по ней:\n' + text);
+  });
+  return parts.length ? '\n' + parts.join('\n\n') : '';
 }
 
 /* ---------------- team storage (sync) ----------------
@@ -320,6 +422,8 @@ function reviewRows_(cfg, req) {
     '- suggestion — исправленный перевод целиком;',
     '- confidence — уверенность от 0 до 100.',
     '',
+    styleGuidesPrompt_(req.styleGuides, uniq_(items.map(function (it) { return it.language; }))),
+    '',
     'Строки (по одной JSON-записи на строку):',
     lines
   ].join('\n');
@@ -411,6 +515,10 @@ function askOpenAI_(apiKey, model, prompt, image, schema) {
 }
 
 /* ---------------- helpers ---------------- */
+
+function uniq_(arr) {
+  return arr.filter(function (x, i) { return x && arr.indexOf(x) === i; });
+}
 
 function parseHttp_(res, who) {
   var code = res.getResponseCode();
