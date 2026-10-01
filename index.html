@@ -546,6 +546,7 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 .dash-hero-ring > div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .dash-hero-ring b{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1;}
 .dash-hero-ring span{font-size:12px;opacity:.8;margin-top:4px;}
+.lang-warn{margin-top:6px;font-size:12.5px;color:var(--high);background:var(--high-bg);border-radius:6px;padding:5px 8px;}
 .notice{display:flex;align-items:center;gap:12px;background:var(--med-bg);color:var(--text);border:1px solid color-mix(in srgb,var(--med) 30%,transparent);border-radius:var(--r-md);padding:10px 12px 10px 16px;margin-bottom:20px;font-size:13px;}
 .notice > svg{color:var(--med);}
 .notice span{flex:1;}
@@ -1746,6 +1747,77 @@ function tokenizePoBlock(lines){
   msgstr = forms[0] || '';
   return {msgctxt, msgidIdx, msgid, msgidPlural, msgstrIdx, msgstr, forms};
 }
+/* ---------- which language is really inside a file ----------
+   Vendors sometimes send one translation under every language's file name. Before upload the hub reads the
+   translations and guesses the language from the alphabet, letters only one language uses (ə, ұ, ҷ, oʻ…)
+   and its most frequent short words. It only warns: the person decides. */
+const LANG_STOPWORDS = {
+  en:['the','and','to','of','your','you','for','with','is','in','on','order','orders'],
+  az:['və','üçün','ilə','bir','bu','da','də','sizin','olan'],
+  tr:['ve','için','ile','bir','bu','da','de','sizin','olan','değil'],
+  uz:['va','uchun','bilan','bu','yoki','sizning','emas','qilish'],
+  fr:['le','la','les','des','et','pour','vous','votre','avec','une','est'],
+  sw:['na','ya','kwa','wa','ni','za','katika','la','cha','yako'],
+};
+function detectTextLanguage(texts){
+  const t = texts.map(x=>visibleText(maskMarkup(x))).join(' \n ');
+  const n = re => (t.match(re)||[]).length;
+  const letters = n(/\p{L}/gu); if(letters < 20) return null;
+  const scripts = {ka:n(/[Ⴀ-ჿ]/g), hy:n(/[԰-֏]/g), am:n(/[ሀ-፿]/g), zh:n(/[一-鿿]/g), ko:n(/[가-힯]/g),
+    ar:n(/[؀-ۿ]/g), he:n(/[֐-׿]/g), cyr:n(/[Ѐ-ӿ]/g), lat:n(/[A-Za-zÀ-ɏə]/g)};
+  const [script, cnt] = Object.entries(scripts).sort((a,b)=>b[1]-a[1])[0];
+  if(cnt/letters < .6) return null;
+  if(script!=='cyr' && script!=='lat') return {code:script, sure:true};
+  const per = re => n(re)*1000/letters;
+  if(script==='cyr'){
+    if(per(/[ҳҷӣӯ]/g) >= 2) return {code:'tg', sure:true};
+    if(per(/[әұһ]/g) >= 2 || per(/[қғ]/g) >= 2 && per(/і/g) >= 2) return {code:'kk', sure:true};
+    if(per(/ў/g) >= 2) return {code: per(/і/g) >= 2 ? 'be' : 'uz', sure:true};
+    if(per(/[ңөү]/g) >= 3) return {code:'ky', sure:true};
+    if(per(/[қғ]/g) >= 2) return {code:'kk', sure:false};
+    return {code:'ru', sure: per(/[ыэъ]/g) >= 3};
+  }
+  // Latin: letters only one language uses, then the most frequent short words
+  if(per(/ə/gi) >= 3) return {code:'az', sure:true};
+  if(/[oOgG][ʻ‘'’`]/.test(t) && n(/[oOgG][ʻ‘'’`]/g)*1000/letters >= 2) return {code:'uz', sure:true};
+  const words = (t.toLowerCase().match(/\p{L}+/gu)||[]); if(words.length < 8) return null;
+  const counts = {}; words.forEach(w=>{ counts[w] = (counts[w]||0)+1; });
+  const score = {}; Object.entries(LANG_STOPWORDS).forEach(([l, list])=>{ score[l] = list.reduce((a,w)=>a+(counts[w]||0),0)*100/words.length; });
+  if(per(/[ışğ]/gi) >= 3) score.tr += 6;
+  if(per(/[éèàùâêîôû]/gi) >= 4) score.fr += 4;
+  const [best, val] = Object.entries(score).sort((a,b)=>b[1]-a[1])[0];
+  const second = Object.values(score).sort((a,b)=>b-a)[1];
+  return val >= 4 && val >= second*1.8 ? {code:best, sure: val >= 8} : null;
+}
+const PENDING_LANG_NAMES = {ka:'грузинский', hy:'армянский', am:'амхарский', zh:'китайский', ko:'корейский', ar:'арабский', he:'иврит', tg:'таджикский', kk:'казахский', be:'белорусский', uz:'узбекский', ky:'кыргызский', ru:'русский', az:'азербайджанский', en:'английский', tr:'турецкий', fr:'французский', sw:'суахили'};
+// reads every pending file once: detected language and a fingerprint of its translations
+async function analyzePendingFiles(list, rerender){
+  for(const f of list){
+    if(f.analyzed) continue; f.analyzed = true;
+    try{
+      const text = typeof f.source==='string' ? f.source : await f.source.text();
+      const targets = parseTranslationFile(f.name, text).map(e=>e.target||'').filter(x=>x.trim());
+      f.detected = detectTextLanguage(targets);
+      f.sig = targets.length >= 3 ? fnvHash(targets.join('\u0001')) : null;
+    }catch(e){ f.detected = null; }
+  }
+  rerender();
+}
+// one line under a pending file when its content doesn't look like the language chosen for it
+function pendingLangWarning(f, list, i){
+  const out = [];
+  const want = baseLang(f.languageCode);
+  if(f.detected && want && f.detected.code!==want && !(want==='uz' && f.detected.code==='uz')){
+    const name = PENDING_LANG_NAMES[f.detected.code] || f.detected.code;
+    out.push(`Внутри ${f.detected.sure?'':'похоже '}${name} (${f.detected.code}), а выбран ${esc(f.languageCode)}`);
+  }
+  if(f.sig){
+    const twins = list.filter((o,k)=>k!==i && o.sig===f.sig && baseLang(o.languageCode)!==want);
+    if(twins.length) out.push('Переводы совпадают с файлом «'+esc(twins[0].name)+'» ('+esc(twins[0].languageCode||'—')+')'+(twins.length>1?' и ещё '+(twins.length-1):''));
+  }
+  return out.length ? `<div class="lang-warn">⚠ ${out.join(' · ')}</div>` : '';
+}
+function pendingLangProblems(list){ return list.filter((f,i)=>pendingLangWarning(f, list, i)).length; }
 function parseTranslationFile(filename, text){
   const lower = filename.toLowerCase();
   if(lower.endsWith('.json')) return parseJsonEntries(text);
@@ -3347,9 +3419,10 @@ async function addFolderPendingFiles(fileList){
   }
   if(!added){ toast('Выбери .po, .json, .csv файл или .zip с несколькими .po'); return; }
   renderFolderPendingFiles();
+  analyzePendingFiles(folderPendingFiles, renderFolderPendingFiles);
 }
 function removeFolderPendingFile(i){ folderPendingFiles.splice(i,1); renderFolderPendingFiles(); }
-function setFolderPendingLanguage(i, code){ if(folderPendingFiles[i]) folderPendingFiles[i].languageCode = code; }
+function setFolderPendingLanguage(i, code){ if(folderPendingFiles[i]) folderPendingFiles[i].languageCode = code; renderFolderPendingFiles(); }
 function renderFolderPendingFiles(){
   const wrap = document.getElementById('folderPendingWrap');
   if(!wrap) return;
@@ -3359,17 +3432,19 @@ function renderFolderPendingFiles(){
   const unresolved = folderPendingFiles.filter(f=>!f.languageCode).length;
   wrap.innerHTML = `<div class="hint" style="margin-top:10px;">Выбрано файлов: ${folderPendingFiles.length}${unresolved?' — у '+unresolved+' не удалось определить язык, выбери вручную':''}. Проверь язык у каждого файла, потом нажми «Загрузить».</div>
     <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px;">
-      ${folderPendingFiles.map((f,i)=>`<div class="row between" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;gap:8px;">
+      ${folderPendingFiles.map((f,i)=>`<div style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;"><div class="row between" style="gap:8px;">
         <span class="mono" style="font-size:12px;flex:1;">${esc(f.name)}</span>
         <select style="max-width:220px;" onchange="setFolderPendingLanguage(${i}, this.value)">${langOptions(f.languageCode)}</select>
         <button class="btn ghost sm" onclick="removeFolderPendingFile(${i})">✕</button>
-      </div>`).join('')}
+      </div>${pendingLangWarning(f, folderPendingFiles, i)}</div>`).join('')}
     </div>
     <button class="btn" style="margin-top:10px;" onclick="uploadFolderPendingFiles()">Загрузить ${folderPendingFiles.length} файл${folderPendingFiles.length===1?'':'ов'}</button>`;
 }
 async function uploadFolderPendingFiles(){
   if(!folderPendingCtx || !folderPendingFiles.length) return;
   if(folderPendingFiles.some(f=>!f.languageCode)){ toast('У некоторых файлов не выбран язык'); return; }
+  const bad = pendingLangProblems(folderPendingFiles);
+  if(bad && !await uiConfirm({title:'Проверь язык файлов', text:`У ${bad} ${plural(bad,'файла','файлов','файлов')} внутри, похоже, не тот язык, что выбран, или одинаковые переводы у разных языков — подробности под каждым файлом. Всё равно загрузить?`, okText:'Загрузить', danger:false})) return;
   const {projectId, componentId} = folderPendingCtx;
   const items = folderPendingFiles.slice();
   folderPendingFiles = [];
@@ -3513,9 +3588,10 @@ async function addProjectPendingFiles(fileList){
   if(!added){ toast('Выбери .po, .json, .csv файл или .zip с несколькими .po'); return; }
   if(autoSplit) toast('По структуре архива подобраны папки для '+autoSplit+' файлов — проверь и поправь при необходимости');
   renderProjectPendingFiles();
+  analyzePendingFiles(projectPendingFiles, renderProjectPendingFiles);
 }
 function removeProjectPendingFile(i){ projectPendingFiles.splice(i,1); renderProjectPendingFiles(); }
-function setProjectPendingLanguage(i, code){ if(projectPendingFiles[i]) projectPendingFiles[i].languageCode = code; }
+function setProjectPendingLanguage(i, code){ if(projectPendingFiles[i]) projectPendingFiles[i].languageCode = code; renderProjectPendingFiles(); }
 function renderProjectPendingFiles(){
   const wrap = document.getElementById('projectPendingWrap');
   if(!wrap) return;
@@ -3535,12 +3611,12 @@ function renderProjectPendingFiles(){
   const unresolvedComp = projectPendingFiles.filter(f=>!f.componentId).length;
   wrap.innerHTML = `<div class="hint" style="margin-top:10px;">Выбрано файлов: ${projectPendingFiles.length}${unresolved?' — у '+unresolved+' не удалось определить язык':''}${unresolvedComp?' — у '+unresolvedComp+' не выбрана папка':''}. Проверь язык и папку у каждого файла (по архиву — уже подобраны, где получилось), потом нажми «Загрузить».</div>
     <div style="margin-top:6px;display:flex;flex-direction:column;gap:6px;">
-      ${projectPendingFiles.map((f,i)=>`<div class="row between" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;gap:8px;flex-wrap:wrap;">
+      ${projectPendingFiles.map((f,i)=>`<div style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;"><div class="row between" style="gap:8px;flex-wrap:wrap;">
         <span class="mono" style="font-size:12px;flex:1;min-width:140px;">${esc(f.name)}</span>
         <select style="max-width:220px;" onchange="setProjectPendingComponent(${i}, this.value)">${compOptions(f)}</select>
         <select style="max-width:220px;" onchange="setProjectPendingLanguage(${i}, this.value)">${langOptions(f.languageCode)}</select>
         <button class="btn ghost sm" onclick="removeProjectPendingFile(${i})">✕</button>
-      </div>`).join('')}
+      </div>${pendingLangWarning(f, projectPendingFiles, i)}</div>`).join('')}
     </div>
     <button class="btn" style="margin-top:10px;" onclick="uploadProjectPendingFiles()">Загрузить ${projectPendingFiles.length} файл${projectPendingFiles.length===1?'':'ов'}</button>`;
 }
@@ -3549,6 +3625,8 @@ async function uploadProjectPendingFiles(){
   if(!projectPendingProjectId || !projectPendingFiles.length) return;
   if(projectPendingFiles.some(f=>!f.languageCode)){ toast('У некоторых файлов не выбран язык'); return; }
   if(projectPendingFiles.some(f=>!f.componentId)){ toast('У некоторых файлов не выбрана папка'); return; }
+  const bad = pendingLangProblems(projectPendingFiles);
+  if(bad && !await uiConfirm({title:'Проверь язык файлов', text:`У ${bad} ${plural(bad,'файла','файлов','файлов')} внутри, похоже, не тот язык, что выбран, или одинаковые переводы у разных языков — подробности под каждым файлом. Всё равно загрузить?`, okText:'Загрузить', danger:false})) return;
   const projectId = projectPendingProjectId;
   const items = projectPendingFiles.slice();
   projectPendingFiles = [];

@@ -92,3 +92,26 @@ test('название и описание файла: при загрузке, 
   expect([f.title, f.description]).toEqual(['Корзина 5.3', 'Тексты новой корзины']);
   expectNoErrors(errors);
 });
+
+test('перед загрузкой: внутри файла не тот язык и одинаковые переводы у разных языков', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['az', 'kk', 'ka'] });
+  await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
+  await page.waitForSelector('#folderPoDrop');
+  const ka = po('ka', [['a', 'Добавить в корзину', 'კალათაში დამატება'], ['b', 'Оформить заказ', 'შეკვეთის გაფორმება'], ['c', 'Мои заказы', 'ჩემი შეკვეთები'], ['d', 'Оплатить картой', 'ბარათით გადახდა']]);
+  const az = po('az', [['a', 'Добавить в корзину', 'Səbətə əlavə et'], ['b', 'Оформить заказ', 'Sifarişi rəsmiləşdir'], ['c', 'Мои заказы', 'Sifarişlərim'], ['d', 'Оплатить картой', 'Kartla ödə']]);
+  await page.evaluate(({ ka, az }) => addFolderPendingFiles([
+    new File([ka], 'app-az.po'), new File([ka], 'app-kk.po'), new File([ka], 'app-ka.po'), new File([az], 'web-az.po'),
+  ]), { ka, az });
+  const rows = page.locator('#folderPendingWrap .mono');
+  await expect(rows).toHaveCount(4);
+  const warn = page.locator('#folderPendingWrap .lang-warn');
+  await expect(warn).toHaveCount(3);                                    // app-az, app-kk — грузинский внутри; app-ka — совпадает с ними
+  await expect(warn.nth(0)).toContainText('грузинский (ka), а выбран az');
+  await expect(warn.nth(2)).toContainText('совпадают с файлом');
+  await page.click('#folderPendingWrap button:has-text("Загрузить")');
+  await expect(page.locator('.dialog')).toContainText('не тот язык');
+  await page.click('.dialog [data-cancel]');
+  expect(await page.evaluate(() => dbList('files').length)).toBe(0);
+  expectNoErrors(errors);
+});
