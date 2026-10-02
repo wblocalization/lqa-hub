@@ -4,13 +4,14 @@ const { expect } = require('@playwright/test');
 
 const APP_URL = 'file://' + path.resolve(__dirname, '..', 'index.html');
 
-// Открывает платформу с чистыми данными: без тура для новичка, с заменой CDN, если задан LQA_CDN.
+// Открывает платформу с чистыми данными: без тура для новичка, без хранилища команды, с заменой CDN, если задан LQA_CDN.
 async function openApp(page, hash = '#/') {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(({ cdn, tessdata }) => {
     try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {}
     if (cdn) window.LQA_CDN = cdn;
+    if (!('LQA_TEAM_BACKEND' in window)) window.LQA_TEAM_BACKEND = '';   // тесты не ходят в настоящее хранилище команды
     if (tessdata) window.LQA_TESSDATA = tessdata;
   }, { cdn: process.env.LQA_CDN || '', tessdata: process.env.LQA_TESSDATA || '' });
   await page.goto(APP_URL + hash);

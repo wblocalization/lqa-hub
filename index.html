@@ -186,7 +186,7 @@ button{font-family:inherit;}
 .row.between{justify-content:space-between;}
 
 label.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-soft);font-weight:500;}
-input[type=text],input[type=number],input[type=date],input[type=url],input[type=file],select,textarea{
+input[type=text],input[type=password],input[type=email],input[type=number],input[type=date],input[type=url],input[type=file],select,textarea{
   border:1px solid var(--border-strong);border-radius:var(--r-sm);padding:0 12px;height:36px;font-size:14px;background:var(--input-bg);color:var(--text);font-family:inherit;transition:border-color .15s ease,box-shadow .15s ease;
 }
 input[type=file]{padding:6px 10px;height:auto;}
@@ -1219,6 +1219,17 @@ function buildSyncBatches(changes){
     });
   });
   return batches;
+}
+/* The team's backend is built into the hub: a new browser (a teammate, an incognito window) connects to it
+   by itself — the backend then asks for a Google sign-in with an approved e-mail before giving any data.
+   Safe to publish only while the backend runs with ADMIN_EMAILS (access by Google accounts). */
+const TEAM_BACKEND_URL = 'LQA_TEAM_BACKEND' in window ? window.LQA_TEAM_BACKEND : 'https://script.google.com/macros/s/AKfycbyv5h0MuqF8pgztEy6hxFA1AP_UcD9xt06tw6zEmhZtZfAnNoDFLY0rfCurKa407DuTOw/exec';
+function bootstrapTeamBackend(){
+  if(!TEAM_BACKEND_URL || getSettings().aiEndpointUrl) return;
+  saveSettings({aiEndpointUrl:TEAM_BACKEND_URL});
+  let pref = null; try{ pref = localStorage.getItem(SYNC_KEY); }catch(e){}
+  // a browser with its own projects joins only by the «Включить» button, so nothing is merged by surprise
+  if(pref!=='off' && !dbList('projects').length){ try{ localStorage.setItem(SYNC_KEY, 'on'); }catch(e){} }
 }
 async function syncRequest(body){
   const s = getSettings();
@@ -7140,6 +7151,7 @@ function loadGoogleIdentity(){
 }
 async function initGoogleSignIn(){
   if(!googleEnabled()) return;
+  if(gsiReady){ renderGoogleButtons(); return; }
   if(!/^https?:$/.test(location.protocol) && !window.google) return;   // Google sign-in needs the published site, not a file on disk
   try{ await loadGoogleIdentity(); }catch(e){ console.warn(e); return; }
   google.accounts.id.initialize({client_id:getSettings().googleClientId.trim(), callback:onGoogleCredential, auto_select:true, cancel_on_tap_outside:false, use_fedcm_for_prompt:true});
@@ -7569,7 +7581,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-01.5';
+const APP_VERSION = '2026-10-02.2';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8248,6 +8260,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   renderMeAvatar();
   router();
   afterNav();
+  bootstrapTeamBackend();
   if(syncEnabled()){ setSyncStatus('idle'); Promise.resolve(syncNow(false)).then(()=>{ if(!gsiReady) initGoogleSignIn(); }).catch(()=>{}); }   // Client ID may arrive with the team's settings
   // editors signed in on this browser start on their tasks
   if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';
