@@ -45,7 +45,7 @@ test('расширение обходит страницы на компьюте
   const errors = [];
   const page = ctx.pages()[0] || await ctx.newPage();
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(() => { try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {} window.LQA_TEAM_BACKEND = ''; });
   await page.goto(appUrl + '#/');
   await page.waitForFunction(() => typeof dbList === 'function' && document.querySelector('.side-link'));
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.lqaExtension)).toBe(require('../extension/manifest.json').version);
@@ -98,7 +98,7 @@ test('шаги перед снимком: нажать на переключат
   });
   const page = ctx.pages()[0] || await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(() => { try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {} window.LQA_TEAM_BACKEND = ''; });
   await page.goto(appUrl + '#/');
   await page.waitForFunction(() => typeof dbList === 'function' && document.querySelector('.side-link'));
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.lqaExtension)).toBe(require('../extension/manifest.json').version);

@@ -1223,7 +1223,7 @@ function buildSyncBatches(changes){
 /* The team's backend is built into the hub: a new browser (a teammate, an incognito window) connects to it
    by itself — the backend then asks for a Google sign-in with an approved e-mail before giving any data.
    Safe to publish only while the backend runs with ADMIN_EMAILS (access by Google accounts). */
-const TEAM_BACKEND_URL = window.LQA_TEAM_BACKEND || '';
+const TEAM_BACKEND_URL = 'LQA_TEAM_BACKEND' in window ? window.LQA_TEAM_BACKEND : 'https://script.google.com/macros/s/AKfycbyv5h0MuqF8pgztEy6hxFA1AP_UcD9xt06tw6zEmhZtZfAnNoDFLY0rfCurKa407DuTOw/exec';
 function bootstrapTeamBackend(){
   if(!TEAM_BACKEND_URL || getSettings().aiEndpointUrl) return;
   saveSettings({aiEndpointUrl:TEAM_BACKEND_URL});
@@ -7581,7 +7581,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-02.1';
+const APP_VERSION = '2026-10-02.2';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
