@@ -994,7 +994,7 @@ function initialsAvatar(name){
 }
 
 function getSettings(){
-  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, checkRebranding:true, checkLegalEntities:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
+  const DEFAULTS = { id:'global', checkVars:true, checkTags:true, checkBreaks:true, checkSpaces:true, checkPunct:true, checkLength:true, lengthRatio:2.2, checkUntranslated:false, checkConsistency:true, checkGlossary:true, glossaryHints:false, checkRebranding:true, checkLegalEntities:true, checkPlurals:true, checkLocale:true, checkDnt:true, checkScript:true, checkLimits:true, lengthRules:'', checkNumbers:true, checkLangRules:true, customLangRules:'', ignoreRules:[], checkSpelling:false, spellSource:false, spellWords:'', dntTerms:'Wildberries\nWB Partners\nWB Club',
     aiEnabled:false, aiEndpointUrl:'', aiModel:'', aiToken:'', aiBatchSize:15, googleClientId:'', googleAccounts:{}, styleGuides:{}, vendorPass:98, vendorWeights:{'Критическая':10,'Высокая':5,'Средняя':2,'Низкая':1} };
   let s = dbGet('settings','global');
   if(!s){
@@ -1405,7 +1405,7 @@ function looksLikeTranslatableText(str){
 const PLURAL_COUNTS = {ru:3, uk:3, be:3, kk:2, uz:2, ky:2, tg:2, hy:2, ka:2, az:2, en:2, am:2, sw:2, tr:2, fr:2, zh:1, ko:1, ar:6};
 function baseLang(code){ return String(code||'').toLowerCase().split(/[-_]/)[0]; }
 // Currency each market shows prices in — a leftover ₽ in, say, the Kazakh UI is almost always a bug
-const LOCALE_CURRENCY = {kk:'₸ (тенге)', uz:'сум', ky:'сом', hy:'֏ (драм)', ka:'₾ (лари)', az:'₼ (манат)', tg:'сомони', be:'Br (белорусский рубль)', en:'валюта рынка', zh:'валюта рынка', tr:'₺'};
+const LOCALE_CURRENCY = {kk:'₸ (тенге)', uz:'сум', ky:'сом', hy:'֏ (драм)', ka:'₾ (лари)', az:'₼ (манат)', tg:'сомони', be:'Br (белорусский рубль)', zh:'валюта рынка', tr:'₺'};   // en: English serves Russia too, ₽ is fine
 const GUILLEMET_LANGS = ['ru','kk','ky','be','tg','uz','az','hy','uk'];
 function parseDntTerms(text){ return String(text||'').split(/[\n,;]+/).map(t=>t.trim()).filter(t=>t.length>1); }
 function hasWholeTerm(text, term){
@@ -1431,7 +1431,8 @@ function parseLengthRules(text){
 function extractNumbers(str){
   const vis = visibleText(maskMarkup(str)).replace(/\{[^{}]*\}/g,' ');
   const out = [];
-  (vis.match(/\d(?:[\d    .,']*\d)?/g)||[]).forEach(raw=>{
+  // a space separates thousands only before exactly three digits; after a comma it ends the number («28, 2012»)
+  (vis.match(/\d+(?:(?:[.,']|[ \u00a0\u202f\u2009](?=\d{3}(?!\d)))\d+)*/g)||[]).forEach(raw=>{
     let t = raw.replace(/[    ']/g,'');
     const lastSep = Math.max(t.lastIndexOf('.'), t.lastIndexOf(','));
     if(lastSep>=0){
@@ -1445,10 +1446,14 @@ function extractNumbers(str){
   });
   return out;
 }
-function numbersIssue(src, tgt){
+// «1 раз» → «once», «2 кода» → «two codes»: small numbers written as words
+const NUMBER_WORDS = {en:{1:['one','once','single'],2:['two','twice','both','couple','pair'],3:['three','thrice'],4:['four'],5:['five'],6:['six'],7:['seven'],8:['eight'],9:['nine'],10:['ten']}};
+function numbersIssue(src, tgt, lang){
   const a = extractNumbers(src), b = extractNumbers(tgt);
   if(!a.length) return null;
-  const {missing, extra} = diffMultiset(a.map(x=>x.norm), b.map(x=>x.norm));
+  let {missing, extra} = diffMultiset(a.map(x=>x.norm), b.map(x=>x.norm));
+  const words = NUMBER_WORDS[baseLang(lang||'')];
+  if(words && missing.length){ const t = ' '+tgt.toLowerCase()+' '; missing = missing.filter(n=>!(words[n]||[]).some(w=>new RegExp('[^\\p{L}]'+w+'[^\\p{L}]','u').test(t))); }
   if(!missing.length) return null;
   const rawOf = (list, n)=> (list.find(x=>x.norm===n)||{}).raw || n;
   return {missing: missing.map(n=>rawOf(a,n)), extra: extra.map(n=>rawOf(b,n))};
@@ -1840,7 +1845,7 @@ function pendingLangProblems(list){ return list.filter((f,i)=>pendingLangWarning
 function parseTranslationFile(filename, text){
   const lower = filename.toLowerCase();
   if(lower.endsWith('.json')) return parseJsonEntries(text);
-  if(lower.endsWith('.csv') || lower.endsWith('.tsv')) return parseCsvEntries(text);
+  if(lower.endsWith('.csv') || lower.endsWith('.tsv')) return parseCsvEntries(text, lower.endsWith('.tsv') ? '\t' : null);
   return parsePoText(text);
 }
 function parsePoText(text){
@@ -1907,8 +1912,12 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       }
       if(s.checkTags){
         const {missing, extra} = diffMultiset(extractTagsNormalized(src), extractTagsNormalized(tgt));
-        if(missing.length) push('Разметка','Критическая','Потерян тег: '+missing.join(', '), {highlightField:'source', highlightText: findRawTagText(src, missing[0]) || missing[0]});
-        if(extra.length) push('Разметка','Критическая','Лишний тег: '+extra.join(', '), {highlightField:'target', highlightText: findRawTagText(tgt, extra[0]) || extra[0]});
+        // a line break <br> is layout: the translation is often shorter and fits one line
+        const isBr = t=>/^<br\s*\/?>$/i.test(t);
+        const lost = missing.filter(t=>!isBr(t)), added = extra.filter(t=>!isBr(t)), brDiff = missing.length - lost.length + extra.length - added.length;
+        if(lost.length) push('Разметка','Критическая','Потерян тег: '+lost.join(', '), {highlightField:'source', highlightText: findRawTagText(src, lost[0]) || lost[0]});
+        if(added.length) push('Разметка','Критическая','Лишний тег: '+added.join(', '), {highlightField:'target', highlightText: findRawTagText(tgt, added[0]) || added[0]});
+        if(brDiff) push('Разметка','Низкая','Переносы строки <br> не совпадают с исходным текстом — проверь, как строка выглядит в интерфейсе');
       }
       if(s.checkBreaks){
         const {missing, extra} = diffMultiset(extractAll(src,BREAK_RE), extractAll(tgt,BREAK_RE));
@@ -1972,7 +1981,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
           push('Формат под страну','Низкая','«Ёлочки» в английском тексте — принято “…” или "…"', {highlightField:'target', highlightText:m[0]});
       }
       if(s.checkNumbers && srcTrim && tgtTrim){
-        const n = numbersIssue(src, tgt);
+        const n = numbersIssue(src, tgt, lang);
         if(n) push('Числа','Высокая','В переводе нет числа '+n.missing.map(x=>'«'+x+'»').join(', ')+(n.extra.length?' — вместо него '+n.extra.map(x=>'«'+x+'»').join(', '):''), {highlightField:n.extra.length?'target':'source', highlightText:n.extra.length?n.extra[0]:n.missing[0], expectedText:n.extra.length?n.missing[0]:null});
       }
       if(s.checkLangRules && tgtTrim){
@@ -2260,6 +2269,8 @@ async function runGlossaryCheck(projectId, override, onProgress){
     approvedAlts: glossaryAlternatives(t.approved||'').map(a=>a.toLowerCase()),
     forbidden: t.forbidden||[], forbiddenLower: (t.forbidden||[]).map(f=>(f||'').toLowerCase()),
     language: t.language || '',
+    // «смена (рабочая)», «снятие (на лифте с этажа)»: the note narrows the meaning — only a hint, the word alone can mean something else
+    narrow: (t.term.match(/\(([^)]*)\)/g)||[]).some(x=>!/^[\p{Lu}\d&+.-]{2,8}$/u.test(x.slice(1,-1).trim())),
     srcAlts: glossaryAlternatives(t.term).map(alt=>{ const srcWords = termSourceWords(alt.toLowerCase()); const first = srcWords[0];
       return {label: isLabelTerm(alt), srcWords, srcProbe: first ? (first.exact ? first.w : first.stem) : alt.toLowerCase()}; })
   }));
@@ -2319,7 +2330,9 @@ async function runGlossaryCheck(projectId, override, onProgress){
             highlightField: 'target', highlightText: foundForm, expectedText: term.approved, matchType:'heuristic', confidence:'medium'});
         } else {
           // a plain everyday word («оплата», «заказ») is often rephrased on purpose («Pay now») — worth a look, not an alarm
-          const plainWord = term.srcAlts.every(a=>a.srcWords.length===1 && !a.label) && !crossExamples.length;
+          const plainWord = (term.narrow || term.srcAlts.every(a=>a.srcWords.length===1 && !a.label)) && !crossExamples.length;
+          // English copy is rewritten freely, so for it these hints are off unless asked for in Settings
+          if(plainWord && !s.glossaryHints && baseLang(r.languageCode)==='en') return;
           issues.push({id:uid(), rowId:r.id, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode,
             type:'Терминология', severity: crossExamples.length ? 'Критическая' : plainWord ? 'Низкая' : 'Высокая',
             text: plainWord ? 'Термин «'+term.term+'»: перевод «'+term.approved+'» не использован — проверь, допустима ли здесь перефразировка.'+crossNote
@@ -5111,9 +5124,7 @@ function submitGlossaryModal(){
   if(file){
     importGlossaryFile(glossaryId, file, importMode, goToGlossary);
   } else if(pasteText){
-    const lines = pasteText.split(/\r?\n/).filter(l=>l.trim());
-    const delim = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',');
-    applyGlossaryImportRows(glossaryId, lines.map(l=>splitCsvLine(l, delim)), importMode);
+    applyGlossaryImportRows(glossaryId, parseCsvMatrix(pasteText), importMode);
     goToGlossary();
   } else {
     goToGlossary();
@@ -5176,6 +5187,29 @@ async function deleteGlossary(id){
   toastUndo('Глоссарий удалён', snap, ()=>{ location.hash = '#/glossary/'+id; router(); });
   location.hash = '#/glossaries';
 }
+// CSV as Excel and Google Sheets write it: a quoted cell may hold commas, quotes ("") and line breaks
+function parseCsvMatrix(text, delim){
+  text = String(text||'').replace(/^\uFEFF/, '');
+  if(!delim){
+    const first = []; let q = false;
+    for(const c of text){ if(c==='"') q = !q; else if(!q && (c==='\n' || c==='\r')) break; else if(!q) first.push(c); }
+    const count = d=>first.filter(c=>c===d).length;
+    delim = count('\t') ? '\t' : (count(';') > count(',') ? ';' : ',');
+  }
+  const rows = []; let row = [], cur = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if(c==='"' && cur.trim()==='') { cur = ''; q = true; }
+    else if(c===delim){ row.push(cur); cur = ''; }
+    else if(c==='\n' || c==='\r'){ if(c==='\r' && text[i+1]==='\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += c;
+  }
+  if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(x=>x));
+}
 function splitCsvLine(line, delim){
   if(delim!==','){ return line.split(delim).map(s=>s.trim()); }
   const res=[]; let cur='', q=false;
@@ -5190,11 +5224,9 @@ function findColumnIndex(header, candidates){
 // alternate to .po for the upload dropzone: a CSV/TSV with key/source/target-style columns
 // (header names auto-detected across common variants), falling back to columns 1/2/3 if no
 // recognizable header is found
-function parseCsvEntries(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.trim());
-  if(!lines.length) return [];
-  const delim = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',');
-  const rows = lines.map(l=>splitCsvLine(l, delim));
+function parseCsvEntries(text, delim){
+  const rows = parseCsvMatrix(text, delim);
+  if(!rows.length) return [];
   const header = rows[0];
   const keyIdx = findColumnIndex(header, ['key','ключ','id','msgctxt','название','name']);
   const srcIdx = findColumnIndex(header, ['source','ru','original','исходный','msgid','русский','src']);
@@ -5266,11 +5298,7 @@ function importGlossaryFile(glossaryId, file, mode, onDone){
   const finish = rowsMatrix => { applyGlossaryImportRows(glossaryId, rowsMatrix, mode); if(onDone) onDone(); };
   if(name.endsWith('.csv')||name.endsWith('.tsv')||name.endsWith('.txt')){
     const reader = new FileReader();
-    reader.onload = e=>{
-      const lines = e.target.result.split(/\r?\n/).filter(l=>l.trim());
-      const delim = name.endsWith('.tsv') ? '\t' : (lines[0]&&lines[0].includes('\t')?'\t':(lines[0]&&lines[0].includes(';')&&!lines[0].includes(',')?';':','));
-      finish(lines.map(l=>splitCsvLine(l, delim)));
-    };
+    reader.onload = e=>finish(parseCsvMatrix(e.target.result, name.endsWith('.tsv') ? '\t' : null));
     reader.readAsText(file, 'UTF-8');
   } else {
     const glossary = dbGet('glossaries', glossaryId);
@@ -5301,9 +5329,7 @@ function importGlossaryFile(glossaryId, file, mode, onDone){
 function importGlossaryPaste(glossaryId, mode){
   const raw = document.getElementById('glossaryPasteArea').value;
   if(!raw.trim()){ toast('Вставь текст с терминами'); return; }
-  const lines = raw.split(/\r?\n/).filter(l=>l.trim());
-  const delim = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',');
-  applyGlossaryImportRows(glossaryId, lines.map(l=>splitCsvLine(l, delim)), mode);
+  applyGlossaryImportRows(glossaryId, parseCsvMatrix(raw), mode);
 }
 
 /* =========================================================
@@ -7640,7 +7666,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-02.3';
+const APP_VERSION = '2026-10-02.4';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8050,6 +8076,7 @@ function renderSettingsPage(el){
         <label class="checkrow">Порог длины (×)<input type="number" id="sLengthRatio" value="${s.lengthRatio}" step="0.1" style="width:70px;margin-left:auto;"></label>
         <label class="checkrow"><input type="checkbox" id="sConsistency" ${s.checkConsistency?'checked':''}> Согласованность между папками</label>
         <label class="checkrow"><input type="checkbox" id="sGlossary" ${s.checkGlossary?'checked':''}> Соответствие глоссарию</label>
+        <label class="checkrow" style="padding-left:24px;"><input type="checkbox" id="sGlossaryHints" ${s.glossaryHints?'checked':''}> …и в английском подсказывать, когда обычное слово из глоссария («оплата», «заказ») или термин с пояснением в скобках передан другим словом (для остальных языков подсказки есть всегда)</label>
         <label class="checkrow"><input type="checkbox" id="sRebranding" ${s.checkRebranding?'checked':''}> WB→N11 (только AZ)</label>
         <label class="checkrow"><input type="checkbox" id="sLegalEntities" ${s.checkLegalEntities?'checked':''}> Юрлица WB в az и en (с автозаменой)</label>
         <label class="checkrow"><input type="checkbox" id="sPlurals" ${s.checkPlurals?'checked':''}> Формы множественного числа (1 товар / 2 товара / 5 товаров)</label>
@@ -8105,6 +8132,7 @@ function saveSettingsForm(){
     lengthRatio: parseFloat(document.getElementById('sLengthRatio').value) || 1.6,
     checkConsistency: document.getElementById('sConsistency').checked,
     checkGlossary: document.getElementById('sGlossary').checked,
+    glossaryHints: document.getElementById('sGlossaryHints').checked,
     checkRebranding: document.getElementById('sRebranding').checked,
     checkLegalEntities: document.getElementById('sLegalEntities').checked,
     checkPlurals: document.getElementById('sPlurals').checked,

@@ -2,7 +2,7 @@
 // The page itself comes from the network first, so a published fix is there on the next reload;
 // the cached copy is used only offline. Icons, fonts and flags are served from cache and refreshed
 // in the background. Requests to other origins (fonts, the AI/storage backend) are never cached here.
-const CACHE = 'lqa-hub-v10';
+const CACHE = 'lqa-hub-v11';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './fonts/TwemojiCountryFlags.woff2'].concat(['am','ar','az','be','en','fr','he','hy','ka','kk','ko','ky','ru','sw','tg','tr','uz','zh'].map(c=>'./flags/'+c+'.svg'));
 
 self.addEventListener('install', e=>{
