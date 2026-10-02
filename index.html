@@ -2106,8 +2106,16 @@ function isWordForm(w, a, lang){
   if(w===a) return true;
   if(a.length<3) return false;
   const l = baseLang(lang);
+  if(l==='en' && enLemma(w)===enLemma(a)) return true;   // item ↔ Items, return ↔ Returns
   if(l==='en') return w.startsWith(a) ? /^(s|es|ed|d|ing|'s|’s)$/.test(w.slice(a.length)) || w===a : wordFormStems(a, lang).slice(1).some(x=>w.startsWith(x.stem) && /^(es|ed|ing|d|s)$/.test(w.slice(x.stem.length)));
   return wordFormStems(a, lang).some(x=>w.startsWith(x.stem) && w.length-x.stem.length<=x.maxTail && (!x.vowelNext || VOWELS_RE.test(w[x.stem.length]||'')));
+}
+function enLemma(w){
+  w = w.replace(/['’]s$/, '');
+  if(w.length>4 && w.endsWith('ies')) return w.slice(0,-3)+'y';
+  if(w.length>4 && /(ss|x|z|ch|sh)es$/.test(w)) return w.slice(0,-2);
+  if(w.length>3 && w.endsWith('s') && !/(ss|us|is)$/.test(w)) return w.slice(0,-1);
+  return w;
 }
 // the approved translation (one or more words) appears in the target in some grammatical form
 function findInflected(textLower, phraseLower, lang){
@@ -2132,12 +2140,15 @@ function findTermInSource(srcLower, term){
     let ok = true;
     for(let j=0; j<term.srcWords.length && ok; j++){
       const t = term.srcWords[j], w = words[i+j].word;
-      ok = t.exact ? w===t.w : (w.startsWith(t.stem) && w.length-t.stem.length<=4);
+      ok = t.exact ? w===t.w : (w.startsWith(t.stem) && (t.stem===t.w ? RU_TAILS_CONS : RU_TAILS).has(w.slice(t.stem.length)));   // отмена ≠ отменить, сбор ≠ сборка
     }
     if(ok){ const last = words[i+term.srcWords.length-1]; return {start:words[i].start, end:last.start+last.word.length}; }
   }
   return null;
 }
+const RU_TAILS = new Set(['', ...RU_ENDINGS]);
+// a term ending in a consonant (заказ, склад, оформлен) takes only case endings: заказов yes, оформления no
+const RU_TAILS_CONS = new Set(['','а','у','ом','е','ы','и','ов','ей','ам','ами','ах','ям','ями','ях','ем','ю','я']);
 function termSourceWords(termLower){
   return (termLower.replace(/ё/g,'е').match(/[\p{L}\p{N}]+/gu)||[]).map(w=>w.length<4 || !/[а-я]/.test(w) ? {w, exact:true} : {w, stem:ruStem(w)});
 }
@@ -2161,6 +2172,8 @@ function containsApprovedForm(tgtLower, approvedLower, lang){
     if(['zh','ja','th'].includes(baseLang(lang))) return {matched:true, confidence:'exact', matchedText: approvedLower, matchStart: idx};   // no spaces between words
   }
   if(lang){ const f = findInflected(tgtLower, approvedLower, lang); if(f) return {matched:true, confidence:'exact', matchedText:f.text, matchStart:f.start, inflected:true}; }
+  // English forms are covered above; for a phrase a cut-off stem («please» of «please try again later») means nothing
+  if(baseLang(lang)==='en' || /\s/.test(approvedLower.trim())) return {matched:false, confidence:'none', matchedText:null};
   const minLen = Math.max(3, Math.ceil(approvedLower.length * 0.7));
   for(let len = approvedLower.length - 1; len >= minLen; len--){
     const stem = approvedLower.slice(0, len);
@@ -2199,6 +2212,30 @@ function crossPlatformGlossaryExamples(allRows, languageCode, componentId, termL
   }
   return examples;
 }
+/* How glossaries are written: «ПВЗ / пункт выдачи», «update / refresh» — alternatives, any one counts;
+   «полная стоимость кредита (ПСК)» — the abbreviation is a form of its own; «собирать (заказ)» — a note. */
+function glossaryAlternatives(text){
+  const out = [];
+  // «update / refresh», «выдача/сдача» split; «А/Б-тест», «1/2» stay whole
+  String(text||'').split(/\s+\/\s+|(?<=[\p{L}]{2})\/(?=[\p{L}]{2})/u).map(x=>x.trim()).filter(x=>x.length>=2).forEach(part=>{
+    const bare = part.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+    if(bare) out.push(bare);
+    (part.match(/\(([^)]*)\)/g)||[]).forEach(x=>{ const inner = x.slice(1,-1).trim(); if(/^[\p{Lu}\d&+.-]{2,8}$/u.test(inner)) out.push(inner); });
+    if(part!==bare) out.push(part);
+  });
+  return [...new Set(out)];
+}
+// «Покупки», «Данные», «Банк» written with a capital letter are names of screens and buttons, not the
+// ordinary words: they count when the string is that name, it stands in quotes, or is capitalised mid-sentence
+const isLabelTerm = t => /^\p{Lu}\p{Ll}/u.test(t);
+function usedAsLabel(src, start, end){
+  if(!/^\p{Lu}/u.test(src.slice(start, end))) return false;
+  const before = src.slice(0, start), after = src.slice(end);
+  if(!/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after)) return true;
+  if(/[«"“„']\s*$/.test(before)) return true;
+  const prev = before.replace(/\s+$/, '').slice(-1);
+  return !!prev && !/[.!?…:;\n]/.test(prev);
+}
 function findCaseInsensitiveMatch(str, needle){
   if(!str || !needle) return null;
   const idx = str.toLowerCase().indexOf(needle.toLowerCase());
@@ -2215,28 +2252,47 @@ async function runGlossaryCheck(projectId, override, onProgress){
   const rawTerms = dbQuery('glossaryTerms', t=>glossaryIds.includes(t.glossaryId));
   if(!rawTerms.length){ dbSave('issues', issues); return; }
   // precompute lowercase fields once — these were previously recomputed on every single row, the dominant cost with a large glossary
-  const terms = rawTerms.filter(t=>t.term).map(t=>({
+  // brands that must stay as is win over a glossary line that translates them
+  const dnt = new Set(String(s.dntTerms||'').split(/\n/).map(x=>x.trim().toLowerCase()).filter(Boolean));
+  const terms = rawTerms.filter(t=>t.term && !dnt.has(t.term.trim().toLowerCase())).map(t=>({
     term: t.term, approved: t.approved||'', glossaryId: t.glossaryId,
     termLower: t.term.toLowerCase(), approvedLower: (t.approved||'').toLowerCase(),
+    approvedAlts: glossaryAlternatives(t.approved||'').map(a=>a.toLowerCase()),
     forbidden: t.forbidden||[], forbiddenLower: (t.forbidden||[]).map(f=>(f||'').toLowerCase()),
-    language: t.language || ''
-  })).map(t=>{ const srcWords = termSourceWords(t.termLower); const first = srcWords[0]; return Object.assign(t, {srcWords, srcProbe: first ? (first.exact ? first.w : first.stem) : t.termLower}); });
+    language: t.language || '',
+    srcAlts: glossaryAlternatives(t.term).map(alt=>{ const srcWords = termSourceWords(alt.toLowerCase()); const first = srcWords[0];
+      return {label: isLabelTerm(alt), srcWords, srcProbe: first ? (first.exact ? first.w : first.stem) : alt.toLowerCase()}; })
+  }));
+  const rank = {exact:2, heuristic:1, none:0};
+  const bestApproved = (tgtLower, term, lang)=>{
+    let best = {matched:false, confidence:'none', matchedText:null};
+    for(const a of term.approvedAlts){ const c = containsApprovedForm(tgtLower, a, lang); if(rank[c.confidence] > rank[best.confidence]) best = c; if(best.confidence==='exact') break; }
+    return best;
+  };
   const rows = dbQuery('rows', r=>r.projectId===projectId);
   const componentsById = {}; dbList('components').forEach(c=>{ componentsById[c.id]=c; });
   const CHUNK = 800;
   for(let start=0; start<rows.length; start+=CHUNK){
     const chunk = rows.slice(start, start+CHUNK);
     chunk.forEach(r=>{
-      const srcLower = maskMarkup(r.source).toLowerCase(), tgtLower = maskMarkup(r.target).toLowerCase();
+      const srcMasked = maskMarkup(r.source), srcLower = srcMasked.toLowerCase(), tgtLower = maskMarkup(r.target).toLowerCase();
       if(!srcLower || !tgtLower.trim()) return;   // empty translation is reported as not translated, not as a glossary miss
+      const found = [];
       terms.forEach(term=>{
         const termLang = glossaryLangById[term.glossaryId] || term.language;
         if(termLang && r.languageCode && termLang.toLowerCase()!==r.languageCode.toLowerCase()) return;
-        const srcFound = findTermInSource(srcLower, term);
-        if(!srcFound) return;
+        for(const alt of term.srcAlts){
+          const f = findTermInSource(srcLower, alt);
+          if(f && (!alt.label || usedAsLabel(srcMasked, f.start, f.end))){ found.push({term, srcFound:f}); break; }
+        }
+      });
+      // «стоимость доставки → delivery fee» covers «Стоимость → Fare» inside it; «Товары» and «товар» on one word count once
+      found.sort((a,b)=>(b.srcFound.end-b.srcFound.start)-(a.srcFound.end-a.srcFound.start));
+      const taken = [];
+      found.filter(x=>{ if(taken.some(t=>t.start<=x.srcFound.start && x.srcFound.end<=t.end)) return false; taken.push(x.srcFound); return true; }).forEach(({term, srcFound})=>{
 
         const forbiddenIdx = term.forbiddenLower.findIndex(f=>f && tgtLower.includes(f));
-        const approvedCheck = term.approvedLower ? containsApprovedForm(tgtLower, term.approvedLower, r.languageCode) : {matched:true, confidence:'exact'};
+        const approvedCheck = term.approvedAlts.length ? bestApproved(tgtLower, term, r.languageCode) : {matched:true, confidence:'exact'};
         const isExact = approvedCheck.matched && approvedCheck.confidence==='exact';
         if(forbiddenIdx<0 && isExact) return; // clean — nothing to report, skip the cross-platform scan entirely
 
@@ -2262,9 +2318,12 @@ async function runGlossaryCheck(projectId, override, onProgress){
             aiExplanation:null, aiSuggestion:null, aiConfidence:null, crossPlatformSuggestion: crossSuggestion,
             highlightField: 'target', highlightText: foundForm, expectedText: term.approved, matchType:'heuristic', confidence:'medium'});
         } else {
+          // a plain everyday word («оплата», «заказ») is often rephrased on purpose («Pay now») — worth a look, not an alarm
+          const plainWord = term.srcAlts.every(a=>a.srcWords.length===1 && !a.label) && !crossExamples.length;
           issues.push({id:uid(), rowId:r.id, projectId:r.projectId, componentId:r.componentId, languageCode:r.languageCode,
-            type:'Терминология', severity: crossExamples.length ? 'Критическая' : 'Высокая',
-            text:'Термин «'+term.term+'»: одобренный перевод «'+term.approved+'» не найден в переводе.'+crossNote,
+            type:'Терминология', severity: crossExamples.length ? 'Критическая' : plainWord ? 'Низкая' : 'Высокая',
+            text: plainWord ? 'Термин «'+term.term+'»: перевод «'+term.approved+'» не использован — проверь, допустима ли здесь перефразировка.'+crossNote
+              : 'Термин «'+term.term+'»: одобренный перевод «'+term.approved+'» не найден в переводе.'+crossNote,
             status:'Новая', createdAt:nowISO(), history:[{ts:nowISO(),action:'Обнаружена (проверка глоссария)'}],
             aiExplanation:null, aiSuggestion:null, aiConfidence:null, crossPlatformSuggestion: crossSuggestion,
             highlightField: srcHit?'source':null, highlightText: srcHit?srcHit.matched:null, expectedText: term.approved, matchType:'missing', confidence:'high'});
@@ -7581,7 +7640,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-02.2';
+const APP_VERSION = '2026-10-02.3';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -7669,12 +7728,12 @@ function maybeStartTour(){
    ========================================================= */
 function exportIssuesToCsv(issues){
   if(!issues.length){ toast('Нечего экспортировать'); return; }
-  let csv = 'id,source,target,project,language,component,type,severity,confidence,explanation,suggestion,status,comment\n';
+  let csv = 'id,source,target,project,language,component,type,severity,problem,expected,confidence,explanation,suggestion,status,comment\n';
   const esc2 = s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
   issues.forEach(i=>{
     const r = dbGet('rows', i.rowId); const p = dbGet('projects', i.projectId); const c = dbGet('components', i.componentId);
     const lastComment = (i.history||[]).slice().reverse().find(h=>h.comment)?.comment || '';
-    csv += [esc2(i.id), esc2(r?r.source:''), esc2(r?r.target:''), esc2(p?p.name:''), esc2(i.languageCode), esc2(c?c.name:''), esc2(i.type), esc2(i.severity), esc2(i.aiConfidence), esc2(i.aiExplanation), esc2(i.aiSuggestion), esc2(i.status), esc2(lastComment)].join(',')+'\n';
+    csv += [esc2(i.id), esc2(r?r.source:''), esc2(r?r.target:''), esc2(p?p.name:''), esc2(i.languageCode), esc2(c?c.name:''), esc2(i.type), esc2(i.severity), esc2(i.text), esc2(i.expectedText), esc2(i.aiConfidence), esc2(i.aiExplanation), esc2(i.aiSuggestion), esc2(i.status), esc2(lastComment)].join(',')+'\n';
   });
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
