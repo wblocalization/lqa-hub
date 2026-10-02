@@ -113,3 +113,42 @@ test('редполитика из файла .docx: текст абзацев и
   await expect(page.locator('#styleGuidesCard')).toContainText('текст, ');
   expectNoErrors(errors);
 });
+
+test('новый браузер (инкогнито) сам подключается к хранилищу команды: вход → данные команды', async ({ page }) => {
+  await page.addInitScript(u => { window.LQA_TEAM_BACKEND = u; }, URL);
+  await page.addInitScript(() => {
+    const b64 = o => btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    window.__gsi = {};
+    window.google = { accounts: { id: {
+      initialize(o) { window.__gsi.options = o; }, prompt() {}, disableAutoSelect() {},
+      renderButton(el) { el.innerHTML = '<button type="button" class="fake-gsi">Войти</button>';
+        el.querySelector('button').onclick = () => window.__gsi.options.callback({ credential: b64({ alg: 'none' }) + '.' + b64({ email: 'ok@gmail.com', exp: Math.floor(Date.now() / 1000) + 3600 }) + '.s' }); },
+    } } };
+  });
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.route(URL, async route => {
+    const req = JSON.parse(route.request().postData() || '{}');
+    const body = !req.idToken ? { error: 'Войди через Google', code: 'auth_required', auth: 'google', clientId: '123-abc.apps.googleusercontent.com' }
+      : req.mode === 'sync' ? { rev: 5, changes: { projects: { upserts: [{ id: 'team1', name: 'Магазин WB', languages: [{ code: 'kk', name: 'Казахский' }] }], deletes: [] } } }
+      : { ok: true, auth: 'google' };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  await page.addInitScript(() => { try { localStorage.setItem('lqa_tour_done', '1'); } catch (e) {} });
+  await page.goto(require('./helpers').APP_URL);
+  await expect(page.locator('#authGate .fake-gsi')).toBeVisible();          // данных нет, только вход
+  expect(await page.evaluate(() => dbList('projects').length)).toBe(0);
+  await page.click('#authGate .fake-gsi');
+  await expect(page.locator('#authGate')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => dbList('projects').map(p => p.name))).toEqual(['Магазин WB']);
+  expectNoErrors(errors);
+});
+
+test('браузер со своими проектами не сливается с командой сам', async ({ page }) => {
+  await page.addInitScript(u => { window.LQA_TEAM_BACKEND = u; }, URL);
+  const errors = await openApp(page);
+  await page.route(URL, route => route.fulfill({ contentType: 'application/json', body: '{"ok":true}' }));
+  await page.evaluate(() => { dbUpsert('projects', { id: 'mine', name: 'Мой', languages: [] }); saveSettings({ aiEndpointUrl: '' }); localStorage.removeItem('lqa_sync'); bootstrapTeamBackend(); });
+  expect(await page.evaluate(() => [getSettings().aiEndpointUrl, syncEnabled()])).toEqual([URL, false]);
+  expectNoErrors(errors);
+});
