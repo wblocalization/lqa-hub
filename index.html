@@ -6054,19 +6054,25 @@ async function fetchLatestExtVersion(){
   try{ const r = await fetch('extension/manifest.json', {cache:'no-store'}); if(r.ok){ extLatest = (await r.json()).version; } }catch(e){}
   return extLatest;
 }
-async function downloadExtensionZip(){
-  const btn = document.getElementById('extDlBtn'); if(btn){ btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.textContent = 'Собираю архив…'; }
+// second extension: strings from Weblate to .po (folder extension-weblate/)
+const EXT_KINDS = {
+  crawl: {src:'extension', files:EXT_FILES, name:'lqa-hub-extension', btn:'extDlBtn'},
+  weblate: {src:'extension-weblate', files:['manifest.json', 'popup.html', 'popup.js', 'weblate.js', 'icon.png', 'README.md'], name:'lqa-hub-weblate', btn:'extWlBtn'},
+};
+async function downloadExtensionZip(kind){
+  const k = EXT_KINDS[kind] || EXT_KINDS.crawl;
+  const btn = document.getElementById(k.btn); if(btn){ btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.textContent = 'Собираю архив…'; }
   try{
     if(!await ensureJSZip()) throw new Error('не загрузилась библиотека архивов');
-    const zip = new JSZip(), dir = zip.folder('lqa-hub-extension');
-    for(const f of EXT_FILES){
-      const r = await fetch('extension/'+f, {cache:'no-store'}); if(!r.ok) throw new Error('нет файла '+f);
+    const zip = new JSZip(), dir = zip.folder(k.name);
+    for(const f of k.files){
+      const r = await fetch(k.src+'/'+f, {cache:'no-store'}); if(!r.ok) throw new Error('нет файла '+f);
       dir.file(f, await r.arrayBuffer());
     }
     const blob = await zip.generateAsync({type:'blob'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lqa-hub-extension.zip'; a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = k.name+'.zip'; a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-    toast('Скачан lqa-hub-extension.zip — распакуй его и выбери папку lqa-hub-extension в Chrome');
+    toast('Скачан '+k.name+'.zip — распакуй его и выбери папку '+k.name+' в Chrome');
   }catch(e){
     toast('Не получилось собрать архив ('+e.message+'). Скачай всю платформу архивом с GitHub и возьми из него папку extension.', {duration:10000, action:{label:'Скачать с GitHub', fn:()=>window.open('https://github.com/wblocalization/lqa-hub/archive/refs/heads/main.zip','_blank')}});
   }finally{ if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.label; } }
@@ -6105,7 +6111,12 @@ async function renderExtensionPage(el){
       <div class="grid grid-2">
         <div class="card"><h3>Как пользоваться</h3><ol class="ext-steps" style="margin-top:0;"><li>Открой сессию в «Визуальной проверке» → <b>Обойти страницы</b>.</li><li>Впиши страницы: <span class="mono">Название | ссылка</span>, по одной в строке. Можно любой сайт WB и шаги вроде <span class="mono">нажать: Қазақша</span> для смены языка.</li><li>Робот откроет отдельное окно, снимет страницы на компьютере и телефоне и сразу найдёт на скриншотах текст и ошибки.</li></ol></div>
         <div class="card"><h3>Обновление и вопросы</h3><ul class="ext-steps" style="margin-top:0;list-style:disc;"><li>Когда выйдет новая версия, здесь и в окне обхода появится подсказка. Скачай архив заново, замени содержимое папки и нажми ↻ на карточке расширения.</li><li>Пока идёт обход, Chrome показывает полоску «начало отлаживать этот браузер» — это нормально.</li><li>Расширение работает только на этом сайте и снимает только сайты WB. Никуда, кроме LQA Hub, скриншоты не отправляет.</li></ul></div>
-      </div>`;
+      </div>
+        <div class="card">
+          <div class="row between" style="flex-wrap:wrap;gap:12px;"><h3 style="margin:0;">Выгрузка из Weblate в .po</h3><button class="btn" id="extWlBtn" onclick="downloadExtensionZip('weblate')">${icon('download',15)}Скачать</button></div>
+          <div class="hint" style="margin:8px 0 10px;line-height:1.6;max-width:760px;">Отдельное расширение: на странице Weblate выгружает переведённые строки в .po — один язык или несколько, любые компоненты проекта, один файл на язык или по файлу на компонент. Готовые .po сразу загружаются сюда на проверку.</div>
+          <ol class="ext-steps" style="margin-top:0;"><li>Скачай и распакуй — появится папка <span class="mono">lqa-hub-weblate</span>. Установи её так же, как расширение выше: <span class="mono">chrome://extensions</span> → Режим разработчика → Загрузить распакованное.</li><li>Открой в Weblate проект или компонент и нажми на значок расширения.</li><li>Отметь языки и компоненты → <b>Выгрузить .po</b>. Файлы появятся в «Загрузках».</li></ol>
+        </div>`;
   };
   draw();
   const before = [crawlExt, extLatest].join();
@@ -7666,7 +7677,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-02.4';
+const APP_VERSION = '2026-10-03.1';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;

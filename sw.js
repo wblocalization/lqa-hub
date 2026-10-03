@@ -2,7 +2,7 @@
 // The page itself comes from the network first, so a published fix is there on the next reload;
 // the cached copy is used only offline. Icons, fonts and flags are served from cache and refreshed
 // in the background. Requests to other origins (fonts, the AI/storage backend) are never cached here.
-const CACHE = 'lqa-hub-v11';
+const CACHE = 'lqa-hub-v12';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './fonts/TwemojiCountryFlags.woff2'].concat(['am','ar','az','be','en','fr','he','hy','ka','kk','ko','ky','ru','sw','tg','tr','uz','zh'].map(c=>'./flags/'+c+'.svg'));
 
 self.addEventListener('install', e=>{
@@ -15,7 +15,7 @@ self.addEventListener('fetch', e=>{
   const req = e.request;
   const u = new URL(req.url);
   // the extension's files are downloaded to build its zip — always take them from the network
-  if(req.method!=='GET' || u.origin!==location.origin || u.pathname.includes('/extension/')) return;
+  if(req.method!=='GET' || u.origin!==location.origin || /\/extension(-weblate)?\//.test(u.pathname)) return;
   if(u.searchParams.has('v')) return;   // the page's own «is there a new version?» request — straight to the network, not cached
   const isPage = req.mode==='navigate' || /\/(index\.html)?$/.test(u.pathname);
   if(isPage){
