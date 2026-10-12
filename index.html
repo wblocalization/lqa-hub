@@ -1239,6 +1239,18 @@ async function syncRequest(body){
   if(data.error) throw new Error(data.error);
   return data;
 }
+/* Связанные Google-почты лежат внутри общей записи настроек. Чтобы два браузера, которые почти одновременно
+   привязали разные почты, не затирали друг друга, списки почт при синхронизации сливаются: побеждает более
+   свежая правка по каждой почте, а удалённые почты помнятся (googleAccountsRemoved), чтобы не вернулись. */
+const accStamp = a => (a && (a.at || a.linkedAt)) || '';
+function mergeGoogleAccounts(a, b, ra, rb){
+  const removed = Object.assign({}, ra||{});
+  Object.entries(rb||{}).forEach(([e, t])=>{ if(!removed[e] || t > removed[e]) removed[e] = t; });
+  const out = {};
+  [a||{}, b||{}].forEach(m=>Object.entries(m).forEach(([e, v])=>{ if(v && (!out[e] || accStamp(v) > accStamp(out[e]))) out[e] = v; }));
+  Object.keys(out).forEach(e=>{ if(removed[e] && removed[e] >= accStamp(out[e])) delete out[e]; });
+  return {accounts:out, removed};
+}
 function applyRemoteChanges(changes){
   const st = syncState(); let got = 0; const touchedTables = [];
   syncApplying = true;
@@ -1249,18 +1261,24 @@ function applyRemoteChanges(changes){
       const base = st.base[t] = st.base[t] || {}; let touched = false;
       (ch.upserts||[]).forEach(rec=>{
         const id = String(rec.id);
-        let incoming = rec;
+        let incoming = rec, rawH = null, merged = null;
         if(t==='settings'){ const local = idx.has(id) ? arr[idx.get(id)] : {}; incoming = Object.assign({}, rec); SYNC_LOCAL_SETTINGS.forEach(k=>{ if(local && k in local) incoming[k] = local[k]; });
           // a teammate who never set up Google sign-in must not switch it off for everyone
-          if(local && local.googleClientId && !incoming.googleClientId) incoming.googleClientId = local.googleClientId; }
+          if(local && local.googleClientId && !incoming.googleClientId) incoming.googleClientId = local.googleClientId;
+          rawH = syncHash(t, incoming);   // как пришло с сервера — если слияние что-то добавило, наше уйдёт обратно
+          merged = mergeGoogleAccounts(local && local.googleAccounts, incoming.googleAccounts, local && local.googleAccountsRemoved, incoming.googleAccountsRemoved);
+          incoming.googleAccounts = merged.accounts; incoming.googleAccountsRemoved = merged.removed; }
         const h = syncHash(t, incoming);
         if(idx.has(id)){
           const cur = arr[idx.get(id)], curH = syncHash(t, cur);
-          if(curH===h){ base[id] = h; return; }
-          if(base[id] && curH!==base[id]) return; // edited here during this sync — ours goes up next time
+          if(curH===h){ base[id] = rawH || h; return; }
+          if(base[id] && curH!==base[id]){   // edited here during this sync — ours goes up next time
+            if(merged){ arr[idx.get(id)] = Object.assign({}, cur, {googleAccounts:merged.accounts, googleAccountsRemoved:merged.removed}); touched = true; }
+            return;
+          }
           arr[idx.get(id)] = incoming;
         } else { idx.set(id, arr.length); arr.push(incoming); }
-        base[id] = h; touched = true; got++;
+        base[id] = rawH || h; touched = true; got++;
       });
       (ch.deletes||[]).forEach(id=>{ id = String(id); if(idx.has(id)){ arr[idx.get(id)] = null; touched = true; got++; } delete base[id]; });
       if(touched){ DB[t] = arr.filter(Boolean); idbPersist(t, DB[t]); touchedTables.push(t); }
@@ -7270,7 +7288,7 @@ function linkGoogleAccount(email, name, role){
     role = prev ? prev.role : (role==='manager' ? 'editor' : role);
     if(want==='manager' && role!=='manager') toast('Роль менеджера выдаёт менеджер: Настройки → Вход через Google', {duration:8000});
   }
-  acc[email] = {name, role, linkedAt:nowISO()};
+  acc[email] = {name, role, linkedAt:nowISO(), at:nowISO()};
   saveSettings({googleAccounts:acc});
 }
 function setAccountRole(email, role){
@@ -7278,7 +7296,7 @@ function setAccountRole(email, role){
   const acc = Object.assign({}, getSettings().googleAccounts||{});
   if(!acc[email]) return;
   if(role!=='manager' && acc[email].role==='manager' && Object.values(acc).filter(a=>a.role==='manager').length===1){ toast('Нужен хотя бы один менеджер'); router(); return; }
-  acc[email] = Object.assign({}, acc[email], {role});
+  acc[email] = Object.assign({}, acc[email], {role, at:nowISO()});
   saveSettings({googleAccounts:acc});
   const g = googleIdentity();
   if(g && g.email===email) setIdentity(acc[email].name, role);
@@ -7377,7 +7395,31 @@ function googleSignOut(){
   if(g && window.google && google.accounts && google.accounts.id){ try{ google.accounts.id.disableAutoSelect(); }catch(e){} }
 }
 function unlinkGoogleAccount(email){
-  const acc = Object.assign({}, getSettings().googleAccounts||{}); delete acc[email]; saveSettings({googleAccounts:acc}); router();
+  const s = getSettings(), acc = Object.assign({}, s.googleAccounts||{}); delete acc[email];
+  saveSettings({googleAccounts:acc, googleAccountsRemoved:Object.assign({}, s.googleAccountsRemoved||{}, {[email]:nowISO()})}); router();
+}
+// менеджер сам привязывает почту к человеку (или исправляет «Кто») — не дожидаясь, пока человек войдёт
+function setAccountPerson(email, name){
+  if(!isManager() || !name) return;
+  const acc = Object.assign({}, getSettings().googleAccounts||{});
+  if(!acc[email]) return;
+  acc[email] = Object.assign({}, acc[email], {name, at:nowISO()});
+  saveSettings({googleAccounts:acc});
+  const g = googleIdentity();
+  if(g && g.email===email) setIdentity(name, acc[email].role);
+  toast(email+' → '+name); router();
+}
+function addGoogleAccount(){
+  if(!isManager()) return;
+  const email = (document.getElementById('gaEmail').value||'').trim().toLowerCase();
+  const name = (document.getElementById('gaName').value||'').trim();
+  const role = document.getElementById('gaRole').value || 'editor';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('Впиши почту, например name@gmail.com'); return; }
+  if(!name){ toast('Выбери, кто это'); return; }
+  const s = getSettings(), acc = Object.assign({}, s.googleAccounts||{}), removed = Object.assign({}, s.googleAccountsRemoved||{});
+  acc[email] = {name, role, linkedAt:nowISO(), at:nowISO()}; delete removed[email];
+  saveSettings({googleAccounts:acc, googleAccountsRemoved:removed});
+  toast(name+' ('+email+'): '+ROLE_LABELS[role]+'. Не забудь, что почта должна быть и в «Почтах команды».', {duration:7000}); router();
 }
 function googleCardHtml(){
   const s = getSettings(), acc = Object.entries(s.googleAccounts||{}).sort((a,b)=>a[1].name.localeCompare(b[1].name,'ru'));
@@ -7397,8 +7439,15 @@ function googleCardHtml(){
       </ol>
       <div style="margin-top:6px;">Вход работает на опубликованном сайте (${esc(origin)}), а не в файле, открытом с диска.</div></details>
     ${acc.length ? `<div class="section-label" style="margin-top:16px;">Связанные почты · ${acc.length}</div><div class="table-wrap"><table><thead><tr><th>Почта</th><th>Кто</th><th>Роль</th><th></th></tr></thead><tbody>
-      ${acc.map(([email, a])=>`<tr><td class="mono">${esc(email)}</td><td>${initialsAvatar(a.name)}</td><td><select style="height:30px;font-size:13px;" onchange="setAccountRole('${esc(email)}', this.value)">${['manager','editor','other'].map(r=>`<option value="${r}" ${(a.role||'editor')===r?'selected':''}>${ROLE_LABELS[r]}</option>`).join('')}</select></td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" title="Отвязать: при следующем входе человек снова выберет себя" onclick="unlinkGoogleAccount('${esc(email)}')">${icon('x',14)}</button></td></tr>`).join('')}
+      ${acc.map(([email, a])=>`<tr><td class="mono">${esc(email)}</td><td><select style="height:30px;font-size:13px;max-width:220px;" title="Кто это — можно исправить" onchange="setAccountPerson('${esc(email)}', this.value)">${[...new Set([a.name, ...allPeople()])].map(n=>`<option value="${esc(n)}" ${n===a.name?'selected':''}>${esc(n)}</option>`).join('')}</select></td><td><select style="height:30px;font-size:13px;" onchange="setAccountRole('${esc(email)}', this.value)">${['manager','editor','other'].map(r=>`<option value="${r}" ${(a.role||'editor')===r?'selected':''}>${ROLE_LABELS[r]}</option>`).join('')}</select></td><td style="text-align:right;"><button class="btn ghost sm" style="color:var(--crit);" title="Отвязать: при следующем входе человек снова выберет себя" onclick="unlinkGoogleAccount('${esc(email)}')">${icon('x',14)}</button></td></tr>`).join('')}
     </tbody></table></div>` : ''}
+    ${isManager() ? `<div class="section-label" style="margin-top:16px;">Привязать почту вручную</div>
+    <div class="hint" style="margin:0 0 8px;">Если человек вошёл, а его почты нет в списке, или нужно сразу выдать роль менеджера — добавь сам. Почта должна быть и в «Почтах команды» (доступ).</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <label class="field" style="flex:1;min-width:200px;margin:0;">Почта<input type="text" id="gaEmail" placeholder="name@gmail.com" autocomplete="off"></label>
+      <label class="field" style="flex:1;min-width:180px;margin:0;">Кто<select id="gaName"><option value="">— выбери —</option>${allPeople().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select></label>
+      <label class="field" style="width:140px;margin:0;">Роль<select id="gaRole">${['manager','editor','other'].map(r=>`<option value="${r}" ${r==='manager'?'selected':''}>${ROLE_LABELS[r]}</option>`).join('')}</select></label>
+      <button class="btn" onclick="addGoogleAccount()">Привязать</button></div>` : ''}
   </div>`;
 }
 function saveGoogleClientId(){
@@ -7677,7 +7726,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-03.1';
+const APP_VERSION = '2026-10-12.1';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
