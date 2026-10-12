@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "LQA Hub — выгрузка из Weblate",
+  "version": "1.0.0",
+  "description": "Выгружает переведённые строки из Weblate в .po: нужный язык или несколько, любые компоненты проекта.",
+  "icons": {
+    "128": "icon.png"
+  },
+  "action": {
+    "default_title": "Выгрузить строки из Weblate в .po",
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ]
+}

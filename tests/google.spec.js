@@ -70,3 +70,50 @@ test('настройка Client ID и список связанных почт',
   await expect(page.locator('#content')).toContainText('a@gmail.com');
   expectNoErrors(errors);
 });
+
+test('связанные почты не теряются, когда два браузера привязали разные почты', async ({ page }) => {
+  const errors = await openApp(page);
+  await page.evaluate(() => saveSettings({ googleClientId: '123-abc.apps.googleusercontent.com' }));
+  // у нас — привязка коллеги, ещё не ушедшая на сервер; с сервера приходят настройки без неё, но с чужой привязкой
+  const res = await page.evaluate(() => {
+    linkGoogleAccount('colleague@gmail.com', EDITORS[0], 'editor');
+    const st = syncState(); st.lastRev = 0; st.base = {};
+    const remote = Object.assign({}, getSettings(), { googleAccounts: { 'boss@gmail.com': { name: MANAGERS[0], role: 'manager', linkedAt: '2026-01-01T00:00:00Z' } } });
+    applyRemoteChanges({ settings: { upserts: [remote] } });
+    const acc = getSettings().googleAccounts;
+    const pending = collectLocalChanges().changes.settings;
+    return { emails: Object.keys(acc).sort(), willPush: !!(pending && pending.ups.length) };
+  });
+  expect(res.emails).toEqual(['boss@gmail.com', 'colleague@gmail.com']);
+  expect(res.willPush).toBe(true);   // слитый список уйдёт обратно на сервер
+
+  // удалённая почта не возвращается из старой копии
+  const back = await page.evaluate(() => {
+    localStorage.setItem('lqa_google', JSON.stringify({ email: 'boss@gmail.com', exp: Date.now() + 3600e3 }));   // удалять может только менеджер
+    unlinkGoogleAccount('colleague@gmail.com');
+    const stale = Object.assign({}, getSettings(), { googleAccounts: { 'colleague@gmail.com': { name: EDITORS[0], role: 'editor', linkedAt: '2026-01-01T00:00:00Z' } }, googleAccountsRemoved: {} });
+    syncState().base = {};
+    applyRemoteChanges({ settings: { upserts: [stale] } });
+    return Object.keys(getSettings().googleAccounts);
+  });
+  expect(back).not.toContain('colleague@gmail.com');
+  expectNoErrors(errors);
+});
+
+test('менеджер сам привязывает почту и исправляет «Кто»', async ({ page }) => {
+  const errors = await openApp(page);
+  const [boss, other] = await page.evaluate(() => [MANAGERS[0], MANAGERS[1]]);
+  await page.evaluate(m => { saveSettings({ googleClientId: '123-abc.apps.googleusercontent.com' }); linkGoogleAccount('boss@gmail.com', m, 'manager');
+    localStorage.setItem('lqa_google', JSON.stringify({ email: 'boss@gmail.com', exp: Date.now() + 3600e3 })); }, boss);
+  await page.goto(page.url().split('#')[0] + '#/settings');
+  await page.fill('#gaEmail', 'Colleague@Gmail.com');
+  await page.selectOption('#gaName', other);
+  await page.selectOption('#gaRole', 'manager');
+  await page.click('button:has-text("Привязать")');
+  expect(await page.evaluate(() => getSettings().googleAccounts['colleague@gmail.com'])).toMatchObject({ name: other, role: 'manager' });
+  // в таблице «Кто» можно поменять
+  const row = page.locator('tr', { hasText: 'colleague@gmail.com' });
+  await row.locator('select').first().selectOption(boss);
+  expect(await page.evaluate(() => getSettings().googleAccounts['colleague@gmail.com'].name)).toBe(boss);
+  expectNoErrors(errors);
+});
