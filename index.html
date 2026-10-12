@@ -3500,8 +3500,9 @@ function wireFolderPoDropzone(projectId, componentId, languages){
   const drop = document.getElementById('folderPoDrop');
   if(!drop) return;
   const input = document.getElementById('folderPoFileInput');
-  input.addEventListener('change', e=>{ addFolderPendingFiles(e.target.files); input.value=''; });
-  drop.addEventListener('click', e=>{ if(e.target.tagName!=='INPUT') input.click(); });
+  // поле — <label> вокруг скрытого input: клик по нему сам открывает выбор файла (второй input.click() открывал окно повторно,
+  // и выбранный файл терялся). Файлы копируем до сброса value — иначе список опустеет.
+  input.addEventListener('change', ()=>{ const files = [...input.files]; input.value=''; addFolderPendingFiles(files); });
   drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('drag'); });
   drop.addEventListener('dragleave', ()=>drop.classList.remove('drag'));
   drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('drag'); addFolderPendingFiles(e.dataTransfer.files); });
@@ -3663,8 +3664,7 @@ function wirePoDropzone(projectId, languages){
   const drop = document.getElementById('poDrop');
   const input = document.getElementById('poFileInput');
   if(!drop) return;
-  input.addEventListener('change', e=>{ addProjectPendingFiles(e.target.files); input.value=''; });
-  drop.addEventListener('click', e=>{ if(e.target.tagName!=='INPUT') input.click(); });
+  input.addEventListener('change', ()=>{ const files = [...input.files]; input.value=''; addProjectPendingFiles(files); });
   drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('drag'); });
   drop.addEventListener('dragleave', ()=>drop.classList.remove('drag'));
   drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('drag'); addProjectPendingFiles(e.dataTransfer.files); });
@@ -7726,7 +7726,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-12.1';
+const APP_VERSION = '2026-10-12.2';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
