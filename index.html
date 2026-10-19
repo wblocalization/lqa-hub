@@ -1592,6 +1592,18 @@ const LANGUAGE_RULES = {
     t=>{ const W = {'იუზერ':'მომხმარებელი','სეტინგ':'პარამეტრები','აიფონ':'iPhone','იუთუბ':'YouTube'};
       const m = visibleText(t).match(/(?<![\u10D0-\u10FF])(იუზერ|სეტინგ|აიფონ|იუთუბ)[\u10D0-\u10FF]*/); return m && {text:'Заимствование или транслитерация бренда: вместо «'+m[0]+'» — «'+W[m[1]]+'»', highlight:m[0], expected:W[m[1]], severity:'Средняя'}; },
   ],
+  // Amharic (Ge'ez script): Ethiopic punctuation instead of Latin, no «::» typed for ።, modern Arabic digits, polite address
+  am: [
+    t=>{ const m = visibleText(t).match(/[ሀ-፿]\s*::(?!:)/); return m && {text:'«::» вместо амхарской точки «።» (U+1362)', highlight:'::', expected:'።', severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/[ሀ-፿]\.(?=\s|$)/); return m && {text:'Латинская точка в конце предложения — в амхарском «።»', highlight:m[0], expected:m[0][0]+'።', severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/[ሀ-፿],(?=\s|$)/); return m && {text:'Латинская запятая — в амхарском «፣»', highlight:m[0], expected:m[0][0]+'፣', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[ሀ-፿];/); return m && {text:'Латинская точка с запятой — в амхарском «፤»', highlight:m[0], expected:m[0][0]+'፤', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/\s+[።፣፤፥](?![ሀ-፿])/); return m && {text:'Пробел перед амхарским знаком препинания', highlight:m[0], expected:m[0].trim(), severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/([።፣፤])\1+/); return m && {text:'Повторяющийся знак препинания', highlight:m[0], expected:m[1], severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[ሀ-፿]፡[ሀ-፿]/); return m && {text:'Старый разделитель слов «፡» — в современном тексте между словами пробел', highlight:m[0], expected:m[0][0]+' '+m[0][2], severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[፩-፼]+/); return m && {text:'Эфиопские цифры «'+m[0]+'» — в интерфейсе числа пишем арабскими цифрами', highlight:m[0], severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/(?<![ሀ-፿])(አንተ|አንቺ)(?![ሀ-፿])/); return m && {text:'«'+m[0]+'» — обращение на «ты» '+(m[1]==='አንተ'?'мужского':'женского')+' рода; в интерфейсе — вежливое «እርስዎ» или нейтральная форма', highlight:m[0], severity:'Низкая'}; },
+  ],
   kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
   zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
 };
@@ -2244,16 +2256,22 @@ function wordFormStems(a, lang){
     if((l==='ka' || l==='hy') && VOWELS_RE.test(last) || /[იაე]$/.test(a)) out.push({stem:a.slice(0,-1), maxTail:8});
   } else if(SLAVIC_LANGS.has(l)){
     const st = ruStem(a); if(st.length>=3) out.push({stem:st, maxTail:4});
+  } else if(l==='am' && a.length>=3){
+    // Ge'ez is a syllabary: a suffix changes the last syllable itself (ምርት → ምርቶች, ምርቱ)
+    out.push({stem:a.slice(0,-1), maxTail:5});
   } else if(l==='en'){
     if(a.endsWith('y')) out.push({stem:a.slice(0,-1)+'i', maxTail:3});
     if(a.endsWith('e')) out.push({stem:a.slice(0,-1), maxTail:3});
   }
   return out;
 }
+// Amharic prepositions are written together with the word: የምርት, በካርድ, ለደንበኛ, እንደ…
+const AM_PREFIXES = ['እንደ','ስለ','ወደ','እስከ','ከነ','የ','በ','ለ','ከ'];
 function isWordForm(w, a, lang){
   if(w===a) return true;
-  if(a.length<3) return false;
   const l = baseLang(lang);
+  if(l==='am'){ const bare = AM_PREFIXES.filter(p=>w.startsWith(p) && w.length>p.length).map(p=>w.slice(p.length)); if(bare.some(x=>x===a || (a.length>=3 && isWordForm(x, a, 'am-x')))) return true; }
+  if(a.length<3) return false;
   if(l==='en' && enLemma(w)===enLemma(a)) return true;   // item ↔ Items, return ↔ Returns
   if(l==='en') return w.startsWith(a) ? /^(s|es|ed|d|ing|'s|’s)$/.test(w.slice(a.length)) || w===a : wordFormStems(a, lang).slice(1).some(x=>w.startsWith(x.stem) && /^(es|ed|ing|d|s)$/.test(w.slice(x.stem.length)));
   return wordFormStems(a, lang).some(x=>w.startsWith(x.stem) && w.length-x.stem.length<=x.maxTail && (!x.vowelNext || VOWELS_RE.test(w[x.stem.length]||'')));
@@ -3741,6 +3759,8 @@ async function handleFolderPoFiles(projectId, componentId, items){
   if(allIssues.some(i=>i.severity==='Критическая')) toast('Найдены критические проблемы');
   status.textContent = '';
   presetStringsTypeFilterFromOverride('folderStringsRoot', checkOverride);
+  const back = folderPendingCtx && folderPendingCtx.componentId===componentId && folderPendingCtx.returnTo;
+  if(back){ if(location.hash===back) router(); else location.hash = back; return; }
   location.hash = '#/project/'+projectId+'/folder/'+componentId+'/strings';
 }
 
@@ -5767,7 +5787,11 @@ function lqaCategoryOptions(selected){
 }
 const ROUND_STATUS = {check:{label:'Проверяют', cls:'st-new'}, review:{label:'На разборе', cls:'st-review'}, done:{label:'Готово', cls:'st-accepted'}};
 function roundStatus(s){ return s.doneAt ? 'done' : s.submittedAt ? 'review' : 'check'; }
-function roundTitle(s){ return languageLabel(s.languageCode)+(s.platform?' · '+s.platform:''); }
+function roundTitle(s){ return 'LQA'+(s.platform?' '+s.platform:'')+' · '+languageLabel(s.languageCode); }
+// what a round checks: uploaded strings, the app on screenshots, or both; rounds made before this choice are screenshot rounds
+const ROUND_KINDS = [['strings','Строки'],['shots','Скриншоты'],['both','Строки и скриншоты']];
+function roundKind(s){ return s.kind || 'shots'; }
+function roundHasStrings(s){ return roundKind(s)!=='shots' || !!s.componentId; }
 function isRoundReviewer(s){ return !!s.reviewer && sameName(s.reviewer, getMe()); }
 // The hub is built around one product (the WB shopping app): its project is the first one, created on first use
 function shopProject(){
@@ -5832,7 +5856,7 @@ function fmtDay(v){ if(!v) return ''; const d = new Date(v); return isNaN(d) ? S
 function renderRoundForm(el, id){
   const ex = id ? dbGet('visualSessions', id) : null;
   setCrumbs([{label:'Проверки', hash:'#/'}, ex ? 'Изменить' : 'Новая проверка']);
-  const langs = LANGUAGE_GROUPS[0].items, lang = ex ? ex.languageCode : 'ka', platform = ex ? ex.platform||'iOS' : 'iOS';
+  const langs = LANGUAGE_GROUPS[0].items, lang = ex ? ex.languageCode : 'ka', platform = ex ? ex.platform||'iOS' : 'iOS', kind = ex ? roundKind(ex) : 'both';
   const shop = dbList('projects').length ? shopProject() : null;
   el.innerHTML = `<div class="page-head"><div><h1 class="page-title">${ex?'Изменить проверку':'Новая проверка'}</h1><div class="page-sub">Проверяющий увидит проверку у себя на главной — вместе с редполитикой и глоссариями языка</div></div></div>
     <div class="card round-form">
@@ -5843,11 +5867,12 @@ function renderRoundForm(el, id){
             <label class="field">Срок (необязательно)<input type="date" id="rfDue" value="${ex?esc(ex.due||''):''}"></label>
           </div>
           <div><div class="field-lbl">Платформа</div><div class="seg" id="rfPlatform">${ROUND_PLATFORMS.map(p=>`<button type="button" class="${platform===p?'on':''}" onclick="segPick(this);roundPlatformChanged()">${p}</button>`).join('')}</div></div>
+          <div><div class="field-lbl">Что проверяем</div><div class="seg" id="rfKind">${ROUND_KINDS.map(([k,l])=>`<button type="button" data-kind="${k}" class="${kind===k?'on':''}" onclick="segPick(this);roundKindChanged()">${l}</button>`).join('')}</div></div>
           <label class="field">Что смотреть<input type="text" id="rfName" value="${ex?esc(ex.name||''):''}" placeholder="например: релиз 7.42 — корзина и оформление заказа"></label>
-          <label class="field">Папка со строками (необязательно)<select id="rfFolder"><option value="">— все строки ${esc(shop?shop.name:'')} —</option>${shop ? componentTree(shop.id).map(c=>`<option value="${c.id}" ${ex&&ex.componentId===c.id?'selected':''}>${esc(compPath(c))}</option>`).join('') : ''}</select>
-            <span class="hint" style="margin:0;">Ошибка со скриншота сама найдёт свою строку в этой папке</span></label>
+          <label class="field">Папка со строками<select id="rfFolder"><option value="">${kind==='shots'?'— все строки '+esc(shop?shop.name:'')+' —':'— создать новую папку для этой проверки —'}</option>${shop ? componentTree(shop.id).map(c=>`<option value="${c.id}" ${ex&&ex.componentId===c.id?'selected':''}>${esc(compPath(c))}</option>`).join('') : ''}</select>
+            <span class="hint" style="margin:0;" id="rfFolderHint">${kind==='shots'?'Ошибка со скриншота сама найдёт свою строку в этой папке':'Новая папка появится в «Строках» в разделе LQA — файлы загрузишь прямо на странице проверки'}</span></label>
         </div></div>
-      <div class="form-sec"><div><h3>Экраны</h3><p class="hint">Что пройти в приложении — по одному на строке. Проверяющий отмечает пройденные и добавляет к ним ошибки</p></div>
+      <div class="form-sec" id="rfCasesSec" style="${kind==='strings'?'display:none;':''}"><div><h3>Экраны</h3><p class="hint">Что пройти в приложении — по одному на строке. Проверяющий отмечает пройденные и добавляет к ним ошибки</p></div>
         <div class="col-gap">
           <textarea id="rfCases" style="min-height:120px;" oninput="this.dataset.dirty='1'" placeholder="Главная и поиск&#10;Карточка товара&#10;Корзина&#10;Оформление заказа&#10;Пункты выдачи&#10;Профиль и настройки">${esc(ex ? (ex.cases||[]).map(c=>c.title).join('\n') : caseTemplate(platform))}</textarea>
           <label class="check-line"><input type="checkbox" id="rfSaveTpl"> <span>Запомнить как шаблон для <b id="rfTplName">${esc(platform)}</b> — в следующий раз подставится сам</span></label>
@@ -5874,6 +5899,13 @@ function roundFormLangChanged(){
   sel.innerHTML = roundReviewerOptions(lang, sel.value);
   document.getElementById('rfMaterials').innerHTML = roundMaterialsHtml(lang, null, true);
 }
+function roundKindChanged(){
+  const on = document.querySelector('#rfKind button.on'), k = on ? on.dataset.kind : 'both';
+  document.getElementById('rfCasesSec').style.display = k==='strings' ? 'none' : '';
+  const sel = document.getElementById('rfFolder');
+  sel.options[0].textContent = k==='shots' ? '— все строки —' : '— создать новую папку для этой проверки —';
+  document.getElementById('rfFolderHint').textContent = k==='shots' ? 'Ошибка со скриншота сама найдёт свою строку в этой папке' : 'Новая папка появится в «Строках» в разделе LQA — файлы загрузишь прямо на странице проверки';
+}
 function caseTemplate(platform){ return ((getSettings().caseTemplates||{})[platform]||''); }
 function roundPlatformChanged(){
   const on = document.querySelector('#rfPlatform button.on'), p = on ? on.textContent : '';
@@ -5881,20 +5913,32 @@ function roundPlatformChanged(){
   const ta = document.getElementById('rfCases');
   if(!ta.dataset.dirty && !location.hash.endsWith('/edit')) ta.value = caseTemplate(p);
 }
+// a round with strings gets its own folder (inside «LQA») and its language in the project, so files upload straight from the round
+function prepareRoundStrings(rec){
+  const p = dbGet('projects', rec.projectId); if(!p) return;
+  if(!(p.languages||[]).some(l=>l.code===rec.languageCode)){ p.languages = (p.languages||[]).concat([{code:rec.languageCode, name:languageLabel(rec.languageCode)}]); dbUpsert('projects', p); }
+  if(rec.componentId && dbGet('components', rec.componentId)) return;
+  let parent = dbQuery('components', c=>c.projectId===p.id && !c.parentId && c.name==='LQA')[0];
+  if(!parent) parent = dbUpsert('components', {id:uid(), projectId:p.id, name:'LQA', createdAt:nowISO()});
+  const comp = dbUpsert('components', {id:uid(), projectId:p.id, parentId:parent.id, name:roundTitle(rec)+(rec.name?' — '+rec.name:''), createdAt:nowISO()});
+  rec.componentId = comp.id;
+}
 function segPick(btn){ btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b===btn)); }
 function saveRound(id){
   const name = document.getElementById('rfName').value.trim();
   if(!name){ toast('Напиши, что смотреть — например, «релиз 7.42, корзина»'); document.getElementById('rfName').focus(); return; }
   const on = document.querySelector('#rfPlatform button.on');
   const rec = id ? dbGet('visualSessions', id) : {id:uid(), createdAt:nowISO(), createdBy:getMe()||null, projectId:shopProject().id};
-  const lines = document.getElementById('rfCases').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  const kindBtn = document.querySelector('#rfKind button.on'), kind = kindBtn ? kindBtn.dataset.kind : 'both';
+  const lines = kind==='strings' && !(rec.cases||[]).length ? [] : document.getElementById('rfCases').value.split('\n').map(x=>x.trim()).filter(Boolean);
   const old = rec.cases || [];
   // a screen keeps its id (and its errors, its «пройден» mark) as long as its title stays
   const cases = lines.map(t=>old.find(c=>c.title===t) || {id:uid(), title:t});
-  Object.assign(rec, {languageCode:document.getElementById('rfLang').value, platform:on?on.textContent:'', name, cases,
+  Object.assign(rec, {languageCode:document.getElementById('rfLang').value, platform:on?on.textContent:'', name, cases, kind,
     componentId:document.getElementById('rfFolder').value || null,
     due:document.getElementById('rfDue').value || '', reviewer:document.getElementById('rfReviewer').value || '', notes:document.getElementById('rfNotes').value.trim()});
-  if(document.getElementById('rfSaveTpl').checked && rec.platform) saveSettings({caseTemplates:Object.assign({}, getSettings().caseTemplates||{}, {[rec.platform]:lines.join('\n')})});
+  if(kind!=='shots') prepareRoundStrings(rec);
+  if(document.getElementById('rfSaveTpl').checked && rec.platform && kind!=='strings') saveSettings({caseTemplates:Object.assign({}, getSettings().caseTemplates||{}, {[rec.platform]:lines.join('\n')})});
   const gone = new Set(old.filter(c=>!cases.includes(c)).map(c=>c.id));
   if(gone.size) dbSave('issues', dbList('issues').map(i=>i.sessionId===rec.id && gone.has(i.caseId) ? Object.assign(i,{caseId:null}) : i));
   dbUpsert('visualSessions', rec);
@@ -5963,12 +6007,14 @@ function renderRoundPage(el, sessionId){
   const sevRank = {'Критическая':0,'Высокая':1,'Средняя':2,'Низкая':3};
   if(roundFilter.sid!==sessionId) roundFilter = {sev:'', st:'', kase:'', sid:sessionId};
   const cases = s.cases || [], passed = cases.filter(c=>c.done).length;
+  const sIds = s.componentId ? compWithDescendants(s.componentId) : null, sLang = String(s.languageCode||'').toLowerCase();
+  const stringsOpen = sIds ? dbQuery('issues', i=>!i.visual && sIds.has(i.componentId) && String(i.languageCode||'').toLowerCase()===sLang && isOpenIssue(i)).length : 0;
   const list = issues.filter(i=>(!roundFilter.kase || i.caseId===roundFilter.kase) && (!roundFilter.sev || i.severity===roundFilter.sev) && (!roundFilter.st || (roundFilter.st==='new' ? i.status==='Новая' : roundFilter.st==='ok' ? /^Принята/.test(i.status) : !/^(Новая|Принята)/.test(i.status))))
     .sort((a,b)=>(sevRank[a.severity]??9)-(sevRank[b.severity]??9) || new Date(a.createdAt)-new Date(b.createdAt));
   const chip = (key, val, label, n)=>`<button type="button" class="chip ${roundFilter[key]===val?'chip-active':''}" onclick="roundFilter.${key}='${val}';router()">${label}${n!=null?` <span class="chip-count">${n}</span>`:''}</button>`;
   const flow = [
     {t:'Материалы', d: [sgOk?'редполитика':'', glOk?'глоссарий':'', dbQuery('roundFiles', f=>f.sessionId===s.id).length?'файлы':''].filter(Boolean).join(', ') || 'можно приложить', done:true},
-    {t:'Проверка', d: issues.length+' '+plural(issues.length,'ошибка','ошибки','ошибок')+(s.reviewer?' · '+s.reviewer.split(' ')[0]:''), done:st!=='check', cur:st==='check'},
+    {t:'Проверка', d: (roundKind(s)==='strings' ? stringsOpen+' '+plural(stringsOpen,'проблема','проблемы','проблем')+' в строках' : issues.length+' '+plural(issues.length,'ошибка','ошибки','ошибок'))+(s.reviewer?' · '+s.reviewer.split(' ')[0]:''), done:st!=='check', cur:st==='check'},
     {t:'Разбор', d: st==='check' ? 'принять или «не ошибка»' : undecided ? 'осталось '+undecided : 'всё разобрано', done:st==='done', cur:st==='review'},
     {t:'Готово', d: st==='done' ? 'принято '+accepted+' из '+issues.length : 'отчёт для команды', done:st==='done'},
   ];
@@ -5991,6 +6037,7 @@ function renderRoundPage(el, sessionId){
     ${s.notes ? `<div class="notice">${icon('alertTriangle',16)}<span><b>На что обратить внимание:</b> ${esc(s.notes)}</span></div>` : ''}
     <div class="round-cols">
       <div style="min-width:0;">
+        ${roundHasStrings(s) ? roundStringsCardHtml(s) : ''}
         ${cases.length ? `<div class="card round-cases"><div class="row between" style="margin-bottom:10px;"><h3 style="margin:0;">Экраны</h3><span class="hint" style="margin:0;"><b>${passed}</b> из ${cases.length} пройдено</span></div>
           <div class="bar-track" style="margin-bottom:10px;"><div class="bar-fill" style="width:${Math.round(passed/cases.length*100)}%;"></div></div>
           ${cases.map(c=>{ const n = issues.filter(i=>i.caseId===c.id).length, canTick = st==='check' && (mgr || isRoundReviewer(s) || !s.reviewer);
@@ -6003,11 +6050,35 @@ function renderRoundPage(el, sessionId){
           ${shots.length ? `<a class="link" href="#/visual/${s.id}/shots">${icon('image',14)} Все скриншоты (${shots.length})</a>` : ''}</div>
         ${issues.length ? `<div class="round-chips">${chip('sev','','Все',issues.length)}${['Критическая','Высокая','Средняя','Низкая'].map(v=>{ const n = issues.filter(i=>i.severity===v).length; return n ? chip('sev',v,v,n) : ''; }).join('')}<span class="chip-sep"></span>${chip('st','new','Не разобрано',undecided)}${chip('st','ok','Принято',accepted)}${chip('st','no','Не ошибка',issues.length-undecided-accepted)}</div>` : ''}
         ${list.length ? list.map(i=>roundIssueCard(i, s)).join('') : issues.length ? '<div class="hint">Под этот фильтр ничего не подходит.</div>'
+          : roundKind(s)==='strings' ? `<div class="hint" style="margin:0;">Здесь — ручные замечания, если автопроверка что-то пропустила.${canAdd?` <a class="link" href="javascript:void(0)" onclick="openRoundIssueForm('${s.id}')">Добавить замечание</a>`:''}</div>`
           : `<div class="card">${emptyState({icon:'image', title: canAdd ? 'Ошибок пока нет' : 'Ошибок не добавлено', text: canAdd ? 'Нашёл ошибку в приложении — сделай скриншот и нажми «Добавить ошибку». С телефона тоже работает: открой эту страницу в Safari или Chrome.' : '',
               action: canAdd ? `<button class="btn" onclick="openRoundIssueForm('${s.id}')">${icon('plus',16)}Добавить ошибку</button>` : ''})}</div>`}
       </div>
       <aside class="round-side"><div class="card" style="margin:0;"><h3 style="margin-top:0;">Материалы</h3>${roundStringsHtml(s)}${roundMaterialsHtml(s.languageCode, s.id)}</div></aside>
     </div>`;
+}
+// the round's own strings: upload right here (same flow as a folder's «Файлы»), and what the automatic check found
+function roundStringsCardHtml(s){
+  const comp = s.componentId ? dbGet('components', s.componentId) : null;
+  if(!comp) return '';
+  const lang = String(s.languageCode||'').toLowerCase();
+  const ids = compWithDescendants(comp.id);
+  const rows = dbQuery('rows', r=>ids.has(r.componentId) && String(r.languageCode||'').toLowerCase()===lang);
+  const files = dbQuery('files', f=>ids.has(f.componentId) && !f.supersededBy && String(f.languageCode||'').toLowerCase()===lang);
+  const open = dbQuery('issues', i=>!i.visual && ids.has(i.componentId) && String(i.languageCode||'').toLowerCase()===lang && isOpenIssue(i)).length;
+  setTimeout(()=>{
+    if(document.getElementById('folderPoDrop')){ wireFolderPoDropzone(s.projectId, comp.id, [{code:s.languageCode, name:languageLabel(s.languageCode)}]); folderPendingCtx.returnTo = '#/visual/'+s.id; }
+    if(rows.length && document.getElementById('roundStringsRoot')) renderRowsIssuesGeneric({projectId:s.projectId, componentId:comp.id}, 'roundStringsRoot');
+  }, 0);
+  return `<div class="card round-strings">
+    <div class="row between" style="margin-bottom:10px;gap:8px;"><h3 style="margin:0;">Строки</h3>
+      <span class="hint" style="margin:0;">${rows.length ? `${rows.length.toLocaleString('ru-RU')} ${plural(rows.length,'строка','строки','строк')} · ${files.length} ${plural(files.length,'файл','файла','файлов')} · <b>${open}</b> ${plural(open,'проблема','проблемы','проблем')} автопроверки` : 'файлов пока нет'} · <a class="link" href="#/project/${s.projectId}/folder/${comp.id}">папка</a></span></div>
+    ${isManager() ? `<input type="hidden" id="folderUploadLanguage" value="${esc(s.languageCode)}">
+      <label class="drop drop-compact" id="folderPoDrop"><div><strong>${rows.length?'+ Новая версия или ещё файлы':'Загрузи строки на проверку'}</strong><span>.po, .json, .csv или .zip — язык: ${esc(languageLabel(s.languageCode))}. Проверка запустится сама</span></div>
+        <input class="hidden-input" type="file" id="folderPoFileInput" multiple accept=".po,.zip,.json,.csv,.tsv"></label>
+      <div id="folderPendingWrap"></div><div class="hint" id="folderUploadStatus"></div>` : ''}
+    ${rows.length ? `<div id="roundStringsRoot" style="margin-top:12px;"></div>` : ''}
+  </div>`;
 }
 function roundIssueCard(i, s){
   const sh = i.shotId ? dbGet('visualShots', i.shotId) : null, row = i.rowId ? dbGet('rows', i.rowId) : null;
@@ -8401,7 +8472,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-19.3';
+const APP_VERSION = '2026-10-19.4';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;

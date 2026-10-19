@@ -22,7 +22,7 @@ test('проверка: экраны, ошибка со скриншотом, с
   await page.fill('#rfCases', 'Корзина\nОформление заказа');
   await page.check('#rfSaveTpl');
   await page.click('button:has-text("Создать проверку")');
-  await expect(page.locator('.project-hero')).toContainText('Грузинский · iOS');
+  await expect(page.locator('.project-hero')).toContainText('LQA iOS · Грузинский');
   await expect(page.locator('.case-row')).toHaveCount(2);
   expect(await page.evaluate(() => getSettings().caseTemplates.iOS)).toBe('Корзина\nОформление заказа');
   await expect(page.locator('.round-side')).toContainText('2 строки');
@@ -137,5 +137,42 @@ test('грузинский по редполитике: кавычки, валю
   expect(rules('must')).toContain('საჭიროა');
   expect(rules('ok')).toBe('');
   expect(rules('ok2')).toBe('');
+  expectNoErrors(errors);
+});
+
+test('проверка только строк: «LQA Веб · Амхарский», своя папка, файл загружается прямо в проверке; правила амхарского', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { name: 'Магазин WB', langs: ['ka'] });
+  await page.evaluate(() => {
+    dbUpsert('glossaries', { id: 'g1', name: 'am', language: 'am', projectId: 'p0' });
+    dbUpsert('glossaryTerms', { id: 't1', glossaryId: 'g1', term: 'Товар', approved: 'ምርት' });
+    location.hash = '#/round/new';
+  });
+  await page.selectOption('#rfLang', 'am');
+  await page.click('#rfPlatform button:has-text("Веб")');
+  await page.click('#rfKind button:has-text("Строки")');
+  await expect(page.locator('#rfCasesSec')).toBeHidden();
+  await page.fill('#rfName', 'Главная');
+  await page.click('button:has-text("Создать проверку")');
+  await expect(page.locator('.project-hero h1')).toContainText('LQA Веб · Амхарский');
+  await expect(page.locator('.round-cases')).toHaveCount(0);
+  const comp = await page.evaluate(() => { const s = dbList('visualSessions')[0]; const c = dbGet('components', s.componentId); return { name: c.name, parent: dbGet('components', c.parentId).name, langs: dbGet('projects', 'p0').languages.map(l => l.code) }; });
+  expect(comp).toEqual({ name: 'LQA Веб · Амхарский — Главная', parent: 'LQA', langs: ['ka', 'am'] });
+
+  await page.setInputFiles('#folderPoFileInput', { name: 'am.po', mimeType: 'text/plain', buffer: Buffer.from(po('am', [
+    ['dot', 'Заказ оформлен.', 'ትዕዛዙ ተረጋግጧል::'], ['lat', 'Заказ оформлен.', 'ትዕዛዙ ተረጋግጧል.'], ['dig', '3 товара', '፫ ምርቶች'],
+    ['you', 'Ты можешь оплатить', 'አንተ መክፈል ትችላለህ'], ['ok', 'Товары в корзине.', 'በጋሪው ውስጥ ያሉ ምርቶች።'], ['pre', 'Цена товара', 'የምርቱ ዋጋ'],
+  ])) });
+  await page.click('#folderPendingWrap button:has-text("Загрузить")');
+  await expect(page.locator('.round-strings')).toContainText('6 строк', { timeout: 15_000 });
+  await expect(page).toHaveURL(/#\/visual\//);
+  const issues = await issuesByKey(page);
+  const rules = k => issues.filter(i => i.key === k && i.type === 'Правила языка').map(i => i.text).join(' | ');
+  expect(rules('dot')).toContain('«::»');
+  expect(rules('lat')).toContain('«።»');
+  expect(rules('dig')).toContain('Эфиопские цифры');
+  expect(rules('you')).toContain('እርስዎ');
+  expect(rules('ok')).toBe('');
+  expect(issues.filter(i => (i.key === 'ok' || i.key === 'pre') && i.type === 'Терминология')).toEqual([]);
   expectNoErrors(errors);
 });
