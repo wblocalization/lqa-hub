@@ -118,3 +118,24 @@ test('глоссарии: пересечения между проектами �
   expect(await page.evaluate(() => openOverlapCount())).toBe(1);
   expectNoErrors(errors);
 });
+
+test('грузинский по редполитике: кавычки, валюта, переменная с послелогом, число + мн. ч., тире, «უნდა»', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['ka'] });
+  await uploadPo(page, { lang: 'ka', text: po('ka', [
+    ['q', 'Статус «В пути»', 'სტატუსი «გზაშია»'], ['cur', 'Цена: 100₽', 'ფასი: 100₾'], ['var', 'Выберите в %s', 'აირჩიეთ %s-ში'],
+    ['pl', '5 товаров', '5 პროდუქტები'], ['dash', 'Заказ - в пути', 'შეკვეთა - გზაშია'], ['must', 'Вы должны ввести пароль', 'თქვენ უნდა შეიყვანოთ პაროლი'],
+    ['ok', 'Выберите: %s', 'აირჩიეთ: %s'], ['ok2', '5 товаров за 100 ₽', '5 პროდუქტი 100 ₾-ად'],
+  ]) });
+  const issues = await issuesByKey(page);
+  const rules = k => issues.filter(i => i.key === k && i.type === 'Правила языка').map(i => i.text).join(' | ');
+  expect(rules('q')).toContain('„…“');
+  expect(rules('cur')).toContain('после суммы');
+  expect(rules('var')).toContain('послелог');
+  expect(rules('pl')).toContain('единственном числе');
+  expect(rules('dash')).toContain('Тире');
+  expect(rules('must')).toContain('საჭიროა');
+  expect(rules('ok')).toBe('');
+  expect(rules('ok2')).toBe('');
+  expectNoErrors(errors);
+});
