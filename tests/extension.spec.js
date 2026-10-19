@@ -53,7 +53,7 @@ test('расширение обходит страницы на компьюте
   await page.evaluate(() => {
     dbUpsert('projects', { id: 'p0', name: 'WB', languages: [{ code: 'ru', name: 'Русский' }] });
     dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Обход', languageCode: 'ru', createdAt: nowISO() });
-    location.hash = '#/visual/s0';
+    location.hash = '#/visual/s0/shots';
   });
   await page.click('button:has-text("Обойти страницы")');
   await page.fill('#crPages', `Главная | ${siteUrl}/\nКаталог | ${siteUrl}/challenge`);
@@ -105,7 +105,7 @@ test('шаги перед снимком: нажать на переключат
   await page.evaluate(() => {
     dbUpsert('projects', { id: 'p0', name: 'WB', languages: [{ code: 'kk', name: 'Казахский' }] });
     dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Языки', languageCode: 'kk', createdAt: nowISO() });
-    location.hash = '#/visual/s0';
+    location.hash = '#/visual/s0/shots';
   });
   await page.click('button:has-text("Обойти страницы")');
   await page.fill('#crPages', [
