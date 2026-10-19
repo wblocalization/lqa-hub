@@ -162,9 +162,11 @@ test('проверка только строк: «LQA Веб · Амхарски
   await page.setInputFiles('#folderPoFileInput', { name: 'am.po', mimeType: 'text/plain', buffer: Buffer.from(po('am', [
     ['dot', 'Заказ оформлен.', 'ትዕዛዙ ተረጋግጧል::'], ['lat', 'Заказ оформлен.', 'ትዕዛዙ ተረጋግጧል.'], ['dig', '3 товара', '፫ ምርቶች'],
     ['you', 'Ты можешь оплатить', 'አንተ መክፈል ትችላለህ'], ['ok', 'Товары в корзине.', 'በጋሪው ውስጥ ያሉ ምርቶች።'], ['pre', 'Цена товара', 'የምርቱ ዋጋ'],
+    ['abbr', 'и т.д.', 'ወዘተ.'], ['dnt', 'Покупатель Wildberries', 'የWildberries ገዢ'],
   ])) });
   await page.click('#folderPendingWrap button:has-text("Загрузить")');
-  await expect(page.locator('.round-strings')).toContainText('6 строк', { timeout: 15_000 });
+  await expect(page.locator('.round-strings')).toContainText('8 строк', { timeout: 15_000 });
+  await expect(page.locator('#roundStringsRoot th').nth(3)).toHaveText('Файл');
   await expect(page).toHaveURL(/#\/visual\//);
   const issues = await issuesByKey(page);
   const rules = k => issues.filter(i => i.key === k && i.type === 'Правила языка').map(i => i.text).join(' | ');
@@ -173,6 +175,8 @@ test('проверка только строк: «LQA Веб · Амхарски
   expect(rules('dig')).toContain('Эфиопские цифры');
   expect(rules('you')).toContain('እርስዎ');
   expect(rules('ok')).toBe('');
+  expect(rules('abbr')).toBe('');
+  expect(issues.filter(i => i.key === 'dnt' && i.type === 'Не переводить')).toEqual([]);
   expect(issues.filter(i => (i.key === 'ok' || i.key === 'pre') && i.type === 'Терминология')).toEqual([]);
   expectNoErrors(errors);
 });
@@ -200,6 +204,8 @@ test('отчёт по каждому файлу в Excel; CSV открывает
   const [csv] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => exportIssuesToCsv(dbList('issues')))]);
   const text = require('fs').readFileSync(await csv.path(), 'utf8');
   expect(text.charCodeAt(0)).toBe(0xFEFF);
-  expect(text.split('\r\n')[0]).toContain('"Исходный текст";"Перевод"');
+  const lines = text.split('\r\n');
+  expect(lines[0]).toContain('"Ключ";"Исходный текст";"Перевод";"Язык";"Файл"');
+  expect(lines.some(l => l.startsWith('"a";') && l.includes('"home.po"'))).toBe(true);
   expectNoErrors(errors);
 });
