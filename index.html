@@ -1575,7 +1575,23 @@ const LANGUAGE_RULES = {
   az: [t=>{ const m = t.match(/[Әә]/); return m && {text:'Кириллическая «'+m[0]+'» вместо латинской «'+(m[0]==='ә'?'ə':'Ə')+'» в азербайджанском', highlight:m[0], expected:m[0]==='ә'?'ə':'Ə', severity:'Высокая'}; }],
   // Georgian has no capital letters: a Mtavruli first letter on a Mkhedruli word («Კალათა») comes from
   // code or a translator «capitalizing» the start like in Russian. All-Mtavruli words (ᲙᲐᲚᲐᲗᲐ) are a valid caps style.
-  ka: [t=>{ const m = visibleText(t).match(/[\u1C90-\u1CBF][\u10D0-\u10FF]+/); return m && {text:'В грузинском нет заглавных букв: «'+m[0]+'» — первая буква из Мтаврули, остальные строчные', highlight:m[0], expected:String.fromCharCode(m[0].charCodeAt(0)-0x1C90+0x10D0)+m[0].slice(1), severity:'Высокая'}; }],
+  ka: [
+    t=>{ const m = visibleText(t).match(/[\u1C90-\u1CBF][\u10D0-\u10FF]+/); return m && {text:'В грузинском нет заглавных букв: «'+m[0]+'» — первая буква из Мтаврули, остальные строчные', highlight:m[0], expected:String.fromCharCode(m[0].charCodeAt(0)-0x1C90+0x10D0)+m[0].slice(1), severity:'Высокая'}; },
+    // the rest follows the Georgian style guide (редполитика): typography, numbers, variables, wording
+    t=>{ const m = visibleText(t).match(/«[^»]*»|"[^"]+"|“[^”]*”/); return m && /[\u10D0-\u10FF]/.test(m[0]) && {text:'Кавычки в грузинском — нижне-верхние „…“', highlight:m[0], expected:'„'+m[0].slice(1,-1)+'“', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u10D0-\u10FF]\s*&\s*[\u10D0-\u10FF]/); return m && {text:'Амперсанд вместо союза: в грузинском тексте пишем «და»', highlight:'&', expected:'და', severity:'Средняя'}; },
+    t=>{ const v = visibleText(t), m = v.match(/\d(?:₾|€|\$)|(?:₾|€|\$)\s?\d[\d\s]*/); return m && {text:'Знак валюты — после суммы, через пробел: 100 ₾', highlight:m[0], severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/\d,\d/); return m && {text:'В грузинском дробную часть отделяем точкой (5.43), разряды — пробелом (3 000)', highlight:m[0], severity:'Низкая'}; },
+    // a postposition glued to a variable comes out wrong once a Georgian word is substituted (თბილისი-ში)
+    t=>{ const m = String(t).match(/(?:%(?:\d+\$)?[-+0 #]*\d*(?:\.\d+)?[sdfi@]|\{\{\s*[\w.]+\s*\}\}|\{[\w.]+\}|\$\{[\w.]+\})-?[\u10D0-\u10FF]+/); return m && {text:'К переменной присоединено окончание или послелог — перестрой фразу, например через двоеточие: «აირჩიეთ: %s»', highlight:m[0], severity:'Средняя'}; },
+    t=>{ const m = String(t).match(/(?:(?<![\d.,])\d+|%d|\{\{\s*count\s*\}\}|\{count\})\s+[\u10D0-\u10FF]+ებ(?:ი|ს|ის|ით|ად|ო|ში|ზე)?(?![\u10D0-\u10FF])/); return m && {text:'После числа существительное — в единственном числе: «5 პროდუქტი», а не «5 პროდუქტები»', highlight:m[0], severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/\d+-(?:ლი|ში)\s+(?:იანვ|თებერვ|მარტ|აპრილ|მაის|ივნის|ივლის|აგვისტ|სექტემბ|ოქტომბ|ნოემბ|დეკემბ)[\u10D0-\u10FF]*/); return m && {text:'Дата пишется без окончания у числа: «1 იანვარი»', highlight:m[0], expected:m[0].replace(/-(?:ლი|ში)/,''), severity:'Низкая'}; },
+    t=>{ const v = visibleText(t), m = v.match(/[\u10D0-\u10FF] - [\u10D0-\u10FF]|[\u10D0-\u10FF]—[\u10D0-\u10FF]/); return m && {text:'Тире — длинное и с пробелами с обеих сторон: « — »', highlight:m[0], expected:m[0][0]+' — '+m[0].slice(-1), severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u10D0-\u10FF];/); return m && {text:'Точку с запятой в интерфейсе не используем — раздели на предложения или пункты', highlight:';', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/(?<![\u10D0-\u10FF])უნდა(?![\u10D0-\u10FF])/); return m && {text:'Не «უნდა» (должен): пишем нейтрально — «საჭიროა» или «აუცილებელია»', highlight:m[0], severity:'Низкая'}; },
+    t=>{ const W = {'იუზერ':'მომხმარებელი','სეტინგ':'პარამეტრები','აიფონ':'iPhone','იუთუბ':'YouTube'};
+      const m = visibleText(t).match(/(?<![\u10D0-\u10FF])(იუზერ|სეტინგ|აიფონ|იუთუბ)[\u10D0-\u10FF]*/); return m && {text:'Заимствование или транслитерация бренда: вместо «'+m[0]+'» — «'+W[m[1]]+'»', highlight:m[0], expected:W[m[1]], severity:'Средняя'}; },
+  ],
   kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
   zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
 };
@@ -7810,7 +7826,7 @@ function editStyleGuide(lang){
     <label class="field">Язык<select id="sgLang" ${lang?'disabled':''}>${codes.map(c=>`<option value="${esc(c)}" ${c===lang?'selected':''}>${esc(languageLabel(c))} (${esc(c)})</option>`).join('')}</select></label>
     <label class="field" style="margin-top:10px;">Ссылка на Google Документ или сам текст
       <textarea id="sgValue" style="min-height:140px;" placeholder="https://docs.google.com/document/d/…">${esc(lang ? sg[lang]||'' : '')}</textarea></label>
-    <label class="field" style="margin-top:10px;">…или загрузи файл (.docx, .txt, .md)<input type="file" id="sgFile" accept=".docx,.txt,.md"></label>
+    <label class="field" style="margin-top:10px;">…или загрузи файл (.docx, .pdf, .txt, .md)<input type="file" id="sgFile" accept=".docx,.pdf,.txt,.md"></label>
     <div class="hint" id="sgFileStatus" style="margin:4px 0 0;"></div>
     <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
   (root, close)=>{
@@ -7835,8 +7851,9 @@ function editStyleGuide(lang){
     if(v.value && getSettings().aiEndpointUrl) setTimeout(()=>checkStyleGuide(v.lang), 0);
   });
 }
-// .docx — the paragraphs of word/document.xml; .txt/.md — as is
+// .docx — the paragraphs of word/document.xml; .pdf — its text, line by line (pdf.js, read in the browser); .txt/.md — as is
 async function readStyleGuideFile(file){
+  if(/\.pdf$/i.test(file.name)) return readPdfText(file);
   if(!/\.docx$/i.test(file.name)) return (await file.text()).replace(/\r\n?/g, '\n').trim();
   if(!await ensureJSZip()) throw new Error('не загрузилась библиотека для .docx — проверь интернет');
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -7848,6 +7865,28 @@ async function readStyleGuideFile(file){
     p.querySelectorAll('*').forEach(n=>{ if(n.namespaceURI!==W) return; if(n.localName==='t') line += n.textContent; else if(n.localName==='tab') line += '\t'; else if(n.localName==='br') line += '\n'; });
     return (p.getElementsByTagNameNS(W, 'numPr').length ? '• ' : '') + line;
   }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+const PDFJS = 'pdfjs-dist@4.10.38/build/';
+async function readPdfText(file){
+  let pdfjs;
+  try{ pdfjs = await import(cdnBase()+PDFJS+'pdf.min.mjs'); }catch(e){ throw new Error('не загрузилась библиотека для PDF — проверь интернет'); }
+  pdfjs.GlobalWorkerOptions.workerSrc = cdnBase()+PDFJS+'pdf.worker.min.mjs';
+  const doc = await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  const pages = [];
+  for(let n=1; n<=doc.numPages; n++){
+    const items = (await (await doc.getPage(n)).getTextContent()).items;
+    let line = '', lastY = null; const lines = [];
+    items.forEach(it=>{
+      const y = Math.round(it.transform[5]);
+      if(lastY!==null && Math.abs(y-lastY)>2){ lines.push(line); line = ''; }
+      line += it.str; lastY = y;
+      if(it.hasEOL){ lines.push(line); line = ''; lastY = null; }
+    });
+    lines.push(line);
+    // the browser's print header/footer (date, page title, url, «3/11») on every page is noise
+    pages.push(lines.filter(l=>!/^\s*https?:\/\/\S+\s+\d+\/\d+\s*$/.test(l) && !/^\d{2}\.\d{2}\.\d{4}, \d{1,2}:\d{2} /.test(l)).join('\n'));
+  }
+  return pages.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 function deleteStyleGuide(lang){
   if(!isManager()) return;
@@ -8362,7 +8401,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-19.2';
+const APP_VERSION = '2026-10-19.3';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
