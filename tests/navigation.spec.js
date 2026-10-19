@@ -12,7 +12,7 @@ async function withData(page) {
 test('все разделы открываются без ошибок', async ({ page }) => {
   const errors = await withData(page);
   for (const hash of ['#/', '#/projects', '#/project/p0', '#/project/p0/folders', '#/project/p0/quality', '#/project/p0/folder/c0',
-    '#/project/p0/folder/c0/strings', '#/issues', '#/my', '#/visual', '#/glossaries', '#/analytics', '#/report', '#/export', '#/settings']) {
+    '#/project/p0/folder/c0/strings', '#/issues', '#/my', '#/visual', '#/glossaries', '#/glossaries/overlaps', '#/glossaries/styleguides', '#/overview', '#/round/new', '#/strings', '#/analytics', '#/report', '#/export', '#/settings']) {
     await page.evaluate(h => { location.hash = h; }, hash);
     await expect(page.locator('#content')).not.toContainText('Не получилось показать страницу');
     await expect(page.locator('#content')).not.toContainText('Страница не найдена');

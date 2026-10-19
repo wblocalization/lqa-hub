@@ -682,6 +682,91 @@ html.theme-vt::view-transition-old(page),html.theme-vt::view-transition-new(page
 }
 @media(max-width:560px){ .grid-4{grid-template-columns:repeat(2,minmax(0,1fr));} .kpi .num{font-size:22px;} .page-head{align-items:flex-start;} }
 @media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important;} ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important;} }
+
+/* ---------- rounds («Проверки») ---------- */
+.round-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px;margin-bottom:8px;}
+.round-card{display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm);color:inherit;text-decoration:none;transition:box-shadow .15s ease,border-color .15s ease,transform .15s ease;}
+.round-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.round-h{display:flex;align-items:center;gap:10px;}
+.round-h h3{margin:0;font-size:16px;line-height:1.3;}
+a.tabbtn{text-decoration:none;}
+.round-h .sub{font-size:12.5px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.round-h .pill{margin-left:auto;flex-shrink:0;}
+.round-fl{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg-2);flex-shrink:0;}
+.round-fl .flag-ic{width:22px;height:auto;}
+.round-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
+.round-steps i{height:5px;border-radius:99px;background:var(--bg-2);}
+.round-steps i.d{background:var(--brand-grad);}
+.round-steps i.c{background:color-mix(in srgb,var(--primary) 40%,var(--bg-2));}
+.round-f{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--text-soft);}
+.round-f > span{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.round-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 18px;}
+.round-flow .st{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;font-size:13px;color:var(--text-soft);min-width:0;}
+.round-flow .st b{display:block;color:var(--text);font-size:14px;margin:2px 0;}
+.round-flow .st small{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);}
+.round-flow .st.done small{color:var(--ok);}
+.round-flow .st.cur{border-color:var(--primary);box-shadow:0 0 0 3px var(--focus);}
+.round-flow .st.cur small{color:var(--primary);}
+@media(max-width:800px){.round-flow{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.round-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;}
+@media(max-width:1100px){.round-cols{grid-template-columns:minmax(0,1fr);}}
+.round-chips{display:flex;flex-wrap:wrap;gap:6px 0;margin-bottom:12px;}
+.round-err{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px;box-shadow:var(--shadow-sm);margin-bottom:10px;}
+@media(max-width:700px){.round-err{grid-template-columns:72px minmax(0,1fr);} .round-acts{grid-column:1/-1;flex-direction:row!important;flex-wrap:wrap;}}
+.round-thumb{display:block;width:100%;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:1px solid var(--border-strong);background:var(--bg-2);padding:0;cursor:zoom-in;}
+.round-thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
+.round-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:default;}
+.round-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;min-width:0;}
+.round-tags .pill{max-width:100%;white-space:normal;height:auto;min-height:22px;padding-top:3px;padding-bottom:3px;line-height:1.3;}
+.round-what{margin:0 0 6px;font-size:14px;font-weight:600;}
+.round-meta{font-size:12px;color:var(--text-faint);margin-top:8px;}
+.round-acts{display:flex;flex-direction:column;gap:6px;}
+.found-expected{flex-wrap:wrap;}
+.found-expected .fe-l{font-family:Inter,system-ui,sans-serif;font-size:11.5px;color:var(--text-faint);}
+.round-cases{margin-bottom:18px;}
+.round-cases .bar-fill{background:var(--brand-grad);}
+.case-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r-sm);}
+.case-row:hover,.case-row.sel{background:var(--surface-2);}
+.case-row .chip{margin:0;height:26px;}
+.case-chk{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;font-size:14px;}
+.case-chk input{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;}
+.case-row.done .case-chk span{color:var(--text-faint);text-decoration:line-through;}
+.have{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px;}
+.have{flex-wrap:wrap;}
+.have > div{min-width:0;flex:1 1 150px;}
+.have b{display:block;font-size:13.5px;}
+.have span{font-size:12px;color:var(--text-faint);overflow-wrap:anywhere;}
+.have-ic{width:30px;height:30px;border-radius:9px;background:var(--ok-bg);color:var(--ok);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.have.missing .have-ic{background:var(--bg-2);color:var(--text-faint);}
+.form-sec{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding:20px 0;border-top:1px solid var(--border);}
+.form-sec:first-child{border-top:0;padding-top:4px;}
+.form-sec h3{margin:0 0 4px;font-size:16px;}
+.form-sec .hint{margin:0;}
+@media(max-width:800px){.form-sec{grid-template-columns:minmax(0,1fr);gap:12px;}}
+.col-gap{display:flex;flex-direction:column;gap:14px;min-width:0;}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+@media(max-width:600px){.f2{grid-template-columns:minmax(0,1fr);}}
+.field-lbl{font-size:13px;color:var(--text-soft);font-weight:500;margin-bottom:6px;}
+.check-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-soft);cursor:pointer;}
+.check-line input{accent-color:var(--primary);}
+.seg{display:inline-flex;background:var(--bg-2);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;font:500 13px Inter,system-ui,sans-serif;color:var(--text-soft);cursor:pointer;}
+.seg button.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow-sm);}
+.seg-sev{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;}
+.seg-sev button{padding:8px 4px;}
+.seg-sev button.on.sev-critical{background:var(--crit-bg);color:var(--crit);}
+.seg-sev button.on.sev-high{background:var(--high-bg);color:var(--high);}
+.seg-sev button.on.sev-medium{background:var(--med-bg);color:var(--med);}
+.seg-sev button.on.sev-low{background:var(--low-bg);color:var(--low);}
+.round-form-modal{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+.shot-pick{display:flex;align-items:center;gap:12px;padding:10px;border:1.5px dashed var(--border-strong);border-radius:var(--r-md);background:var(--surface-2);cursor:pointer;}
+.shot-pick:hover,.shot-pick.drag{border-color:var(--primary);background:var(--primary-bg);}
+.shot-pick-img{width:56px;height:74px;border-radius:8px;overflow:hidden;background:var(--bg-2);display:flex;align-items:center;justify-content:center;color:var(--text-faint);flex-shrink:0;}
+.shot-pick-img img{width:100%;height:100%;object-fit:cover;object-position:top;}
+.shot-pick b{display:block;font-size:14px;}
+.shot-pick small{font-size:12px;color:var(--text-faint);}
+.hint-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--text-soft);background:var(--bg-2);border-radius:8px;padding:7px 10px;margin-bottom:6px;}
+.hint-line.gl{background:var(--ok-bg);color:var(--ok);}
 </style>
 </head>
 <body>
@@ -1424,6 +1509,8 @@ const PLURAL_COUNTS = {ru:3, uk:3, be:3, kk:2, uz:2, ky:2, tg:2, hy:2, ka:2, az:
 function baseLang(code){ return String(code||'').toLowerCase().split(/[-_]/)[0]; }
 // Currency each market shows prices in — a leftover ₽ in, say, the Kazakh UI is almost always a bug
 const LOCALE_CURRENCY = {kk:'₸ (тенге)', uz:'сум', ky:'сом', hy:'֏ (драм)', ka:'₾ (лари)', az:'₼ (манат)', tg:'сомони', be:'Br (белорусский рубль)', zh:'валюта рынка', tr:'₺'};   // en: English serves Russia too, ₽ is fine
+// languages whose words run long next to Russian/English: the «much longer than the source» hint gets more room
+const LENGTH_RATIO_LANG = {ka:1.3, hy:1.2, az:1.1, uz:1.1, kk:1.1, ky:1.1};
 const GUILLEMET_LANGS = ['ru','kk','ky','be','tg','uz','az','hy','uk'];
 function parseDntTerms(text){ return String(text||'').split(/[\n,;]+/).map(t=>t.trim()).filter(t=>t.length>1); }
 function hasWholeTerm(text, term){
@@ -1486,6 +1573,9 @@ const LANGUAGE_RULES = {
   uz: [t=>{ const m = t.match(/[oOgG]['’`‘]/); return m && {text:'Узбекский апостроф: в «oʻ» и «gʻ» ставится знак ʻ (U+02BB), а не '+m[0].slice(1), highlight:m[0], expected:m[0][0]+'ʻ', severity:'Низкая'}; }],
   hy: [t=>{ const m = /[Ա-և][^Ա-և]*$/.test(t) && t.trim().match(/[Ա-և]+([.:])\s*$/); return m && {text:'Армянская точка — «։» (վերջակետ), а не «'+m[1]+'»', highlight:m[1], expected:'։', severity:'Низкая'}; }],
   az: [t=>{ const m = t.match(/[Әә]/); return m && {text:'Кириллическая «'+m[0]+'» вместо латинской «'+(m[0]==='ә'?'ə':'Ə')+'» в азербайджанском', highlight:m[0], expected:m[0]==='ә'?'ə':'Ə', severity:'Высокая'}; }],
+  // Georgian has no capital letters: a Mtavruli first letter on a Mkhedruli word («Კალათა») comes from
+  // code or a translator «capitalizing» the start like in Russian. All-Mtavruli words (ᲙᲐᲚᲐᲗᲐ) are a valid caps style.
+  ka: [t=>{ const m = visibleText(t).match(/[\u1C90-\u1CBF][\u10D0-\u10FF]+/); return m && {text:'В грузинском нет заглавных букв: «'+m[0]+'» — первая буква из Мтаврули, остальные строчные', highlight:m[0], expected:String.fromCharCode(m[0].charCodeAt(0)-0x1C90+0x10D0)+m[0].slice(1), severity:'Высокая'}; }],
   kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
   zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
 };
@@ -1668,6 +1758,21 @@ function extractTagsNormalized(str){
 }
 const BREAK_RE = /\\n|\\r/g;
 function extractAll(str, re){ if(!str) return []; const r = new RegExp(re.source, re.flags); return str.match(r) || []; }
+// Variables of the source vs the translation. A printf variable with a suffix glued on is still the
+// variable when the source has it: «%@ın», «%1$sdən» (az), «%sни» (uz). VAR_RE alone can't tell
+// «%dan» (a percent sign + suffix) from «%d» + «an», so only the source's own variables are looked for.
+function diffVars(src, tgt){
+  const res = diffMultiset(extractAll(src,VAR_RE), extractAll(tgt,VAR_RE));
+  if(!res.missing.length) return res;
+  const glued = {};
+  res.missing.forEach(v=>{
+    if(!/^%/.test(v) || glued[v]!==undefined) return;
+    const re = new RegExp('(?<!\\d)'+v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=[\\p{L}])', 'gu');
+    glued[v] = (String(tgt||'').match(re)||[]).length;
+  });
+  res.missing = res.missing.filter(v=>!(glued[v]>0 && glued[v]--));
+  return res;
+}
 function diffMultiset(a, b){
   const ca={}, cb={};
   a.forEach(t=>ca[t]=(ca[t]||0)+1); b.forEach(t=>cb[t]=(cb[t]||0)+1);
@@ -1923,7 +2028,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       // an empty translation is just not translated — its variables, tags and line breaks aren't "lost"
       if(!tgtTrim && !(r.targetForms||[]).slice(1).some(f=>String(f||'').trim())) return;
       if(s.checkVars){
-        const {missing, extra} = diffMultiset(extractAll(src,VAR_RE), extractAll(tgt,VAR_RE));
+        const {missing, extra} = diffVars(src, tgt);
         if(missing.length) push('Переменные','Критическая','Потеряна переменная: '+missing.join(', '), {highlightField:'source', highlightText:missing[0]});
         if(extra.length) push('Переменные','Критическая','Лишняя переменная: '+extra.join(', '), {highlightField:'target', highlightText:extra[0]});
         // no check of the order: languages put words in a different order, and «%2$s üçün %1$s» is correct Azerbaijani
@@ -1956,7 +2061,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       }
       if(s.checkLength && srcTrim.length>=3 && tgtTrim.length>0){
         const ratio = tgtTrim.length/srcTrim.length;
-        if(ratio > (s.lengthRatio||1.6)) push('Длина','Средняя','Перевод заметно длиннее исходного (×'+ratio.toFixed(2)+') — может не влезть в интерфейс');
+        if(ratio > (s.lengthRatio||1.6)*(LENGTH_RATIO_LANG[baseLang(r.languageCode)]||1)) push('Длина','Средняя','Перевод заметно длиннее исходного (×'+ratio.toFixed(2)+') — может не влезть в интерфейс');
       }
       if(s.checkLegalEntities && tgtTrim){
         legalEntityIssues(src, tgt, r.languageCode).forEach(x=>{
@@ -1982,7 +2087,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
         r.targetForms.forEach((f,i)=>{
           if(i===0) return; // form 0 is the row's own target and goes through every check above
           if(!String(f||'').trim()){ push('Множественное число','Критическая','Не заполнена форма №'+(i+1)+' множественного числа'); return; }
-          const {missing, extra} = diffMultiset(extractAll(r.sourcePlural||src, VAR_RE), extractAll(f, VAR_RE));
+          const {missing, extra} = diffVars(r.sourcePlural||src, f);
           if(missing.length) push('Множественное число','Высокая','В форме №'+(i+1)+' потеряна переменная: '+missing.join(', '));
           if(extra.length) push('Множественное число','Высокая','В форме №'+(i+1)+' лишняя переменная: '+extra.join(', '));
           const tagDiff = diffMultiset(extractTagsNormalized(r.sourcePlural||src), extractTagsNormalized(f));
@@ -2228,7 +2333,7 @@ function crossPlatformGlossaryExamples(allRows, languageCode, componentId, termL
     if(r.componentId===componentId || r.languageCode!==languageCode) continue;
     const src = (r.source||'').toLowerCase();
     if(!src.includes(termLower)) continue;
-    const tgt = (r.target||'').toLowerCase();
+    const tgt = lcFold(r.target);
     const check = containsApprovedForm(tgt, approvedLower);
     if(!check.matched || check.confidence!=='exact') continue; // only confident matches count as cross-platform proof
     const comp = componentsById[r.componentId];
@@ -2269,11 +2374,15 @@ function findCaseInsensitiveMatch(str, needle){
   if(idx<0) return null;
   return {index: idx, matched: str.slice(idx, idx+needle.length)};
 }
+// Lowercase for matching a translation against the glossary. Plain toLowerCase() turns the Azerbaijani/Turkish
+// «İ» into «i» + a combining dot, so «İade» at the start of a sentence never matched «iade»; «ı»/«i» are
+// folded together for the same reason («IŞIQ» → «işiq» but the glossary has «işıq»).
+function lcFold(s){ return String(s||'').toLowerCase().replace(/\u0307/g,'').replace(/ı/g,'i'); }
 async function runGlossaryCheck(projectId, override, onProgress){
   const s = Object.assign({}, getSettings(), override||{});
   if(!s.checkGlossary) return;
   let issues = dbList('issues').filter(i=>!(i.projectId===projectId && i.type==='Терминология'));
-  const glossaries = dbQuery('glossaries', g=>!g.projectId || g.projectId===projectId);
+  const glossaries = dbQuery('glossaries', g=>g.projectId ? g.projectId===projectId : !g.scope);
   const glossaryIds = glossaries.map(g=>g.id);
   const glossaryLangById = {}; glossaries.forEach(g=>{ glossaryLangById[g.id] = g.language || ''; });
   const rawTerms = dbQuery('glossaryTerms', t=>glossaryIds.includes(t.glossaryId));
@@ -2283,9 +2392,9 @@ async function runGlossaryCheck(projectId, override, onProgress){
   const dnt = new Set(String(s.dntTerms||'').split(/\n/).map(x=>x.trim().toLowerCase()).filter(Boolean));
   const terms = rawTerms.filter(t=>t.term && !dnt.has(t.term.trim().toLowerCase())).map(t=>({
     term: t.term, approved: t.approved||'', glossaryId: t.glossaryId,
-    termLower: t.term.toLowerCase(), approvedLower: (t.approved||'').toLowerCase(),
-    approvedAlts: glossaryAlternatives(t.approved||'').map(a=>a.toLowerCase()),
-    forbidden: t.forbidden||[], forbiddenLower: (t.forbidden||[]).map(f=>(f||'').toLowerCase()),
+    termLower: t.term.toLowerCase(), approvedLower: lcFold(t.approved||''),
+    approvedAlts: glossaryAlternatives(t.approved||'').map(lcFold),
+    forbidden: t.forbidden||[], forbiddenLower: (t.forbidden||[]).map(f=>lcFold(f||'')),
     language: t.language || '',
     // «смена (рабочая)», «снятие (на лифте с этажа)»: the note narrows the meaning — only a hint, the word alone can mean something else
     narrow: (t.term.match(/\(([^)]*)\)/g)||[]).some(x=>!/^[\p{Lu}\d&+.-]{2,8}$/u.test(x.slice(1,-1).trim())),
@@ -2304,7 +2413,7 @@ async function runGlossaryCheck(projectId, override, onProgress){
   for(let start=0; start<rows.length; start+=CHUNK){
     const chunk = rows.slice(start, start+CHUNK);
     chunk.forEach(r=>{
-      const srcMasked = maskMarkup(r.source), srcLower = srcMasked.toLowerCase(), tgtLower = maskMarkup(r.target).toLowerCase();
+      const srcMasked = maskMarkup(r.source), srcLower = srcMasked.toLowerCase(), tgtLower = lcFold(maskMarkup(r.target));
       if(!srcLower || !tgtLower.trim()) return;   // empty translation is reported as not translated, not as a glossary miss
       const found = [];
       terms.forEach(term=>{
@@ -2471,7 +2580,7 @@ function readCheckSettingsOverride(prefix){
 const AI_SEVERITIES = ['Критическая','Высокая','Средняя','Низкая'];
 const AI_TYPES = ['Смысл','Точность перевода','Терминология','Грамматика','Стиль','Пропуск','Добавление','Согласованность'];
 function collectGlossaryForRow(row){
-  const glossaryIds = dbQuery('glossaries', g=>!g.projectId || g.projectId===row.projectId).map(g=>g.id);
+  const glossaryIds = dbQuery('glossaries', g=>g.projectId ? g.projectId===row.projectId : !g.scope).map(g=>g.id);
   return dbQuery('glossaryTerms', t=>glossaryIds.includes(t.glossaryId) && (!t.language || t.language.toLowerCase()===row.languageCode.toLowerCase()))
     .map(t=>({term:t.term, approved:t.approved}));
 }
@@ -2579,18 +2688,14 @@ function icon(name, size){
   size = size || 18;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:-3px;">${ICONS[name]||''}</svg>`;
 }
+// The hub is set up for one product (the WB shopping app), so the menu follows its LQA flow; the other
+// pages (projects, all problems, vendors, export, the extension) still open by link and from Ctrl K
 const NAV = [
-  {icon:'home', label:'Главная', route:'#/', group:'Основное'},
-  {icon:'folder', label:'Проекты', route:'#/projects', group:'Основное'},
-  {icon:'alertTriangle', label:'Проблемы', route:'#/issues', group:'Основное'},
-  {icon:'check', label:'Мои задачи', route:'#/my', group:'Основное'},
-  {icon:'image', label:'Визуальная проверка', route:'#/visual', group:'Основное'},
-  {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Основное'},
-  {icon:'barChart', label:'Аналитика', route:'#/analytics', group:'Отчёты'},
-  {icon:'file', label:'Отчёт за период', route:'#/report', group:'Отчёты'},
-  {icon:'user', label:'Подрядчики', route:'#/vendors', group:'Отчёты'},
-  {icon:'download', label:'Экспорт', route:'#/export', group:'Отчёты'},
-  {icon:'globe', label:'Расширение', route:'#/extension', group:'Система'},
+  {icon:'check', label:'Проверки', route:'#/', group:'Работа'},
+  {icon:'file', label:'Строки', route:'#/strings', group:'Работа'},
+  {icon:'bookOpen', label:'Глоссарии', route:'#/glossaries', group:'Работа'},
+  {icon:'barChart', label:'Качество по языкам', route:'#/overview', group:'Итоги'},
+  {icon:'file', label:'Отчёт за период', route:'#/report', group:'Итоги'},
   {icon:'settings', label:'Настройки', route:'#/settings', group:'Система'},
 ];
 // UI theme is a per-browser display preference, not app data, so it's kept outside the
@@ -2617,16 +2722,15 @@ function initTheme(){
 }
 function renderSidebar(){
   const h = location.hash || '#/';
-  const openIssueCount = vList('issues').filter(i=>i.status==='Новая'||i.status==='На проверке').length;
   const groups = {};
   NAV.filter(n=>routeAllowed(n.route.replace(/^#\//,'').split('/').filter(Boolean))).forEach(n=>{ (groups[n.group] = groups[n.group]||[]).push(n); });
   let html = '';
   Object.keys(groups).forEach(g=>{
     html += `<div class="side-group-label">${esc(g)}</div>`;
     groups[g].forEach(n=>{
-      const active = h===n.route || (n.route!=='#/' && h.startsWith(n.route));
-      const myCount = n.route==='#/my' ? myTaskCount() : 0;
-      const badge = (n.route==='#/issues' && openIssueCount) ? `<span class="side-badge-count">${openIssueCount}</span>` : myCount ? `<span class="side-badge-count me">${myCount}</span>` : '';
+      const active = h===n.route || (n.route!=='#/' && h.startsWith(n.route)) || (n.route==='#/' && /^#\/(visual|round)\b/.test(h)) || (n.route==='#/strings' && /^#\/project\b/.test(h)) || (n.route==='#/glossaries' && h.startsWith('#/glossary/'));
+      const waiting = n.route==='#/' ? roundsWaitingOnMe() : 0;
+      const badge = waiting ? `<span class="side-badge-count me" title="Ждут тебя">${waiting}</span>` : '';
       html += `<a class="side-link ${active?'active':''}" href="${n.route}"><span class="ic">${icon(n.icon)}</span><span class="lbl">${n.label}</span>${badge}</a>`;
     });
   });
@@ -2658,17 +2762,22 @@ function router(){
       content.innerHTML = `<div class="card">${emptyState({icon:'user', title:'Этот раздел для менеджеров', text:'Здесь то, что настраивает менеджер. Твои задачи — в «Моих задачах», проблемы твоих языков — в «Проблемах».', action:'<a class="btn" href="#/my">Мои задачи</a> <a class="btn secondary" href="#/issues">Проблемы</a>'})}</div>`;
       return;
     }
-    if(parts.length===0) return renderDashboard(content);
+    if(parts.length===0) return renderRoundsHome(content);
+    if(parts[0]==='overview') return renderDashboard(content);
+    if(parts[0]==='strings'){ location.replace('#/project/'+shopProject().id); return; }
+    if(parts[0]==='round' && parts[1]==='new') return renderRoundForm(content);
+    if(parts[0]==='round' && parts[1] && parts[2]==='edit') return renderRoundForm(content, parts[1]);
     if(parts[0]==='projects' && parts.length===1) return renderProjectsList(content);
     if(parts[0]==='project' && parts[1] && parts[2]==='folder' && parts[3]) return renderFolderDetail(content, parts[1], parts[3], parts[4]||'overview');
     if(parts[0]==='project' && parts[1]) return renderProjectDetail(content, parts[1], parts[2]||'overview', parts[3]);
     if(parts[0]==='issues') return renderIssuesPage(content);
     if(parts[0]==='my') return renderMyTasks(content);
-    if(parts[0]==='visual' && parts[1]) return renderVisualSession(content, parts[1]);
+    if(parts[0]==='visual' && parts[1] && parts[2]==='shots') return renderVisualSession(content, parts[1]);
+    if(parts[0]==='visual' && parts[1]) return renderRoundPage(content, parts[1]);
     if(parts[0]==='visual') return renderVisualList(content);
     if(parts[0]==='review-queue') return renderReviewQueue(content);
     if(parts[0]==='runs') return renderRunsPage(content);
-    if(parts[0]==='glossaries' && parts.length===1) return renderGlossariesList(content);
+    if(parts[0]==='glossaries') return renderGlossariesList(content, parts[1]);
     if(parts[0]==='glossary' && parts[1]) return renderGlossaryDetail(content, parts[1]);
     if(parts[0]==='analytics') return renderAnalytics(content);
     if(parts[0]==='export') return renderExportPage(content);
@@ -5065,22 +5174,131 @@ function languageFlag(code){
   if(FLAG_ICONS.has(base)) return `<img class="flag-ic" src="flags/${base}.svg" alt="" aria-hidden="true" draggable="false">`;
   return LANGUAGE_FLAGS[base] || '🌐';
 }
-function renderGlossariesList(el){
-  setCrumbs(['Глоссарии']);
+function renderGlossariesList(el, tab){
+  setCrumbs(tab==='overlaps' ? [{label:'Глоссарии', hash:'#/glossaries'}, 'Пересечения'] : tab==='styleguides' ? [{label:'Глоссарии', hash:'#/glossaries'}, 'Редполитики'] : ['Глоссарии']);
+  const nOverlaps = openOverlapCount();
+  const tabs = `<div class="tabbar"><a class="tabbtn ${!tab?'active':''}" href="#/glossaries">Глоссарии</a><a class="tabbtn ${tab==='overlaps'?'active':''}" href="#/glossaries/overlaps">Пересечения${nOverlaps?` <span class="chip-count">${nOverlaps}</span>`:''}</a><a class="tabbtn ${tab==='styleguides'?'active':''}" href="#/glossaries/styleguides">Редполитики</a></div>`;
+  const head = `<div class="page-head"><div><h1 class="page-title">Глоссарии и редполитики</h1><div class="page-sub">Термины и утверждённые переводы по языкам и проектам</div></div>${isManager()?`<button class="btn" onclick="openGlossaryModal()">${icon('plus',16)}Глоссарий</button>`:''}</div>`;
+  if(tab==='overlaps'){ el.innerHTML = head + tabs + renderGlossaryOverlaps(); return; }
+  if(tab==='styleguides'){ el.innerHTML = head + tabs + styleGuidesCardHtml(getSettings()); return; }
   const glossaries = dbList('glossaries');
   const groups = {};
   glossaries.forEach(g=>{ const key = g.language || ''; (groups[key]=groups[key]||[]).push(g); });
   const groupKeys = Object.keys(groups).sort((a,b)=> a===''?1 : b===''?-1 : languageLabel(a).localeCompare(languageLabel(b)));
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">Глоссарии</h1><div class="page-sub">Термины и утверждённые переводы, по языкам</div></div><button class="btn" onclick="openGlossaryModal()">${icon('plus',16)}Новый глоссарий</button></div>
+  el.innerHTML = head + tabs + `
     ${glossaries.length ? groupKeys.map(key=>`
       <div class="section-label">${key ? languageFlag(key)+' '+esc(languageLabel(key))+' ('+esc(key)+')' : 'Без языка (созданы раньше)'}</div>
       <div class="grid grid-3">${groups[key].map(g=>{
         const proj = g.projectId ? dbGet('projects', g.projectId) : null;
         const termCount = dbQuery('glossaryTerms', t=>t.glossaryId===g.id).length;
-        return `<div class="card clickable" style="margin:0;" onclick="location.hash='#/glossary/${g.id}'"><div class="row" style="gap:12px;flex-wrap:nowrap;align-items:flex-start;"><span class="es-ic" style="width:36px;height:36px;border-radius:10px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('bookOpen',18)}</span><div style="min-width:0;"><h3 style="margin:0 0 2px;">${esc(g.name)}</h3><div class="hint" style="margin:0;">${proj?'Проект: '+esc(proj.name):'Общий, для всех проектов'} · ${termCount} ${plural(termCount,'термин','термина','терминов')}</div></div></div></div>`;
+        return `<div class="card clickable" style="margin:0;" onclick="location.hash='#/glossary/${g.id}'"><div class="row" style="gap:12px;flex-wrap:nowrap;align-items:flex-start;"><span class="es-ic" style="width:36px;height:36px;border-radius:10px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('bookOpen',18)}</span><div style="min-width:0;"><h3 style="margin:0 0 2px;">${esc(g.name)}</h3><div class="hint" style="margin:0;">${proj?'Проект: '+esc(proj.name):g.scope?'Проект: '+esc(g.scope)+' · только для сравнения':'Общий, для всех проектов'} · ${termCount} ${plural(termCount,'термин','термина','терминов')}</div></div></div></div>`;
       }).join('')}</div>
     `).join('') : `<div class="card">${emptyState({img:IMG.LANGUAGES, title:'Глоссариев пока нет', text:'Создай глоссарий для конкретного языка — общий, на все проекты сразу, или привязанный к одному.', action:'<button class="btn" onclick="openGlossaryModal()">'+icon('plus',16)+'Новый глоссарий</button>'})}</div>`}`;
   el.insertAdjacentHTML('beforeend', glossaryCandidatesHtml());
+}
+/* ---------- overlaps between glossaries ----------
+   Each product has its own glossary per language (магазин, портал продавца, пуши…), so a term often sits
+   in several of them. Same translation — fine. Different translations — either meant (another context:
+   «Оба верны») or one is outdated («Сделать правильным» writes the chosen one into the others).
+   A decision is kept with the set of translations it was made for: if they change, the term comes back. */
+function glossaryScopeLabel(g){
+  const proj = g.projectId ? dbGet('projects', g.projectId) : null;
+  return proj ? proj.name : g.scope ? g.scope : 'Общий';
+}
+function overlapNorm(s){ return lcFold(s).replace(/\s+/g,' ').trim(); }
+function glossaryOverlaps(){
+  const gl = {}; dbList('glossaries').forEach(g=>{ gl[g.id] = g; });
+  const by = {};
+  dbList('glossaryTerms').forEach(t=>{
+    const g = gl[t.glossaryId], lang = String((g && g.language) || t.language || '').toLowerCase();
+    if(!g || !t.term || !lang) return;
+    const key = lang+'|'+overlapNorm(t.term);
+    (by[key] = by[key]||[]).push({t, g});
+  });
+  const out = [];
+  Object.entries(by).forEach(([key, list])=>{
+    if(new Set(list.map(x=>x.g.id)).size < 2) return;
+    const variants = new Set(list.map(x=>overlapNorm(x.t.approved||'')));
+    // a translation one glossary approves and another forbids is the sharpest case
+    const forbidden = list.some(x=>x.t.approved && list.some(y=>y!==x && (y.t.forbidden||[]).some(f=>overlapNorm(f)===overlapNorm(x.t.approved))));
+    const sig = [...variants].sort().join('¦')+(forbidden?'¦!':'');
+    const dec = dbGet('glossaryOverlapDecisions', key);
+    out.push({key, lang:key.split('|')[0], term:list[0].t.term, list, differ: variants.size>1 || forbidden, forbidden, decision: dec && dec.sig===sig ? dec : null, sig});
+  });
+  return out.sort((a,b)=>a.term.localeCompare(b.term,'ru'));
+}
+function openOverlapCount(){ return glossaryOverlaps().filter(o=>o.differ && !o.decision).length; }
+let overlapFilter = {lang:'', show:'open'};
+function renderGlossaryOverlaps(){
+  const all = glossaryOverlaps(), mgr = isManager();
+  const inLang = all.filter(o=>!overlapFilter.lang || o.lang===overlapFilter.lang);
+  const groups = {open: inLang.filter(o=>o.differ && !o.decision), done: inLang.filter(o=>o.decision), same: inLang.filter(o=>!o.differ && !o.decision)};
+  const list = groups[overlapFilter.show] || groups.open;
+  const langs = [...new Set(all.map(o=>o.lang))].sort((a,b)=>languageLabel(a).localeCompare(languageLabel(b),'ru'));
+  const chip = (key, val, label, n)=>`<button type="button" class="chip ${overlapFilter[key]===val?'chip-active':''}" onclick="overlapFilter.${key}='${val}';router()">${label}${n!=null?` <span class="chip-count">${n}</span>`:''}</button>`;
+  if(!all.length) return `<div class="card">${emptyState({icon:'bookOpen', title:'Пересечений нет', text:'Когда один и тот же термин есть в нескольких глоссариях одного языка — например, в глоссарии магазина и портала продавца, — он появится здесь, и сразу будет видно, где переводы расходятся.'})}</div>`;
+  return `<div class="hint" style="margin:0 0 14px;max-width:820px;line-height:1.6;">Один и тот же термин в нескольких глоссариях одного языка. Разные переводы — повод проверить: если в разных проектах так и задумано, отметь <b>«Оба верны»</b>; если где-то устарело — нажми <b>«Сделать правильным»</b> у верного, и он проставится в остальные глоссарии.</div>
+    <div class="round-chips">${chip('show','open','Разные переводы',groups.open.length)}${chip('show','done','Решённые',groups.done.length)}${chip('show','same','Совпадают',groups.same.length)}
+      ${langs.length>1 ? `<span class="chip-sep"></span>${chip('lang','','Все языки')}${langs.map(l=>chip('lang',l,languageFlag(l)+' '+esc(languageLabel(l)), all.filter(o=>o.lang===l && o.differ && !o.decision).length||null)).join('')}` : ''}</div>
+    ${list.length ? list.map(o=>{
+      const dec = o.decision;
+      const pill = dec ? (dec.status==='ok' ? '<span class="pill st-accepted">Оба верны</span>' : '<span class="pill st-accepted">Исправлено</span>')
+        : o.forbidden ? '<span class="pill sev-critical">В одном глоссарии запрещён</span>' : o.differ ? '<span class="pill sev-high">Разные переводы</span>' : '<span class="pill sev-ok">Совпадают</span>';
+      return `<div class="card overlap" style="margin:0 0 12px;">
+        <div class="row between" style="gap:10px;margin-bottom:10px;"><div class="row" style="gap:10px;flex-wrap:nowrap;min-width:0;"><span class="round-fl">${languageFlag(o.lang)}</span><div style="min-width:0;"><h3 style="margin:0;">${esc(o.term)}</h3><div class="hint" style="margin:0;">${esc(languageLabel(o.lang))} · ${new Set(o.list.map(x=>x.g.id)).size} глоссария</div></div></div>${pill}</div>
+        <div class="table-wrap"><table><thead><tr><th>Глоссарий</th><th>Перевод</th><th>Запрещено</th>${mgr && o.differ?'<th></th>':''}</tr></thead><tbody>
+          ${o.list.map(x=>`<tr><td><a class="link" href="#/glossary/${x.g.id}">${esc(x.g.name)}</a><div class="hint" style="margin:0;">${esc(glossaryScopeLabel(x.g))}</div></td>
+            <td><b>${esc(x.t.approved||'—')}</b>${x.t.comment?`<div class="hint" style="margin:0;">${esc(x.t.comment)}</div>`:''}</td><td>${esc((x.t.forbidden||[]).join(', ')||'—')}</td>
+            ${mgr && o.differ ? `<td style="text-align:right;">${x.t.approved?`<button class="btn secondary sm" onclick="fixOverlap('${esc(o.key)}','${x.t.id}')">Сделать правильным</button>`:''}</td>` : ''}</tr>`).join('')}
+        </tbody></table></div>
+        <div class="row between" style="margin-top:10px;gap:8px;">
+          <span class="hint" style="margin:0;">${dec ? `${dec.status==='ok'?'Отмечено «оба верны»':'Исправлено'}${dec.by?' · '+esc(dec.by):''} · ${esc(fmtDate(dec.ts))}${dec.note?' · '+esc(dec.note):''}` : ''}</span>
+          ${mgr ? (dec ? `<button class="btn secondary sm" onclick="undoOverlapDecision('${esc(o.key)}')">Вернуть в непроверенные</button>` : o.differ ? `<button class="btn secondary sm" onclick="markOverlapOk('${esc(o.key)}')">${icon('check',14)}Оба верны</button>` : '') : ''}
+        </div></div>`; }).join('') : `<div class="hint">${overlapFilter.show==='open' ? 'Расхождений нет — все общие термины переведены одинаково или уже разобраны 🎉' : 'Здесь пока пусто.'}</div>`}`;
+}
+async function markOverlapOk(key){
+  const o = glossaryOverlaps().find(x=>x.key===key); if(!o) return;
+  const note = await uiPrompt({title:'Оба перевода верны', text:'«'+esc(o.term)+'» переведён по-разному, и так и задумано. Пересечение уйдёт в «Решённые» — вернётся, только если переводы снова поменяются.', label:'Почему (необязательно)', placeholder:'например: в портале продавца — другой контекст', okText:'Отметить'});
+  if(note==null) return;
+  dbUpsert('glossaryOverlapDecisions', {id:key, status:'ok', sig:o.sig, note, by:getMe()||null, ts:nowISO()});
+  router(); toast('Отмечено: оба верны');
+}
+async function fixOverlap(key, termId){
+  const o = glossaryOverlaps().find(x=>x.key===key); if(!o) return;
+  const right = o.list.find(x=>x.t.id===termId).t;
+  const others = o.list.filter(x=>x.t.id!==termId && overlapNorm(x.t.approved||'')!==overlapNorm(right.approved));
+  if(!await uiConfirm({title:'Проставить «'+right.approved+'»?', icon:'check', danger:false, okText:'Проставить',
+    text:'В '+others.length+' '+plural(others.length,'глоссарии','глоссариях','глоссариях')+' перевод «'+esc(o.term)+'» станет «'+esc(right.approved)+'». Старый вариант сохранится в комментарии к термину.'})) return;
+  const snap = snapshotTables(['glossaryTerms','glossaryOverlapDecisions']);
+  const right_ = overlapNorm(right.approved);
+  o.list.forEach(x=>{
+    const t = x.t;
+    // the chosen translation can't stay forbidden anywhere
+    const forbidden = (t.forbidden||[]).filter(f=>overlapNorm(f)!==right_);
+    if(t.id!==termId && overlapNorm(t.approved||'')!==right_){
+      dbUpsert('glossaryTerms', Object.assign({}, t, {approved:right.approved, forbidden, comment:[t.comment, 'Было: «'+(t.approved||'—')+'» (исправлено по пересечению '+new Date().toLocaleDateString('ru-RU')+')'].filter(Boolean).join(' · ')}));
+    } else if(forbidden.length!==(t.forbidden||[]).length) dbUpsert('glossaryTerms', Object.assign({}, t, {forbidden}));
+  });
+  const fresh = glossaryOverlaps().find(x=>x.key===key);
+  dbUpsert('glossaryOverlapDecisions', {id:key, status:'fixed', sig:fresh ? fresh.sig : '', chosen:right.approved, by:getMe()||null, ts:nowISO()});
+  router(); toastUndo('Проставлено «'+right.approved+'»', snap);
+}
+function undoOverlapDecision(key){ dbRemove('glossaryOverlapDecisions', key); router(); }
+async function editGlossaryScope(id){
+  const g = dbGet('glossaries', id); if(!g || !isManager()) return;
+  const projects = dbList('projects');
+  const cur = g.projectId || (g.scope ? '__other' : '');
+  const v = await uiDialog(`<h3>Проект глоссария</h3>
+    <div class="dialog-text">Глоссарий своего проекта участвует в автопроверке строк. Глоссарий другого проекта (например, портала продавца) только хранится и сравнивается во вкладке «Пересечения».</div>
+    <label class="field" style="margin-top:14px;">Проект<select id="gsProject" onchange="document.getElementById('gsOtherWrap').style.display=this.value==='__other'?'flex':'none'">
+      ${projects.map(p=>`<option value="${p.id}" ${cur===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}<option value="" ${cur===''?'selected':''}>Общий — для всех</option><option value="__other" ${cur==='__other'?'selected':''}>Другой проект…</option></select></label>
+    <label class="field" id="gsOtherWrap" style="margin-top:10px;display:${cur==='__other'?'flex':'none'};">Название проекта<input type="text" id="gsOther" value="${esc(g.scope||'')}" placeholder="например: Портал продавца"></label>
+    <div class="modal-actions"><button class="btn secondary" data-cancel>Отмена</button><button class="btn" data-ok>Сохранить</button></div>`,
+    (root, close)=>{ root.querySelector('[data-ok]').onclick = ()=>close({p:root.querySelector('#gsProject').value, other:root.querySelector('#gsOther').value.trim()}); });
+  if(!v) return;
+  if(v.p==='__other' && !v.other){ toast('Напиши название проекта'); return; }
+  dbUpsert('glossaries', Object.assign({}, g, {projectId: v.p && v.p!=='__other' ? v.p : null, scope: v.p==='__other' ? v.other : ''}));
+  router(); toast('Сохранено');
 }
 function openGlossaryModal(){
   const projects = dbList('projects');
@@ -5095,7 +5313,9 @@ function openGlossaryModal(){
       <div id="glModeNewFields">
         <label class="field">Язык<select id="glLang">${languageSelectOptionsGrouped()}</select></label>
         <label class="field" style="margin-top:12px;">Название (необязательно)<input type="text" id="glName" placeholder="по умолчанию — название языка"></label>
-        <label class="field" style="margin-top:12px;">Проект (необязательно)<select id="glProject"><option value="">Общий (для всех проектов)</option>${projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label>
+        <label class="field" style="margin-top:12px;">Проект (необязательно)<select id="glProject" onchange="document.getElementById('glScopeWrap').style.display=this.value==='__other'?'flex':'none'">${projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}<option value="">Общий (для всех проектов)</option><option value="__other">Другой проект…</option></select></label>
+        <label class="field" id="glScopeWrap" style="margin-top:12px;display:none;">Название проекта<input type="text" id="glScope" placeholder="например: Портал продавца">
+          <span class="hint" style="margin:0;">Такой глоссарий не участвует в проверке строк — только хранится и сравнивается в «Пересечениях»</span></label>
       </div>
       <div id="glModeExistingFields" style="display:none;">
         <label class="field">Какой глоссарий обновить<select id="glExisting">${existingGlossaries.map(g=>{ const proj=g.projectId?dbGet('projects',g.projectId):null; return `<option value="${g.id}">${esc(g.name)} — ${g.language?esc(languageLabel(g.language)):'без языка'}${proj?' · '+esc(proj.name):''}</option>`; }).join('')}</select></label>
@@ -5127,10 +5347,12 @@ function submitGlossaryModal(){
   } else {
     const language = document.getElementById('glLang').value;
     let name = document.getElementById('glName').value.trim();
-    const projectId = document.getElementById('glProject').value || null;
+    const pv = document.getElementById('glProject').value, scope = pv==='__other' ? document.getElementById('glScope').value.trim() : '';
+    const projectId = pv && pv!=='__other' ? pv : null;
     if(!language){ toast('Выбери язык'); return; }
-    if(!name) name = languageLabel(language);
-    const rec = {id:uid(), name, language, projectId, createdAt:nowISO()};
+    if(pv==='__other' && !scope){ toast('Напиши название проекта'); return; }
+    if(!name) name = languageLabel(language)+(scope ? ' · '+scope : '');
+    const rec = {id:uid(), name, language, projectId, scope, createdAt:nowISO()};
     dbUpsert('glossaries', rec);
     glossaryId = rec.id;
   }
@@ -5151,13 +5373,13 @@ function submitGlossaryModal(){
 function renderGlossaryDetail(el, glossaryId){
   const g = dbGet('glossaries', glossaryId);
   if(!g){ el.innerHTML='<div class="empty"><b>Глоссарий не найден</b></div>'; return; }
-  setCrumbs(['Глоссарии', g.name]);
+  setCrumbs([{label:'Глоссарии', hash:'#/glossaries'}, g.name]);
   const terms = dbQuery('glossaryTerms', t=>t.glossaryId===glossaryId);
   const proj = g.projectId ? dbGet('projects', g.projectId) : null;
   const langText = g.language ? languageLabel(g.language)+' ('+g.language+')' : 'не указан';
 
-  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">${esc(g.name)}</h1><div class="page-sub">Язык: ${esc(langText)} · ${proj?'Проект: '+esc(proj.name):'Общий (для всех проектов)'}</div></div>
-      <div class="row"><button class="btn secondary" onclick="deleteGlossary('${glossaryId}')">Удалить глоссарий</button></div></div>
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">${esc(g.name)}</h1><div class="page-sub">Язык: ${esc(langText)} · ${proj?'Проект: '+esc(proj.name):g.scope?'Проект: '+esc(g.scope)+' (только для сравнения)':'Общий (для всех проектов)'}</div></div>
+      <div class="row">${isManager()?`<button class="btn secondary" onclick="editGlossaryScope('${glossaryId}')">Проект…</button>`:''}<button class="btn secondary" onclick="deleteGlossary('${glossaryId}')">Удалить глоссарий</button></div></div>
     <div class="card">
       <h3>Загрузить / обновить термины</h3>
       <label class="field" style="max-width:420px;">Как добавлять<select id="glossaryDetailImportMode">
@@ -5492,7 +5714,420 @@ async function deleteVisualSession(id){
   dbRemove('visualSessions', id);
   dbSave('visualSessions', dbList('visualSessions').map(v=>v.refSessionId===id ? Object.assign({}, v, {refSessionId:null}) : v));
   toastUndo('Сессия удалена', snap, ()=>{ location.hash = '#/visual/'+id; router(); });
-  location.hash = s ? '#/project/'+s.projectId+'/visual' : '#/visual';
+  location.hash = '#/';
+}
+
+/* =========================================================
+   ROUNDS («Проверки») — one LQA pass: a language + a platform + a reviewer.
+   A round is a visual session with a few more fields (platform, due, reviewer, notes,
+   submittedAt, doneAt); its errors are visual issues, so screenshots, the shot viewer,
+   the HTML report and the issues table keep working on them.
+   Flow: материалы → проверяющий добавляет ошибки → сдаёт → менеджер разбирает → готово.
+   ========================================================= */
+const ROUND_PLATFORMS = ['iOS','Android','Веб','Другое'];
+// the team's LQA schema; a group without sub-items is chosen as a whole
+const LQA_CATEGORIES = [
+  {code:'1', label:'Терминология', items:[['1.1','Неверный термин'],['1.2','Термин переведён по-разному']]},
+  {code:'2', label:'Точность', items:[['2.1','Переведено то, что не переводится'],['2.2','Искажён смысл'],['2.3','Пропуск'],['2.4','Лишнее'],['2.5','Не переведено']]},
+  {code:'3', label:'Уместность для аудитории', items:[]},
+  {code:'4', label:'Языковые нормы', items:[['4.1','Оформление текста'],['4.2','Грамматика'],['4.3','Непонятно'],['4.4','Пунктуация'],['4.5','Орфография']]},
+  {code:'5', label:'Локальные стандарты', items:[]},
+  {code:'6', label:'Дизайн и разметка', items:[['6.1','Обрезано, не влезает'],['6.2','Разметка, теги, переменные']]},
+  {code:'7', label:'Стиль', items:[['7.1','Регистр, обращение'],['7.2','Неестественно, коряво'],['7.3','Не по редполитике'],['7.4','Стиль непоследовательный']]},
+];
+function lqaCategoryLabel(code){
+  for(const g of LQA_CATEGORIES){
+    if(g.code===code) return g.code+' '+g.label;
+    const it = g.items.find(([c])=>c===code);
+    if(it) return it[0]+' '+g.label+' · '+it[1];
+  }
+  return code||'';
+}
+function lqaCategoryOptions(selected){
+  return LQA_CATEGORIES.map(g=>g.items.length
+    ? `<optgroup label="${g.code} ${esc(g.label)}">${g.items.map(([c,l])=>`<option value="${c}" ${c===selected?'selected':''}>${c} ${esc(l)}</option>`).join('')}</optgroup>`
+    : `<option value="${g.code}" ${g.code===selected?'selected':''}>${g.code} ${esc(g.label)}</option>`).join('');
+}
+const ROUND_STATUS = {check:{label:'Проверяют', cls:'st-new'}, review:{label:'На разборе', cls:'st-review'}, done:{label:'Готово', cls:'st-accepted'}};
+function roundStatus(s){ return s.doneAt ? 'done' : s.submittedAt ? 'review' : 'check'; }
+function roundTitle(s){ return languageLabel(s.languageCode)+(s.platform?' · '+s.platform:''); }
+function isRoundReviewer(s){ return !!s.reviewer && sameName(s.reviewer, getMe()); }
+// The hub is built around one product (the WB shopping app): its project is the first one, created on first use
+function shopProject(){
+  const ps = dbList('projects').slice().sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0));
+  const shop = ps.find(p=>/магазин|wildberries|\bwb\b/i.test(p.name||'')) || ps[0];
+  if(shop) return shop;
+  return dbUpsert('projects', {id:uid(), name:'Магазин WB', createdAt:nowISO(), languages: LANGUAGE_GROUPS[0].items.map(([code,name])=>({code,name}))});
+}
+// glossaries a check of this project uses: its own and the common ones; another product's glossary stays out
+function glossariesForCheck(projectId, languageCode){
+  return dbQuery('glossaries', g=>(g.projectId ? g.projectId===projectId : !g.scope) && (!languageCode || !g.language || g.language.toLowerCase()===String(languageCode).toLowerCase()));
+}
+// rounds that wait on me: a reviewer — mine still being checked; a manager — handed in and not yet sorted out
+function roundsWaitingOnMe(){
+  return vList('visualSessions').filter(s=>{ const st = roundStatus(s); return isManager() ? st==='review' : st==='check' && isRoundReviewer(s); }).length;
+}
+
+function renderRoundsHome(el){
+  setCrumbs(['Проверки']);
+  if(!getMe()) setTimeout(renderGoogleButtons, 0);
+  const rounds = vList('visualSessions').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const active = rounds.filter(s=>roundStatus(s)!=='done'), done = rounds.filter(s=>roundStatus(s)==='done');
+  const mine = isManager() ? [] : active.filter(isRoundReviewer);
+  const shop = dbList('projects').length ? shopProject() : null;
+  const card = s=>{
+    const {issues} = visualSessionStats(s.id), st = roundStatus(s);
+    const crit = issues.filter(i=>i.severity==='Критическая').length;
+    const open = issues.filter(i=>i.status==='Новая').length;
+    const step = st==='check' ? 1 : st==='review' ? 2 : 3;
+    return `<a class="round-card" href="#/visual/${s.id}">
+      <div class="round-h"><span class="round-fl">${languageFlag(s.languageCode)}</span><div style="min-width:0;"><h3>${esc(roundTitle(s))}</h3><div class="sub">${esc(s.name||'')}</div></div><span class="pill ${ROUND_STATUS[st].cls}">${ROUND_STATUS[st].label}</span></div>
+      <div class="round-steps">${[0,1,2,3].map(n=>`<i class="${n<step?'d':n===step?'c':''}"></i>`).join('')}</div>
+      <div class="round-f"><span>${s.reviewer?initialsAvatar(s.reviewer):'<span class="hint" style="margin:0;">проверяющий не выбран</span>'}${s.due?` · до ${esc(fmtDay(s.due))}`:''}</span>
+        <span><b>${issues.length}</b> ${plural(issues.length,'ошибка','ошибки','ошибок')}${crit?` · <span style="color:var(--crit);">${crit} крит.</span>`:''}${st==='review'&&open?` · ${open} не разобрано`:''}</span></div>
+    </a>`;
+  };
+  el.innerHTML = `
+    ${getMe() ? '' : `<div class="notice who-notice">${icon('user',16)}<span><b>Кто ты?</b> ${googleEnabled() ? 'Войди через Google или выбери себя из списка' : 'Выбери себя из списка'} — увидишь проверки, которые на тебе.</span>${googleEnabled() ? '<div class="gsi-btn"></div>' : ''}<button class="btn sm" onclick="openWhoAmI()">Выбрать себя</button></div>`}
+    <section class="dash-hero">
+      <div class="dash-hero-text">
+        <div class="dash-hello">${greeting()} 👋</div>
+        <h1>${esc(shop ? shop.name : 'Магазин WB')}</h1>
+        <p>${active.length ? `${active.length} ${plural(active.length,'проверка идёт','проверки идут','проверок идут')}` : 'Сейчас проверок нет'}${mine.length ? ` · <b>${mine.length}</b> на тебе` : ''}</p>
+        <div class="row" style="gap:8px;margin-top:18px;">
+          ${isManager() ? `<a class="btn on-dark" href="#/round/new">${icon('plus',15)}Новая проверка</a>` : ''}
+          <a class="btn on-dark" href="#/strings">${icon('file',15)}Строки и автопроверка</a>
+          <a class="btn on-dark" href="#/glossaries">${icon('bookOpen',15)}Глоссарии</a>
+        </div>
+      </div>
+    </section>
+    ${active.length ? `<div class="section-label">Идут сейчас</div><div class="round-grid stagger">${active.map(card).join('')}</div>` : `<div class="card">${emptyState({icon:'check', title:'Проверок пока нет',
+      text:'<ol class="es-steps"><li>Создай проверку: язык, платформа и кто проверяет</li><li>Приложи редполитику, глоссарий и что ещё нужно</li><li>Проверяющий добавляет ошибки со скриншотами — хоть с телефона</li><li>Разбираешь: принять или «не ошибка» — и готов отчёт</li></ol>',
+      action: isManager() ? `<a class="btn" href="#/round/new">${icon('plus',16)}Новая проверка</a>` : ''})}</div>`}
+    ${done.length ? `<div class="section-label">Завершённые</div><div class="card" style="padding:0;overflow:hidden;"><div class="table-wrap"><table><thead><tr><th>Проверка</th><th>Что смотрели</th><th>Кто</th><th>Ошибок</th><th>Завершена</th></tr></thead><tbody>
+      ${done.map(s=>{ const {issues} = visualSessionStats(s.id); const acc = issues.filter(i=>/^Принята/.test(i.status)).length;
+        return `<tr class="clickable" onclick="location.hash='#/visual/${s.id}'"><td>${languageFlag(s.languageCode)} ${esc(roundTitle(s))}</td><td>${esc(s.name||'')}</td><td>${esc(s.reviewer||'—')}</td><td>${acc} из ${issues.length}</td><td>${esc(fmtDay(s.doneAt))}</td></tr>`; }).join('')}
+    </tbody></table></div></div>` : ''}`;
+}
+function fmtDay(v){ if(!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString('ru-RU',{day:'numeric', month:'short'}); }
+
+/* ---------- create / edit ---------- */
+function renderRoundForm(el, id){
+  const ex = id ? dbGet('visualSessions', id) : null;
+  setCrumbs([{label:'Проверки', hash:'#/'}, ex ? 'Изменить' : 'Новая проверка']);
+  const langs = LANGUAGE_GROUPS[0].items, lang = ex ? ex.languageCode : 'ka', platform = ex ? ex.platform||'iOS' : 'iOS';
+  const shop = dbList('projects').length ? shopProject() : null;
+  el.innerHTML = `<div class="page-head"><div><h1 class="page-title">${ex?'Изменить проверку':'Новая проверка'}</h1><div class="page-sub">Проверяющий увидит проверку у себя на главной — вместе с редполитикой и глоссариями языка</div></div></div>
+    <div class="card round-form">
+      <div class="form-sec"><div><h3>Что проверяем</h3><p class="hint">Язык и платформа</p></div>
+        <div class="col-gap">
+          <div class="f2">
+            <label class="field">Язык<select id="rfLang" onchange="roundFormLangChanged()">${langs.map(([c,n])=>`<option value="${c}" ${c===lang?'selected':''}>${esc(n)} (${c})</option>`).join('')}</select></label>
+            <label class="field">Срок (необязательно)<input type="date" id="rfDue" value="${ex?esc(ex.due||''):''}"></label>
+          </div>
+          <div><div class="field-lbl">Платформа</div><div class="seg" id="rfPlatform">${ROUND_PLATFORMS.map(p=>`<button type="button" class="${platform===p?'on':''}" onclick="segPick(this);roundPlatformChanged()">${p}</button>`).join('')}</div></div>
+          <label class="field">Что смотреть<input type="text" id="rfName" value="${ex?esc(ex.name||''):''}" placeholder="например: релиз 7.42 — корзина и оформление заказа"></label>
+          <label class="field">Папка со строками (необязательно)<select id="rfFolder"><option value="">— все строки ${esc(shop?shop.name:'')} —</option>${shop ? componentTree(shop.id).map(c=>`<option value="${c.id}" ${ex&&ex.componentId===c.id?'selected':''}>${esc(compPath(c))}</option>`).join('') : ''}</select>
+            <span class="hint" style="margin:0;">Ошибка со скриншота сама найдёт свою строку в этой папке</span></label>
+        </div></div>
+      <div class="form-sec"><div><h3>Экраны</h3><p class="hint">Что пройти в приложении — по одному на строке. Проверяющий отмечает пройденные и добавляет к ним ошибки</p></div>
+        <div class="col-gap">
+          <textarea id="rfCases" style="min-height:120px;" oninput="this.dataset.dirty='1'" placeholder="Главная и поиск&#10;Карточка товара&#10;Корзина&#10;Оформление заказа&#10;Пункты выдачи&#10;Профиль и настройки">${esc(ex ? (ex.cases||[]).map(c=>c.title).join('\n') : caseTemplate(platform))}</textarea>
+          <label class="check-line"><input type="checkbox" id="rfSaveTpl"> <span>Запомнить как шаблон для <b id="rfTplName">${esc(platform)}</b> — в следующий раз подставится сам</span></label>
+        </div></div>
+      <div class="form-sec"><div><h3>Кто проверяет</h3><p class="hint">Сначала — редакторы этого языка</p></div>
+        <div class="col-gap">
+          <label class="field">Проверяющий<select id="rfReviewer">${roundReviewerOptions(lang, ex&&ex.reviewer)}</select></label>
+          <label class="field">На что обратить внимание (необязательно)<textarea id="rfNotes" style="min-height:64px;" placeholder="например: обрезки на кнопках, обращение на «вы»">${ex?esc(ex.notes||''):''}</textarea></label>
+        </div></div>
+      <div class="form-sec"><div><h3>Материалы</h3><p class="hint">Что уже есть для языка — подтянется само</p></div><div id="rfMaterials">${roundMaterialsHtml(lang, null, true)}</div></div>
+      <div class="row" style="justify-content:flex-end;gap:8px;padding-top:4px;"><a class="btn secondary" href="${ex?'#/visual/'+ex.id:'#/'}">Отмена</a><button class="btn" onclick="saveRound(${ex?`'${ex.id}'`:'null'})">${ex?'Сохранить':'Создать проверку'}</button></div>
+    </div>`;
+}
+function roundReviewerOptions(lang, selected){
+  const own = editorsForLanguage(lang), rest = allPeople().filter(n=>!own.some(o=>sameName(o,n)));
+  const opt = n=>`<option value="${esc(n)}" ${sameName(n,selected)?'selected':''}>${esc(n)}</option>`;
+  return '<option value="">— выбрать позже —</option>'
+    + `<optgroup label="${esc(languageLabel(lang))}">${own.map(opt).join('')}</optgroup>`
+    + (rest.length ? `<optgroup label="Остальные">${rest.map(opt).join('')}</optgroup>` : '')
+    + (selected && !allPeople().some(n=>sameName(n,selected)) ? opt(selected) : '');
+}
+function roundFormLangChanged(){
+  const lang = document.getElementById('rfLang').value, sel = document.getElementById('rfReviewer');
+  sel.innerHTML = roundReviewerOptions(lang, sel.value);
+  document.getElementById('rfMaterials').innerHTML = roundMaterialsHtml(lang, null, true);
+}
+function caseTemplate(platform){ return ((getSettings().caseTemplates||{})[platform]||''); }
+function roundPlatformChanged(){
+  const on = document.querySelector('#rfPlatform button.on'), p = on ? on.textContent : '';
+  document.getElementById('rfTplName').textContent = p;
+  const ta = document.getElementById('rfCases');
+  if(!ta.dataset.dirty && !location.hash.endsWith('/edit')) ta.value = caseTemplate(p);
+}
+function segPick(btn){ btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b===btn)); }
+function saveRound(id){
+  const name = document.getElementById('rfName').value.trim();
+  if(!name){ toast('Напиши, что смотреть — например, «релиз 7.42, корзина»'); document.getElementById('rfName').focus(); return; }
+  const on = document.querySelector('#rfPlatform button.on');
+  const rec = id ? dbGet('visualSessions', id) : {id:uid(), createdAt:nowISO(), createdBy:getMe()||null, projectId:shopProject().id};
+  const lines = document.getElementById('rfCases').value.split('\n').map(x=>x.trim()).filter(Boolean);
+  const old = rec.cases || [];
+  // a screen keeps its id (and its errors, its «пройден» mark) as long as its title stays
+  const cases = lines.map(t=>old.find(c=>c.title===t) || {id:uid(), title:t});
+  Object.assign(rec, {languageCode:document.getElementById('rfLang').value, platform:on?on.textContent:'', name, cases,
+    componentId:document.getElementById('rfFolder').value || null,
+    due:document.getElementById('rfDue').value || '', reviewer:document.getElementById('rfReviewer').value || '', notes:document.getElementById('rfNotes').value.trim()});
+  if(document.getElementById('rfSaveTpl').checked && rec.platform) saveSettings({caseTemplates:Object.assign({}, getSettings().caseTemplates||{}, {[rec.platform]:lines.join('\n')})});
+  const gone = new Set(old.filter(c=>!cases.includes(c)).map(c=>c.id));
+  if(gone.size) dbSave('issues', dbList('issues').map(i=>i.sessionId===rec.id && gone.has(i.caseId) ? Object.assign(i,{caseId:null}) : i));
+  dbUpsert('visualSessions', rec);
+  if(id) dbSave('issues', dbList('issues').map(i=>i.visual && i.sessionId===id ? Object.assign(i,{languageCode:rec.languageCode}) : i));
+  toast(id ? 'Проверка обновлена' : 'Проверка создана'+(rec.reviewer?' — '+rec.reviewer+' увидит её у себя':''));
+  location.hash = '#/visual/'+rec.id;
+}
+
+/* ---------- materials: style guide, glossaries, attached files ---------- */
+const ROUND_FILE_MAX = 8*1024*1024;
+// the strings this round is about: its folder (with subfolders) in its language, and what the automatic check found there
+function roundStringsHtml(s){
+  const comp = s.componentId ? dbGet('components', s.componentId) : null, ids = comp ? compWithDescendants(comp.id) : null;
+  const lang = String(s.languageCode||'').toLowerCase();
+  const rows = dbQuery('rows', r=>r.projectId===s.projectId && String(r.languageCode||'').toLowerCase()===lang && (!ids || ids.has(r.componentId)));
+  const open = dbQuery('issues', i=>!i.visual && i.projectId===s.projectId && String(i.languageCode||'').toLowerCase()===lang && (!ids || ids.has(i.componentId)) && isOpenIssue(i)).length;
+  const href = comp ? '#/project/'+s.projectId+'/folder/'+comp.id+'/strings' : '#/project/'+s.projectId;
+  return `<div class="have ${rows.length?'':'missing'}"><span class="have-ic">${icon(rows.length?'check':'plus',16)}</span><div><b>Строки · ${esc(comp ? compPath(comp) : 'весь проект')}</b>
+    <span>${rows.length ? rows.length.toLocaleString('ru-RU')+' '+plural(rows.length,'строка','строки','строк')+(open?' · '+open+' '+plural(open,'проблема','проблемы','проблем')+' автопроверки':' · автопроверка чистая') : 'файлов на этом языке пока нет'}</span></div>
+    <a class="btn secondary sm" href="${href}">${rows.length?'Открыть':'Загрузить'}</a></div>`;
+}
+function roundMaterialsHtml(lang, sessionId, readonly){
+  const sg = (getSettings().styleGuides||{})[lang];
+  const sgText = sg ? (/^https?:\/\//.test(sg) ? `<a class="link" href="${esc(sg)}" target="_blank" rel="noopener">открыть</a>` : 'текст или файл') : '';
+  const gls = glossariesForCheck(sessionId ? (dbGet('visualSessions', sessionId)||{}).projectId : (dbList('projects').length ? shopProject().id : null), lang);
+  const files = sessionId ? dbQuery('roundFiles', f=>f.sessionId===sessionId) : [];
+  const item = (ok, title, sub, action)=>`<div class="have ${ok?'':'missing'}"><span class="have-ic">${icon(ok?'check':'plus',16)}</span><div><b>${title}</b><span>${sub}</span></div>${action||''}</div>`;
+  return item(!!sg, 'Редполитика · '+esc(languageLabel(lang)), sg ? sgText : 'ещё нет', isManager() ? `<button type="button" class="btn secondary sm" onclick="editStyleGuide('${esc(lang)}')">${sg?'Заменить':'Добавить'}</button>` : '')
+    + item(gls.length, 'Глоссари'+(gls.length===1?'й':'и')+' · '+esc(languageLabel(lang)),
+        gls.length ? gls.map(g=>`<a class="link" href="#/glossary/${g.id}">${esc(g.name)}</a> (${dbQuery('glossaryTerms', t=>t.glossaryId===g.id).length})`).join(', ') + ' — подсказки будут прямо в форме ошибки' : 'ещё нет',
+        `<a class="btn secondary sm" href="#/glossaries">${gls.length?'Все глоссарии':'Загрузить'}</a>`)
+    + (readonly ? '<div class="hint" style="margin:6px 0 0;">Словари, инструкции и другие файлы можно приложить на странице проверки.</div>'
+      : files.map(f=>`<div class="have"><span class="have-ic">${icon('file',16)}</span><div><b>${esc(f.name)}</b><span>${fmtSize(f.size)} · ${esc(f.by||'')}</span></div><button type="button" class="btn secondary sm" onclick="downloadRoundFile('${f.id}')">${icon('download',14)}</button>${isManager()?`<button type="button" class="btn secondary sm" title="Удалить" onclick="deleteRoundFile('${f.id}')">${icon('trash',14)}</button>`:''}</div>`).join('')
+        + (isManager() ? `<label class="drop drop-compact" style="margin-top:8px;"><input type="file" multiple hidden onchange="addRoundFiles('${sessionId}', [...this.files]); this.value='';"><div><strong>+ Приложить файлы</strong><span>словари, список экранов, инструкция — до 8 МБ каждый</span></div></label>` : ''));
+}
+function fmtSize(n){ return n>=1048576 ? (n/1048576).toFixed(1).replace('.',',')+' МБ' : Math.max(1,Math.round(n/1024))+' КБ'; }
+async function addRoundFiles(sessionId, files){
+  let added = 0;
+  for(const f of files){
+    if(f.size > ROUND_FILE_MAX){ toast('«'+f.name+'» больше 8 МБ — дай ссылку на него в «На что обратить внимание»'); continue; }
+    const dataUrl = await new Promise((res, rej)=>{ const r = new FileReader(); r.onload = ()=>res(r.result); r.onerror = ()=>rej(r.error); r.readAsDataURL(f); });
+    dbUpsert('roundFiles', {id:uid(), sessionId, name:f.name, size:f.size, type:f.type||'', dataUrl, by:getMe()||'', createdAt:nowISO()});
+    added++;
+  }
+  if(added){ toast('Приложено файлов: '+added); router(); }
+}
+function downloadRoundFile(id){
+  const f = dbGet('roundFiles', id); if(!f) return;
+  const a = document.createElement('a'); a.href = f.dataUrl; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+}
+function deleteRoundFile(id){
+  const snap = snapshotTables(['roundFiles']); dbRemove('roundFiles', id); router(); toastUndo('Файл удалён', snap);
+}
+
+/* ---------- one round ---------- */
+let roundFilter = {sev:'', st:'', kase:''};
+function renderRoundPage(el, sessionId){
+  const s = dbGet('visualSessions', sessionId);
+  if(!s){ setCrumbs([{label:'Проверки', hash:'#/'}, 'Не найдено']); el.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Проверка не найдена', action:'<a class="btn secondary" href="#/">Ко всем проверкам</a>'}); return; }
+  setCrumbs([{label:'Проверки', hash:'#/'}, roundTitle(s)]);
+  const {shots, issues} = visualSessionStats(sessionId);
+  const st = roundStatus(s), mgr = isManager(), canAdd = st==='check' && (mgr || isRoundReviewer(s) || !s.reviewer);
+  const undecided = issues.filter(i=>i.status==='Новая').length;
+  const accepted = issues.filter(i=>/^Принята/.test(i.status)).length;
+  const sgOk = !!(getSettings().styleGuides||{})[s.languageCode], glOk = glossariesForCheck(s.projectId, s.languageCode).length>0;
+  const sevRank = {'Критическая':0,'Высокая':1,'Средняя':2,'Низкая':3};
+  if(roundFilter.sid!==sessionId) roundFilter = {sev:'', st:'', kase:'', sid:sessionId};
+  const cases = s.cases || [], passed = cases.filter(c=>c.done).length;
+  const list = issues.filter(i=>(!roundFilter.kase || i.caseId===roundFilter.kase) && (!roundFilter.sev || i.severity===roundFilter.sev) && (!roundFilter.st || (roundFilter.st==='new' ? i.status==='Новая' : roundFilter.st==='ok' ? /^Принята/.test(i.status) : !/^(Новая|Принята)/.test(i.status))))
+    .sort((a,b)=>(sevRank[a.severity]??9)-(sevRank[b.severity]??9) || new Date(a.createdAt)-new Date(b.createdAt));
+  const chip = (key, val, label, n)=>`<button type="button" class="chip ${roundFilter[key]===val?'chip-active':''}" onclick="roundFilter.${key}='${val}';router()">${label}${n!=null?` <span class="chip-count">${n}</span>`:''}</button>`;
+  const flow = [
+    {t:'Материалы', d: [sgOk?'редполитика':'', glOk?'глоссарий':'', dbQuery('roundFiles', f=>f.sessionId===s.id).length?'файлы':''].filter(Boolean).join(', ') || 'можно приложить', done:true},
+    {t:'Проверка', d: issues.length+' '+plural(issues.length,'ошибка','ошибки','ошибок')+(s.reviewer?' · '+s.reviewer.split(' ')[0]:''), done:st!=='check', cur:st==='check'},
+    {t:'Разбор', d: st==='check' ? 'принять или «не ошибка»' : undecided ? 'осталось '+undecided : 'всё разобрано', done:st==='done', cur:st==='review'},
+    {t:'Готово', d: st==='done' ? 'принято '+accepted+' из '+issues.length : 'отчёт для команды', done:st==='done'},
+  ];
+  el.innerHTML = `
+    <div class="project-hero">
+      <div class="page-head">
+        <div style="min-width:0;"><h1 class="page-title">${languageFlag(s.languageCode)} ${esc(roundTitle(s))}</h1>
+          <div class="page-sub">${esc(s.name||'')}${s.reviewer?' · проверяет '+esc(s.reviewer):' · проверяющий не выбран'}${s.due?' · до '+esc(fmtDay(s.due)):''}</div></div>
+        <div class="row">
+          ${canAdd ? `<button class="btn on-dark" onclick="openRoundIssueForm('${s.id}')">${icon('plus',15)}Добавить ошибку</button>` : ''}
+          ${st==='check' && (isRoundReviewer(s) || mgr) && issues.length ? `<button class="btn on-dark" onclick="submitRound('${s.id}')">${icon('check',15)}Сдать проверку</button>` : ''}
+          ${st==='review' && mgr ? `<button class="btn on-dark" onclick="finishRound('${s.id}')">${icon('check',15)}Завершить</button>` : ''}
+          ${st!=='check' && mgr ? `<button class="btn on-dark" onclick="reopenRound('${s.id}')">Вернуть в проверку</button>` : ''}
+          <button class="btn on-dark" ${shots.length?'':'disabled'} onclick="downloadVisualReport('${s.id}')" title="Один HTML-файл со скриншотами и ошибками — можно отправить команде">${icon('download',15)}Отчёт</button>
+          ${mgr ? `<a class="btn on-dark" href="#/round/${s.id}/edit" title="Изменить">${icon('edit',15)}</a><button class="btn on-dark" title="Удалить проверку" onclick="deleteVisualSession('${s.id}')">${icon('trash',15)}</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="round-flow">${flow.map((f,n)=>`<div class="st ${f.done?'done':''} ${f.cur?'cur':''}"><small>${f.cur?'Сейчас':f.done?'✓ Готово':'Дальше'}</small><b>${n+1}. ${f.t}</b>${esc(f.d)}</div>`).join('')}</div>
+    ${s.notes ? `<div class="notice">${icon('alertTriangle',16)}<span><b>На что обратить внимание:</b> ${esc(s.notes)}</span></div>` : ''}
+    <div class="round-cols">
+      <div style="min-width:0;">
+        ${cases.length ? `<div class="card round-cases"><div class="row between" style="margin-bottom:10px;"><h3 style="margin:0;">Экраны</h3><span class="hint" style="margin:0;"><b>${passed}</b> из ${cases.length} пройдено</span></div>
+          <div class="bar-track" style="margin-bottom:10px;"><div class="bar-fill" style="width:${Math.round(passed/cases.length*100)}%;"></div></div>
+          ${cases.map(c=>{ const n = issues.filter(i=>i.caseId===c.id).length, canTick = st==='check' && (mgr || isRoundReviewer(s) || !s.reviewer);
+            return `<div class="case-row ${c.done?'done':''} ${roundFilter.kase===c.id?'sel':''}">
+              <label class="case-chk"><input type="checkbox" ${c.done?'checked':''} ${canTick?'':'disabled'} onchange="toggleRoundCase('${s.id}','${c.id}',this.checked)"><span>${esc(c.title)}</span></label>
+              ${n ? `<button type="button" class="chip ${roundFilter.kase===c.id?'chip-active':''}" onclick="roundFilter.kase=roundFilter.kase==='${c.id}'?'':'${c.id}';router()">${n} ${plural(n,'ошибка','ошибки','ошибок')}</button>` : ''}
+              ${canAdd ? `<button type="button" class="btn secondary sm" onclick="openRoundIssueForm('${s.id}',null,'${c.id}')">${icon('plus',13)}Ошибка</button>` : ''}
+            </div>`; }).join('')}</div>` : ''}
+        <div class="row between" style="margin-bottom:12px;"><h2 class="section-title" style="margin:0;">Ошибки <span class="chip-count">${issues.length}</span></h2>
+          ${shots.length ? `<a class="link" href="#/visual/${s.id}/shots">${icon('image',14)} Все скриншоты (${shots.length})</a>` : ''}</div>
+        ${issues.length ? `<div class="round-chips">${chip('sev','','Все',issues.length)}${['Критическая','Высокая','Средняя','Низкая'].map(v=>{ const n = issues.filter(i=>i.severity===v).length; return n ? chip('sev',v,v,n) : ''; }).join('')}<span class="chip-sep"></span>${chip('st','new','Не разобрано',undecided)}${chip('st','ok','Принято',accepted)}${chip('st','no','Не ошибка',issues.length-undecided-accepted)}</div>` : ''}
+        ${list.length ? list.map(i=>roundIssueCard(i, s)).join('') : issues.length ? '<div class="hint">Под этот фильтр ничего не подходит.</div>'
+          : `<div class="card">${emptyState({icon:'image', title: canAdd ? 'Ошибок пока нет' : 'Ошибок не добавлено', text: canAdd ? 'Нашёл ошибку в приложении — сделай скриншот и нажми «Добавить ошибку». С телефона тоже работает: открой эту страницу в Safari или Chrome.' : '',
+              action: canAdd ? `<button class="btn" onclick="openRoundIssueForm('${s.id}')">${icon('plus',16)}Добавить ошибку</button>` : ''})}</div>`}
+      </div>
+      <aside class="round-side"><div class="card" style="margin:0;"><h3 style="margin-top:0;">Материалы</h3>${roundStringsHtml(s)}${roundMaterialsHtml(s.languageCode, s.id)}</div></aside>
+    </div>`;
+}
+function roundIssueCard(i, s){
+  const sh = i.shotId ? dbGet('visualShots', i.shotId) : null, row = i.rowId ? dbGet('rows', i.rowId) : null;
+  const mgr = isManager(), mine = sameName(i.createdBy, getMe());
+  const decided = i.status!=='Новая';
+  return `<div class="round-err" id="ri_${i.id}">
+    ${sh ? `<button type="button" class="round-thumb" onclick="openShotViewer('${sh.id}','${i.id}')" title="Открыть скриншот"><img src="${sh.thumb}" alt=""></button>` : `<div class="round-thumb empty">${icon('image',20)}</div>`}
+    <div style="min-width:0;">
+      <div class="round-tags">${(s.cases||[]).find(c=>c.id===i.caseId) ? `<span class="pill st-review">${esc(s.cases.find(c=>c.id===i.caseId).title)}</span>` : ''}<span class="pill sev-${severityClass(i.severity)}">${esc(i.severity)}</span><span class="pill type">${esc(i.type)}</span>${decided?`<span class="pill ${statusClass(i.status)}">${esc(i.status==='Отклонена'?'Не ошибка':i.status)}</span>`:''}</div>
+      ${i.text ? `<p class="round-what">${esc(i.text)}</p>` : ''}
+      ${i.highlightText||i.expectedText ? `<div class="found-expected"><span class="fe-l">сейчас</span><b>${esc(i.highlightText||'—')}</b><span class="arrow">→</span><span class="fe-l">надо</span><span class="to">${esc(i.expectedText||'—')}</span></div>` : ''}
+      <div class="round-meta">${esc(i.createdBy||'')}${i.createdBy?' · ':''}${esc(fmtDate(i.createdAt))}${row?` · строка <span class="mono">${esc(row.key||row.source||'')}</span>`:''}</div>
+    </div>
+    <div class="round-acts">
+      ${mgr && roundStatus(s)!=='done' ? (decided ? `<button class="btn secondary sm" onclick="decideRoundIssue('${i.id}','')">Вернуть</button>`
+        : `<button class="btn sm" onclick="decideRoundIssue('${i.id}','Принята')">Принять</button><button class="btn secondary sm" onclick="decideRoundIssue('${i.id}','Отклонена')">Не ошибка</button>`) : ''}
+      ${(mgr || mine) && roundStatus(s)==='check' ? `<button class="btn secondary sm" onclick="openRoundIssueForm('${s.id}','${i.id}')">Изменить</button>` : ''}
+    </div>
+  </div>`;
+}
+function toggleRoundCase(sessionId, caseId, done){
+  const s = dbGet('visualSessions', sessionId), c = (s.cases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.done = done; c.doneBy = done ? getMe()||null : null; c.doneAt = done ? nowISO() : null;
+  dbUpsert('visualSessions', s); router();
+}
+function decideRoundIssue(id, status){
+  const i = dbGet('issues', id); if(!i) return;
+  i.status = status || 'Новая';
+  i.history = (i.history||[]).concat([{ts:nowISO(), action: status==='Принята' ? 'Подтвердить' : status==='Отклонена' ? 'Опровергнуть' : 'Вернуть на разбор', by:getMe()||null}]);
+  dbUpsert('issues', i); router();
+}
+async function submitRound(id){
+  const s = dbGet('visualSessions', id);
+  if(!await uiConfirm({title:'Сдать проверку?', icon:'check', danger:false, okText:'Сдать', text:'Ошибки уйдут менеджеру на разбор. Добавлять новые уже не получится — если что-то забыл, менеджер вернёт проверку.'})) return;
+  s.submittedAt = nowISO(); s.submittedBy = getMe()||null; dbUpsert('visualSessions', s); router(); toast('Проверка сдана');
+}
+async function finishRound(id){
+  const s = dbGet('visualSessions', id);
+  const left = visualSessionStats(id).issues.filter(i=>i.status==='Новая').length;
+  if(left && !await uiConfirm({title:'Остались неразобранные', icon:'alertTriangle', danger:false, okText:'Всё равно завершить', text:left+' '+plural(left,'ошибка не разобрана','ошибки не разобраны','ошибок не разобраны')+'. Они так и останутся «новыми».'})) return;
+  s.doneAt = nowISO(); dbUpsert('visualSessions', s); router(); toast('Проверка завершена — отчёт можно скачать');
+}
+function reopenRound(id){
+  const s = dbGet('visualSessions', id); delete s.submittedAt; delete s.doneAt; dbUpsert('visualSessions', s); router(); toast('Проверка снова открыта для ошибок');
+}
+
+/* ---------- add / edit an error: screenshot, как сейчас → как надо, category, severity ---------- */
+let roundForm = null;   // {sessionId, issueId, file, preview}
+function openRoundIssueForm(sessionId, issueId, caseId){
+  const s = dbGet('visualSessions', sessionId), ex = issueId ? dbGet('issues', issueId) : null;
+  const kase = ex ? ex.caseId : caseId || (roundFilter.sid===sessionId ? roundFilter.kase : '');
+  const sh = ex && ex.shotId ? dbGet('visualShots', ex.shotId) : null;
+  roundForm = {sessionId, issueId:issueId||null, file:null, preview: sh ? sh.thumb : ''};
+  const sev = ex ? ex.severity : 'Средняя';
+  openModal(`<h3>${ex?'Изменить ошибку':'Новая ошибка'} · ${esc(roundTitle(s))}</h3>
+    <div class="round-form-modal">
+      <label class="shot-pick" id="rfShotPick"><input type="file" accept="image/*" hidden onchange="roundShotChosen(this.files[0])">
+        <span class="shot-pick-img" id="rfShotImg">${roundForm.preview?`<img src="${roundForm.preview}" alt="">`:icon('image',22)}</span>
+        <span><b id="rfShotLbl">${roundForm.preview?'Скриншот прикреплён':'Скриншот'}</b><small>${roundForm.preview?'нажми, чтобы заменить':'выбери из галереи, перетащи или вставь Ctrl+V'}</small></span></label>
+      ${(s.cases||[]).length ? `<label class="field">Экран<select id="rfCase"><option value="">— не выбран —</option>${s.cases.map(c=>`<option value="${c.id}" ${c.id===kase?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>` : ''}
+      <label class="field">Как сейчас<input type="text" id="rfNow" value="${ex?esc(ex.highlightText||''):''}" placeholder="текст на экране, как есть" oninput="roundFormHints()"></label>
+      <label class="field">Как надо<input type="text" id="rfNeed" value="${ex?esc(ex.expectedText||''):''}" placeholder="правильный вариант"></label>
+      <div id="rfHints"></div>
+      <label class="field">Категория<select id="rfCat">${lqaCategoryOptions(ex ? ex.lqaCategory : '')}</select></label>
+      <div><div class="field-lbl">Насколько серьёзно</div><div class="seg seg-sev" id="rfSev">${['Критическая','Высокая','Средняя','Низкая'].map(v=>`<button type="button" class="sev-${severityClass(v)} ${v===sev?'on':''}" onclick="segPick(this)">${v}</button>`).join('')}</div></div>
+      <label class="field">Комментарий (необязательно)<input type="text" id="rfText" value="${ex?esc(ex.text||''):''}" placeholder="например: кнопка оплаты в корзине"></label>
+    </div>
+    <div class="modal-actions">${ex?`<button class="btn secondary" style="margin-right:auto;color:var(--crit);" onclick="deleteRoundIssue('${ex.id}')">${icon('trash',14)}Удалить</button>`:''}<button class="btn secondary" onclick="closeModal()">Отмена</button>
+      ${ex?'':`<button class="btn secondary" onclick="saveRoundIssue(true)">Сохранить и ещё</button>`}<button class="btn" onclick="saveRoundIssue(false)">Сохранить</button></div>`);
+  const pick = document.getElementById('rfShotPick');
+  pick.ondragover = e=>{ e.preventDefault(); pick.classList.add('drag'); };
+  pick.ondragleave = ()=>pick.classList.remove('drag');
+  pick.ondrop = e=>{ e.preventDefault(); pick.classList.remove('drag'); roundShotChosen([...e.dataTransfer.files].find(f=>f.type.startsWith('image/'))); };
+  roundFormHints();
+  if(!ex) setTimeout(()=>{ const n = document.getElementById('rfNow'); if(n && matchMedia('(pointer:fine)').matches) n.focus(); }, 50);
+}
+document.addEventListener('paste', e=>{
+  const f = [...(e.clipboardData?e.clipboardData.files:[])].find(x=>x.type.startsWith('image/'));
+  if(!f) return;
+  if(roundForm && document.getElementById('rfShotPick')){ e.preventDefault(); roundShotChosen(f); return; }
+  // a screenshot pasted on the round page starts a new error with it
+  const m = (location.hash||'').match(/^#\/visual\/([^/]+)$/), s = m && dbGet('visualSessions', m[1]);
+  if(!s || document.getElementById('shotViewer') || document.querySelector('#modalRoot .modal') || /^(INPUT|TEXTAREA)$/.test((e.target||{}).tagName||'')) return;
+  if(roundStatus(s)!=='check' || !(isManager() || isRoundReviewer(s) || !s.reviewer)) return;
+  e.preventDefault(); openRoundIssueForm(s.id); roundShotChosen(f);
+});
+function roundShotChosen(file){
+  if(!file || !roundForm) return;
+  roundForm.file = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('rfShotImg').innerHTML = `<img src="${url}" alt="">`;
+  document.getElementById('rfShotLbl').textContent = 'Скриншот прикреплён';
+}
+// the text on screen finds its string in the uploaded files; the string's source finds glossary terms to check against
+function roundFormHints(){
+  const box = document.getElementById('rfHints'); if(!box || !roundForm) return;
+  const s = dbGet('visualSessions', roundForm.sessionId), now = document.getElementById('rfNow').value;
+  const found = findRowsByScreenText(s.projectId, s.languageCode, now, 20);
+  const inFolder = s.componentId ? compWithDescendants(s.componentId) : null;
+  const row = (inFolder && found.find(r=>inFolder.has(r.componentId))) || found[0];
+  roundForm.rowId = row ? row.id : null;
+  let html = '';
+  if(row) html += `<div class="hint-line">${icon('file',13)} Строка найдена: <span class="mono">${esc(row.key||'')}</span> · «${esc(row.source||'')}»</div>`;
+  const gIds = new Set(glossariesForCheck(s.projectId, s.languageCode).map(g=>g.id));
+  const src = lcFold(row ? row.source : ''), tgt = lcFold(now);
+  const terms = dbQuery('glossaryTerms', t=>gIds.has(t.glossaryId) && t.term && t.approved && (src && src.includes(lcFold(t.term)) || tgt && (t.forbidden||[]).some(f=>f && tgt.includes(lcFold(f))))).slice(0,3);
+  terms.forEach(t=>{ html += `<div class="hint-line gl">${icon('bookOpen',13)} По глоссарию: ${esc(t.term)} → <b>${esc(t.approved)}</b>${(t.forbidden||[]).length?` · не «${esc(t.forbidden.join('», «'))}»`:''}</div>`; });
+  box.innerHTML = html;
+}
+async function saveRoundIssue(another){
+  const f = roundForm; if(!f) return;
+  const s = dbGet('visualSessions', f.sessionId), ex = f.issueId ? dbGet('issues', f.issueId) : null;
+  const now = document.getElementById('rfNow').value.trim(), need = document.getElementById('rfNeed').value.trim(), text = document.getElementById('rfText').value.trim();
+  if(!now && !need && !text && !f.file && !(ex && ex.shotId)){ toast('Добавь скриншот или напиши, как сейчас и как надо'); return; }
+  const cat = document.getElementById('rfCat').value, sevBtn = document.querySelector('#rfSev button.on');
+  let shotId = ex ? ex.shotId : null;
+  if(f.file){
+    const ids = await addShotFiles(s.id, [f.file], 'round');
+    if(!ids || !ids.length) return;
+    shotId = ids[0];
+  }
+  const row = f.rowId ? dbGet('rows', f.rowId) : null;
+  const issue = Object.assign(ex || {id:uid(), visual:true, manual:true, round:true, sessionId:s.id, projectId:s.projectId, languageCode:s.languageCode,
+      status:'Новая', createdAt:nowISO(), createdBy:getMe()||null, history:[{ts:nowISO(), action:'Добавлена в проверке', by:getMe()||null}]},
+    {shotId, caseId: document.getElementById('rfCase') ? document.getElementById('rfCase').value || null : null, lqaCategory:cat, type:lqaCategoryLabel(cat), severity:sevBtn ? sevBtn.textContent : 'Средняя', text,
+      highlightText:now||null, expectedText:need||null, rowId: row ? row.id : (ex ? ex.rowId : null), componentId: row ? row.componentId : (ex ? ex.componentId : null)});
+  if(ex) issue.history = (issue.history||[]).concat([{ts:nowISO(), action:'Изменена', by:getMe()||null}]);
+  dbUpsert('issues', issue);
+  closeModal(); router(); renderSidebar();
+  toast(ex ? 'Ошибка обновлена' : 'Ошибка добавлена');
+  if(another) openRoundIssueForm(s.id);
+}
+function deleteRoundIssue(id){
+  closeModal();
+  const snap = snapshotTables(['issues']);
+  dbRemove('issues', id); router();
+  toastUndo('Ошибка удалена', snap, router);
 }
 
 /* ---------- one session ---------- */
@@ -5500,7 +6135,7 @@ function renderVisualSession(el, sessionId){
   const s = dbGet('visualSessions', sessionId);
   if(!s){ setCrumbs([{label:'Визуальная проверка', hash:'#/visual'}, 'Не найдено']); el.innerHTML = emptyState({img:IMG.ERROR_ILL, title:'Сессия не найдена', action:'<a class="btn secondary" href="#/visual">Ко всем сессиям</a>'}); return; }
   const p = dbGet('projects', s.projectId);
-  setCrumbs([{label:'Визуальная проверка', hash:'#/visual'}, ...(p?[{label:p.name, hash:'#/project/'+p.id+'/visual'}]:[]), s.name]);
+  setCrumbs([{label:'Проверки', hash:'#/'}, {label:roundTitle(s), hash:'#/visual/'+s.id}, 'Скриншоты']);
   const {shots, issues} = visualSessionStats(sessionId);
   shots.sort((a,b)=>(a.order||0)-(b.order||0));
   const ai = getSettings();
@@ -5562,7 +6197,7 @@ function wireShotDrop(sessionId){
   drop.ondrop = e=>{ e.preventDefault(); drop.classList.remove('drag'); addShotFiles(sessionId, [...e.dataTransfer.files]); };
 }
 document.addEventListener('paste', e=>{
-  const m = (location.hash||'').match(/^#\/visual\/([^/]+)/);
+  const m = (location.hash||'').match(/^#\/visual\/([^/]+)\/shots/);
   if(!m || document.getElementById('shotViewer')) return;
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   const files = [...(e.clipboardData?e.clipboardData.files:[])].filter(f=>f.type.startsWith('image/'));
@@ -5598,7 +6233,7 @@ async function addShotFiles(sessionId, files, how){
     }
   }catch(err){ console.error(err); toast('Не получилось обработать файл: '+err.message); }
   visualState.busy = false; setShotStatus('');
-  if(added){ dbSave('visualShotImages', images); dbSave('visualShots', shots); if(how!=='crawl') toast('Добавлено скриншотов: '+added); }
+  if(added){ dbSave('visualShotImages', images); dbSave('visualShots', shots); if(how!=='crawl' && how!=='round') toast('Добавлено скриншотов: '+added); }
   if(how!=='crawl' || !viewerState) router();
   return newIds;
 }
@@ -6809,7 +7444,7 @@ async function runVisualAI(sessionId, shotIds){
   }
   const sess = dbGet('visualSessions', sessionId);
   const shots = (shotIds ? shotIds.map(id=>dbGet('visualShots', id)) : dbQuery('visualShots', x=>x.sessionId===sessionId)).filter(Boolean);
-  const glossaryIds = dbQuery('glossaries', g=>!g.projectId || g.projectId===sess.projectId).map(g=>g.id);
+  const glossaryIds = dbQuery('glossaries', g=>g.projectId ? g.projectId===sess.projectId : !g.scope).map(g=>g.id);
   const glossary = dbQuery('glossaryTerms', t=>glossaryIds.includes(t.glossaryId) && (!t.language || t.language.toLowerCase()===sess.languageCode.toLowerCase())).slice(0,300).map(t=>({term:t.term, approved:t.approved}));
   let created = 0, failed = 0, done = 0;
   toast('ИИ проверяет скриншоты: '+shots.length+'…');
@@ -7058,7 +7693,7 @@ function visibleLangs(p){
   return langs ? all.filter(l=>langs.has(String(l.code).toLowerCase())) : all;
 }
 function vProjects(){ const langs = myLanguages(); return langs ? dbList('projects').filter(p=>visibleLangs(p).length) : dbList('projects'); }
-const MANAGER_ROUTES = ['analytics','report','vendors','sample','export','extension','runs'];
+const MANAGER_ROUTES = ['round','analytics','report','vendors','sample','export','extension','runs'];
 const MANAGER_PROJECT_TABS = ['quality','settings'];
 // actions only a manager can take — their buttons are hidden for everyone else and the functions refuse
 const MANAGER_ACTIONS = ['openProjectModal','saveProject','deleteProject','addProjectLanguage','removeProjectLanguage','addAllStandardLanguages','saveProjectLanguages',
@@ -7726,7 +8361,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-12.2';
+const APP_VERSION = '2026-10-19.1';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8280,7 +8915,7 @@ function paletteCompute(qRaw){
   if(q){
     addScored(dbList('projects').map(p=>({group:'Проекты', icon:'folder', label:p.name, hint:(visibleLangs(p)||[]).map(l=>l.code).join(' '), run:()=>{ location.hash='#/project/'+p.id; }})), 5);
     addScored(dbList('components').map(c=>({group:'Папки', icon:'folder', label:compPath(c), hint:dbGet('projects',c.projectId)?.name||'', run:()=>{ location.hash='#/project/'+c.projectId+'/folder/'+c.id; }})), 6);
-    addScored(vList('visualSessions').map(v=>({group:'Визуальная проверка', icon:'image', label:v.name||'Сессия', hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
+    addScored(vList('visualSessions').map(v=>({group:'Проверки', icon:'check', label:roundTitle(v)+(v.name?' · '+v.name:''), hint:[v.languageCode, v.page].filter(Boolean).join(' · '), run:()=>{ location.hash='#/visual/'+v.id; }})), 5);
     addScored(dbList('glossaries').map(g=>({group:'Глоссарии', icon:'bookOpen', label:g.name, run:()=>{ location.hash='#/glossary/'+g.id; }})), 4);
     addScored(vList('files').filter(f=>!f.supersededBy).map(f=>({group:'Файлы', icon:'file', label:fileLabel(f), hint:[f.title?f.filename:'', f.description||'', f.languageCode].filter(Boolean).join(' · '), run:()=>{ location.hash='#/project/'+f.projectId+'/folder/'+f.componentId+'/files'; }})), 5);
     if(q.length>=2){
