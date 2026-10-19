@@ -724,6 +724,9 @@ a.tabbtn{text-decoration:none;}
 .found-expected{flex-wrap:wrap;}
 .found-expected .fe-l{font-family:Inter,system-ui,sans-serif;font-size:11.5px;color:var(--text-faint);}
 .round-cases{margin-bottom:18px;}
+.round-files{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.round-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);}
+.round-file .mono{font-size:12.5px;flex:1;min-width:140px;overflow-wrap:anywhere;}
 .round-cases .bar-fill{background:var(--brand-grad);}
 .case-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r-sm);}
 .case-row:hover,.case-row.sel{background:var(--surface-2);}
@@ -3575,7 +3578,7 @@ function renderFolderDetail(el, projectId, componentId, tab){
     <div class="card">
       <div class="row between"><h3>Загруженные файлы</h3>${files.length?fileBulkBarHtml():''}</div>
       ${files.length ? `<div class="table-wrap"><table><thead><tr><th class="mgr-only" style="width:28px;"><input type="checkbox" title="Выбрать все файлы" onchange="toggleAllFiles(this)"></th><th>Файл</th><th>Язык</th><th>Строк</th><th>Загружен</th><th>Кто</th><th></th></tr></thead><tbody>
-        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mgr-only">${fileChkHtml(f)}</td><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
+        ${files.map(f=>`<tr style="${f.supersededBy?'opacity:.55;':''}"><td class="mgr-only">${fileChkHtml(f)}</td><td>${fileCellHtml(f)}${f.supersededBy?' <span class="pill type">прежняя версия</span>':f.previousVersionId?' <span class="pill st-new">новая версия</span>':''}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td><td class="nowrap" style="text-align:right;">${f.supersededBy?'':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button><button class="btn ghost sm" title="Отчёт по этому файлу (Excel)" onclick="downloadFilesReport(['${f.id}'])">${icon('download',14)}Отчёт</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`).join('')}
       </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
     </div>`;
   } else if(tab==='strings'){
@@ -3796,7 +3799,7 @@ function renderProjectFiles(p){
       ${files.map(f=>{
         const c = dbGet('components', f.componentId);
         return `<tr><td class="mgr-only">${fileChkHtml(f)}</td><td>${fileCellHtml(f)}</td><td>${folderBadge(c)}</td><td>${esc(f.languageCode)}</td><td>${f.rowCount}</td><td>${fmtDate(f.uploadedAt)}</td><td>${initialsAvatar(f.uploadedBy)}</td>
-          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
+          <td class="nowrap" style="text-align:right;">${f.supersededBy?'<span class="pill type">прежняя версия</span>':`<button class="btn ghost sm" onclick="rerunFileCheck('${f.id}')">Перезапустить проверку</button>`}${f.supersededBy?'':`<button class="btn ghost sm" title="Скачать .po с исправлениями" onclick="downloadCorrectedPo('${f.id}')">${icon('download',14)}.po</button><button class="btn ghost sm" title="Отчёт по этому файлу (Excel)" onclick="downloadFilesReport(['${f.id}'])">${icon('download',14)}Отчёт</button>`}${f.vendorId && !f.supersededBy ? `<button class="btn ghost sm" title="Выборочная проверка поставки подрядчика" onclick="startSample('${f.id}')">${icon('check',14)}Выборка</button>` : ''}<button class="btn ghost sm" title="Название, описание, подрядчик" onclick="editFileMeta('${f.id}')">${icon('edit',14)}</button><button class="btn ghost sm" title="Удалить файл" style="color:var(--crit);" onclick="deleteFile('${f.id}')">${icon('trash',14)}</button></td></tr>`;
       }).join('')}
     </tbody></table></div>` : `<div class="empty">Файлов пока нет.</div>`}
   </div>`;
@@ -6077,6 +6080,8 @@ function roundStringsCardHtml(s){
       <label class="drop drop-compact" id="folderPoDrop"><div><strong>${rows.length?'+ Новая версия или ещё файлы':'Загрузи строки на проверку'}</strong><span>.po, .json, .csv или .zip — язык: ${esc(languageLabel(s.languageCode))}. Проверка запустится сама</span></div>
         <input class="hidden-input" type="file" id="folderPoFileInput" multiple accept=".po,.zip,.json,.csv,.tsv"></label>
       <div id="folderPendingWrap"></div><div class="hint" id="folderUploadStatus"></div>` : ''}
+    ${files.length ? `<div class="round-files">${files.map(f=>`<div class="round-file"><span class="mono">${esc(fileLabel(f))}</span><span class="hint" style="margin:0;">${f.rowCount} ${plural(f.rowCount,'строка','строки','строк')} · ${esc(fmtDate(f.uploadedAt))}</span><button class="btn secondary sm" onclick="downloadFilesReport(['${f.id}'])">${icon('download',13)}Отчёт</button></div>`).join('')}
+      ${files.length>1 ? `<button class="btn secondary sm" style="margin-top:6px;" onclick="downloadFilesReport(${esc(JSON.stringify(files.map(f=>f.id)))}, ${esc(JSON.stringify(roundTitle(s)+' — отчёт по файлам.xlsx'))})">${icon('download',13)}Все файлы одним Excel — каждый на своём листе</button>` : ''}</div>` : ''}
     ${rows.length ? `<div id="roundStringsRoot" style="margin-top:12px;"></div>` : ''}
   </div>`;
 }
@@ -8472,7 +8477,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-19.4';
+const APP_VERSION = '2026-10-19.5';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8558,18 +8563,22 @@ function maybeStartTour(){
 /* =========================================================
    EXPORT
    ========================================================= */
+// Excel (Russian locale) opens a CSV right only with a BOM (else the Cyrillic turns into mojibake) and «;» between columns
+function downloadCsv(rows, filename){
+  const cell = v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const blob = new Blob(['\uFEFF'+rows.map(r=>r.map(cell).join(';')).join('\r\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
 function exportIssuesToCsv(issues){
   if(!issues.length){ toast('Нечего экспортировать'); return; }
-  let csv = 'id,source,target,project,language,component,type,severity,problem,expected,confidence,explanation,suggestion,status,comment\n';
-  const esc2 = s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
+  const rows = [['ID','Исходный текст','Перевод','Проект','Язык','Папка','Тип','Важность','Проблема','Как надо','Уверенность','Объяснение','Предложение','Статус','Комментарий']];
   issues.forEach(i=>{
-    const r = dbGet('rows', i.rowId); const p = dbGet('projects', i.projectId); const c = dbGet('components', i.componentId);
+    const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId);
     const lastComment = (i.history||[]).slice().reverse().find(h=>h.comment)?.comment || '';
-    csv += [esc2(i.id), esc2(r?r.source:''), esc2(r?r.target:''), esc2(p?p.name:''), esc2(i.languageCode), esc2(c?c.name:''), esc2(i.type), esc2(i.severity), esc2(i.text), esc2(i.expectedText), esc2(i.aiConfidence), esc2(i.aiExplanation), esc2(i.aiSuggestion), esc2(i.status), esc2(lastComment)].join(',')+'\n';
+    rows.push([i.id, r?r.source:'', r?r.target:'', p?p.name:'', i.languageCode, c?c.name:'', i.type, i.severity, i.text, i.expectedText, i.aiConfidence, i.aiExplanation, i.aiSuggestion, i.status, lastComment]);
   });
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='lqa_issues.csv'; a.click(); URL.revokeObjectURL(url);
+  downloadCsv(rows, 'lqa_issues.csv');
 }
 function exportIssuesToXlsx(issues){
   if(!issues.length){ toast('Нечего экспортировать'); return; }
@@ -8837,15 +8846,36 @@ function renderExportPage(el){
 function exportVisualChecksCsv(){
   const visualChecks = dbList('visualChecks');
   if(!visualChecks.length){ toast('Очередь пуста'); return; }
-  let csv = 'project,component,language,source,target,reason,created_at\n';
-  const esc2 = s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
-  visualChecks.forEach(v=>{
-    const p=dbGet('projects', v.projectId), c=dbGet('components', v.componentId);
-    csv += [esc2(p?p.name:''), esc2(c?c.name:''), esc2(v.languageCode), esc2(v.source), esc2(v.target), esc2(v.reason), esc2(v.createdAt)].join(',')+'\n';
+  const rows = [['Проект','Папка','Язык','Исходный текст','Перевод','Причина','Добавлено']];
+  visualChecks.forEach(v=>{ const p = dbGet('projects', v.projectId), c = dbGet('components', v.componentId); rows.push([p?p.name:'', c?c.name:'', v.languageCode, v.source, v.target, v.reason, v.createdAt]); });
+  downloadCsv(rows, 'visual_check_queue.csv');
+}
+/* ---------- report per file (Excel) ----------
+   «Итог»: one line per file — rows, words, open problems by severity, quality; then one sheet per file
+   with its problems (key, source, translation, what's wrong, how it should be, status). */
+const SEV_ORDER = ['Критическая','Высокая','Средняя','Низкая'];
+async function downloadFilesReport(fileIds, filename){
+  const files = fileIds.map(id=>dbGet('files', id)).filter(Boolean);
+  if(!files.length){ toast('Нет файлов для отчёта'); return; }
+  if(!await ensureXlsx()){ toast('Библиотека Excel не загрузилась — проверь интернет'); return; }
+  const wb = XLSX.utils.book_new(), used = new Set();
+  const sheetName = base=>{ let n = String(base).replace(/[\[\]:*?\/\\]/g,' ').trim().slice(0,28) || 'Файл', k = 2, out = n; while(used.has(out.toLowerCase())) out = n.slice(0,26)+' '+(k++); used.add(out.toLowerCase()); return out; };
+  used.add('итог');
+  const summary = [['Файл','Язык','Папка','Загружен','Строк','Слов','Проблем открыто',...SEV_ORDER,'Без проблем, %']];
+  const sheets = [];
+  files.forEach(f=>{
+    const rows = dbQuery('rows', r=>r.fileId===f.id), rowIds = new Set(rows.map(r=>r.id)), byId = {}; rows.forEach(r=>{ byId[r.id] = r; });
+    const issues = dbQuery('issues', i=>rowIds.has(i.rowId)).sort((a,b)=>SEV_ORDER.indexOf(a.severity)-SEV_ORDER.indexOf(b.severity));
+    const open = issues.filter(isOpenIssue), q = rowsQuality([...rowIds]), comp = dbGet('components', f.componentId);
+    summary.push([fileLabel(f), f.languageCode, comp ? compPath(comp) : '', fmtDate(f.uploadedAt), rows.length, f.words||'', open.length, ...SEV_ORDER.map(s=>open.filter(i=>i.severity===s).length), q==null ? '' : Math.round(q*100)]);
+    const data = [['Ключ','Исходный текст','Перевод','Тип','Важность','Проблема','Как надо','Статус']].concat(issues.map(i=>{ const r = byId[i.rowId]||{}; return [r.key||'', r.source||'', r.target||'', i.type, i.severity, i.text, i.expectedText||'', i.status]; }));
+    if(data.length===1) data.push(['','','','','','Проблем не найдено','','']);
+    sheets.push([sheetName(fileLabel(f).replace(/\.[^.]+$/,'')+' '+f.languageCode), data]);
   });
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='visual_check_queue.csv'; a.click(); URL.revokeObjectURL(url);
+  const ws0 = XLSX.utils.aoa_to_sheet(summary); ws0['!cols'] = [{wch:36},{wch:8},{wch:28},{wch:17},{wch:8},{wch:8},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws0, 'Итог');
+  sheets.forEach(([name, data])=>{ const ws = XLSX.utils.aoa_to_sheet(data); ws['!cols'] = [{wch:28},{wch:40},{wch:40},{wch:22},{wch:12},{wch:50},{wch:30},{wch:14}]; XLSX.utils.book_append_sheet(wb, ws, name); });
+  XLSX.writeFile(wb, filename || ('Отчёт — '+(files.length===1 ? fileLabel(files[0]).replace(/\.[^.]+$/,'')+' ('+files[0].languageCode+')' : files.length+' файлов')+'.xlsx'));
 }
 function doExport(fmt){
   let issues = dbList('issues');
