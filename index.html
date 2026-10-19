@@ -1516,8 +1516,10 @@ const LOCALE_CURRENCY = {kk:'₸ (тенге)', uz:'сум', ky:'сом', hy:'֏
 const LENGTH_RATIO_LANG = {ka:1.3, hy:1.2, az:1.1, uz:1.1, kk:1.1, ky:1.1};
 const GUILLEMET_LANGS = ['ru','kk','ky','be','tg','uz','az','hy','uk'];
 function parseDntTerms(text){ return String(text||'').split(/[\n,;]+/).map(t=>t.trim()).filter(t=>t.length>1); }
+// a Latin brand next to letters of another script is still a whole word: «የWildberries» (am), «Wildberriesის»
 function hasWholeTerm(text, term){
-  return new RegExp('(?<![\\p{L}\\p{N}])'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])', 'u').test(text||'');
+  const edge = /^[\p{Script=Latin}\p{N}\p{P}\p{Zs}]+$/u.test(term) ? '[\\p{Script=Latin}\\p{N}]' : '[\\p{L}\\p{N}]';
+  return new RegExp('(?<!'+edge+')'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?!'+edge+')', 'u').test(text||'');
 }
 // Languages whose UI is not written in Cyrillic: Cyrillic letters in their translation are almost
 // always an untranslated or copy-pasted Russian piece. (Uzbek also exists in Cyrillic, so for uz
@@ -1597,15 +1599,16 @@ const LANGUAGE_RULES = {
   ],
   // Amharic (Ge'ez script): Ethiopic punctuation instead of Latin, no «::» typed for ።, modern Arabic digits, polite address
   am: [
-    t=>{ const m = visibleText(t).match(/[ሀ-፿]\s*::(?!:)/); return m && {text:'«::» вместо амхарской точки «።» (U+1362)', highlight:'::', expected:'።', severity:'Средняя'}; },
-    t=>{ const m = visibleText(t).match(/[ሀ-፿]\.(?=\s|$)/); return m && {text:'Латинская точка в конце предложения — в амхарском «።»', highlight:m[0], expected:m[0][0]+'።', severity:'Средняя'}; },
-    t=>{ const m = visibleText(t).match(/[ሀ-፿],(?=\s|$)/); return m && {text:'Латинская запятая — в амхарском «፣»', highlight:m[0], expected:m[0][0]+'፣', severity:'Низкая'}; },
-    t=>{ const m = visibleText(t).match(/[ሀ-፿];/); return m && {text:'Латинская точка с запятой — в амхарском «፤»', highlight:m[0], expected:m[0][0]+'፤', severity:'Низкая'}; },
-    t=>{ const m = visibleText(t).match(/\s+[።፣፤፥](?![ሀ-፿])/); return m && {text:'Пробел перед амхарским знаком препинания', highlight:m[0], expected:m[0].trim(), severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u1200-\u137F]\s*::(?!:)/); return m && {text:'«::» вместо амхарской точки «።» (U+1362)', highlight:'::', expected:'።', severity:'Средняя'}; },
+    // abbreviations keep their dot: ወዘተ. (и т.д.), ዓ.ም.
+    t=>{ const v = visibleText(t).replace(/(?<![\u1200-\u137F])(?:ወዘተ|ዓ\.ም|ወ\.ዘ\.ተ|ዓ\.ዓ)\./g, ' '), m = v.match(/[\u1200-\u137F]\.(?=\s|$)/); return m && {text:'Латинская точка в конце предложения — в амхарском «።»', highlight:m[0], expected:m[0][0]+'።', severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/[\u1200-\u137F],(?=\s|$)/); return m && {text:'Латинская запятая — в амхарском «፣»', highlight:m[0], expected:m[0][0]+'፣', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u1200-\u137F];/); return m && {text:'Латинская точка с запятой — в амхарском «፤»', highlight:m[0], expected:m[0][0]+'፤', severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/\s+[።፣፤፥](?![\u1200-\u137F])/); return m && {text:'Пробел перед амхарским знаком препинания', highlight:m[0], expected:m[0].trim(), severity:'Низкая'}; },
     t=>{ const m = visibleText(t).match(/([።፣፤])\1+/); return m && {text:'Повторяющийся знак препинания', highlight:m[0], expected:m[1], severity:'Низкая'}; },
-    t=>{ const m = visibleText(t).match(/[ሀ-፿]፡[ሀ-፿]/); return m && {text:'Старый разделитель слов «፡» — в современном тексте между словами пробел', highlight:m[0], expected:m[0][0]+' '+m[0][2], severity:'Низкая'}; },
-    t=>{ const m = visibleText(t).match(/[፩-፼]+/); return m && {text:'Эфиопские цифры «'+m[0]+'» — в интерфейсе числа пишем арабскими цифрами', highlight:m[0], severity:'Средняя'}; },
-    t=>{ const m = visibleText(t).match(/(?<![ሀ-፿])(አንተ|አንቺ)(?![ሀ-፿])/); return m && {text:'«'+m[0]+'» — обращение на «ты» '+(m[1]==='አንተ'?'мужского':'женского')+' рода; в интерфейсе — вежливое «እርስዎ» или нейтральная форма', highlight:m[0], severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u1200-\u137F]፡[\u1200-\u137F]/); return m && {text:'Старый разделитель слов «፡» — в современном тексте между словами пробел', highlight:m[0], expected:m[0][0]+' '+m[0][2], severity:'Низкая'}; },
+    t=>{ const m = visibleText(t).match(/[\u1369-\u137C]+/); return m && {text:'Эфиопские цифры «'+m[0]+'» — в интерфейсе числа пишем арабскими цифрами', highlight:m[0], severity:'Средняя'}; },
+    t=>{ const m = visibleText(t).match(/(?<![\u1200-\u137F])(አንተ|አንቺ)(?![\u1200-\u137F])/); return m && {text:'«'+m[0]+'» — обращение на «ты» '+(m[1]==='አንተ'?'мужского':'женского')+' рода; в интерфейсе — вежливое «እርስዎ» или нейтральная форма', highlight:m[0], severity:'Низкая'}; },
   ],
   kk: [t=>{ const m = t.match(/[əƏ]/); return m && {text:'Латинская «'+m[0]+'» вместо казахской «ә»', highlight:m[0], expected:'ә', severity:'Высокая'}; }],
   zh: [t=>{ const m = t.match(/[一-鿿][,.!?;:](?=[一-鿿]|$)/); return m && {text:'В китайском тексте — полноширинная пунктуация (，。！？；：), а не «'+m[0].slice(-1)+'»', highlight:m[0], severity:'Низкая'}; }],
@@ -4409,13 +4412,13 @@ function renderIssuesTableGeneric(fixedFilter, mountId){
         ${i.visual && !r ? `<td class="cell-text" colspan="2">${visualIssueCell(i)}</td>` : `<td class="mono cell-text">${r?renderFieldWithHighlight(r.source, i, 'source'):''}</td>
         <td class="mono cell-text">${r?renderFieldWithHighlight(r.target, i, 'target'):''}</td>`}
         <td><span class="pill type">${esc(i.type)}</span></td>
-        <td class="nowrap">${esc(proj?proj.name:'—')}</td><td>${esc(i.languageCode)}</td><td>${folderBadge(comp)}</td>
+        <td class="nowrap">${esc(proj?proj.name:'—')}</td><td>${esc(i.languageCode)}</td><td>${fixedFilter.componentId ? `<span class="hint" style="margin:0;white-space:nowrap;">${esc(r?fileLabel(dbGet('files', r.fileId)):'')}</span>` : folderBadge(comp)}</td>
         <td><span class="pill ${statusClass(i.status)}">${esc(i.status)}</span></td>
         <td class="nowrap">${formatDeadline(i.deadline)}</td>
         <td class="cell-go">${icon('chevronRight',16)}</td>
       </tr>`;
   };
-  tw.innerHTML = pageIssues.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Важность</th><th>Ключ</th><th>Исходный текст</th><th>Перевод</th><th>Тип</th><th>Проект</th><th>Язык</th><th>Папка</th><th>Статус</th><th>Дедлайн</th><th></th></tr></thead><tbody>
+  tw.innerHTML = pageIssues.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Важность</th><th>Ключ</th><th>Исходный текст</th><th>Перевод</th><th>Тип</th><th>Проект</th><th>Язык</th><th>${fixedFilter.componentId?'Файл':'Папка'}</th><th>Статус</th><th>Дедлайн</th><th></th></tr></thead><tbody>
     ${pageIssues.slice(0, LAZY_CHUNK).map(rowHtml).join('')}
   </tbody></table></div>
   <div class="pager">${pageSizeSelectHtml(key, issues.length, `renderIssuesTableGeneric(issuesFixedFilters['${mountId}'],'${mountId}')`)}<span>${issues.length} ${plural(issues.length,'проблема','проблемы','проблем')}${totalPages>1?`, стр. ${st.page} из ${totalPages}`:''}</span>
@@ -4536,7 +4539,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
         <td><input type="checkbox" class="${key}_chk" value="${r.id}" ${st.selected.has(r.id)?'checked':''} onchange="toggleOneIssue('${key}', '${r.id}', this.checked, this)"></td>
         <td class="mono cell-key" title="${esc(r.key?r.key+' — нажми, чтобы скопировать':'')}" ${r.key?`data-k="${esc(r.key)}" onclick="event.stopPropagation();copyText(this.dataset.k,'Ключ скопирован')"`:''}>${esc(r.key||'—')}</td>
         <td>${esc(r.languageCode)}</td>
-        <td>${folderBadge(comp)}</td>
+        <td>${fixedFilter.componentId ? `<span class="hint" style="margin:0;white-space:nowrap;">${esc(fileLabel(dbGet('files', r.fileId)))}</span>` : folderBadge(comp)}</td>
         <td class="mono cell-text">${primary?renderFieldWithHighlight(r.source, primary, 'source'):highlightTokens(r.source)}</td>
         <td class="mono cell-text">${primary?renderFieldWithHighlight(r.target, primary, 'target'):highlightTokens(r.target)}</td>
         <td style="min-width:140px;">${pillsHtml}</td>
@@ -4544,7 +4547,7 @@ function renderRowsIssuesGeneric(fixedFilter, mountId){
         <td class="cell-go">${icon('chevronRight',16)}</td>
       </tr>`;
   };
-  tw.innerHTML = pageRows.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Ключ</th><th>Язык</th><th>Папка</th><th>Исходный текст</th><th>Перевод</th><th>Проблемы</th><th>Дедлайн</th><th></th></tr></thead><tbody>
+  tw.innerHTML = pageRows.length ? `<div class="table-wrap"><table><thead><tr><th style="width:36px;"></th><th>Ключ</th><th>Язык</th><th>${fixedFilter.componentId?'Файл':'Папка'}</th><th>Исходный текст</th><th>Перевод</th><th>Проблемы</th><th>Дедлайн</th><th></th></tr></thead><tbody>
     ${pageRows.slice(0, LAZY_CHUNK).map(rowHtml).join('')}
   </tbody></table></div>
   <div class="pager">${pageSizeSelectHtml(key, finalRows.length, `renderRowsIssuesGeneric(issuesFixedFilters['${mountId}'],'${mountId}')`)}<span>${finalRows.length} ${plural(finalRows.length,'строка','строки','строк')}${totalPages>1?`, стр. ${st.page} из ${totalPages}`:''}</span>
@@ -8477,7 +8480,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-19.5';
+const APP_VERSION = '2026-10-19.6';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8570,25 +8573,26 @@ function downloadCsv(rows, filename){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
+// one layout for CSV and Excel: the key and the file first, so a problem is easy to find in the source files
+function issueExportRows(issues){
+  const rows = [['Ключ','Исходный текст','Перевод','Язык','Файл','Папка','Тип','Важность','Проблема','Как надо','Статус','Комментарий','Объяснение ИИ','Предложение ИИ','Проект','ID проблемы']];
+  issues.forEach(i=>{
+    const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId), f = r ? dbGet('files', r.fileId) : null;
+    const lastComment = (i.history||[]).slice().reverse().find(h=>h.comment)?.comment || '';
+    rows.push([r?r.key||'':'', r?r.source:'', r?r.target:'', i.languageCode, fileLabel(f), c?compPath(c):'', i.type, i.severity, i.text, i.expectedText||'', i.status, lastComment, i.aiExplanation||'', i.aiSuggestion||'', p?p.name:'', i.id]);
+  });
+  return rows;
+}
 function exportIssuesToCsv(issues){
   if(!issues.length){ toast('Нечего экспортировать'); return; }
-  const rows = [['ID','Исходный текст','Перевод','Проект','Язык','Папка','Тип','Важность','Проблема','Как надо','Уверенность','Объяснение','Предложение','Статус','Комментарий']];
-  issues.forEach(i=>{
-    const r = dbGet('rows', i.rowId), p = dbGet('projects', i.projectId), c = dbGet('components', i.componentId);
-    const lastComment = (i.history||[]).slice().reverse().find(h=>h.comment)?.comment || '';
-    rows.push([i.id, r?r.source:'', r?r.target:'', p?p.name:'', i.languageCode, c?c.name:'', i.type, i.severity, i.text, i.expectedText, i.aiConfidence, i.aiExplanation, i.aiSuggestion, i.status, lastComment]);
-  });
-  downloadCsv(rows, 'lqa_issues.csv');
+  downloadCsv(issueExportRows(issues), 'lqa_issues.csv');
 }
 function exportIssuesToXlsx(issues){
   if(!issues.length){ toast('Нечего экспортировать'); return; }
   ensureXlsx().then(ok=>{
     if(!ok){ toast('Библиотека Excel не загрузилась — используй CSV вместо этого.'); return; }
-    const data = issues.map(i=>{
-      const r = dbGet('rows', i.rowId); const p = dbGet('projects', i.projectId); const c = dbGet('components', i.componentId);
-      return {ID:i.id, Исходный_текст:r?r.source:'', Перевод:r?r.target:'', Проект:p?p.name:'', Язык:i.languageCode, Папка:c?c.name:'', Тип:i.type, Важность:i.severity, Уверенность_ИИ:i.aiConfidence, Объяснение:i.aiExplanation, Предложение:i.aiSuggestion, Статус:i.status};
-    });
-    const ws = XLSX.utils.json_to_sheet(data);
+    const ws = XLSX.utils.aoa_to_sheet(issueExportRows(issues));
+    ws['!cols'] = [{wch:28},{wch:40},{wch:40},{wch:6},{wch:24},{wch:24},{wch:20},{wch:12},{wch:50},{wch:28},{wch:12},{wch:30},{wch:30},{wch:30},{wch:16},{wch:10}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Проблемы');
     XLSX.writeFile(wb, 'lqa_issues.xlsx');
