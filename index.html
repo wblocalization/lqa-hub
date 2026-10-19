@@ -3066,22 +3066,23 @@ async function deleteProject(id){
   location.hash = '#/projects';
 }
 
-const PROJECT_TOP_TABS = [['overview','Обзор'],['folders','Папки'],['content','Контент'],['visual','Скриншоты'],['quality','Качество'],['settings','Настройки']];
-const PROJECT_CONTENT_TABS = [['strings','Строки'],['files','Файлы']];
+// strings and files sit under one «content» route (old links keep working) but show as two tabs;
+// screenshots live in rounds now (#/project/:id/visual still opens)
+const PROJECT_TOP_TABS = [['overview','Обзор'],['folders','Папки'],['content/strings','Строки'],['content/files','Файлы'],['quality','Качество'],['settings','Настройки']];
 function renderProjectDetail(el, projectId, topTab, subTab){
   const project = dbGet('projects', projectId);
   if(!project){ el.innerHTML = '<div class="empty"><b>Проект не найден</b></div>'; return; }
   topTab = topTab || 'overview';
   if(topTab==='content') subTab = subTab || 'strings';
-  const crumbLabel = PROJECT_TOP_TABS.find(t=>t[0]===topTab)?.[1]||'';
+  const tabKey = topTab==='content' ? 'content/'+subTab : topTab;
+  const crumbLabel = PROJECT_TOP_TABS.find(t=>t[0]===tabKey)?.[1] || (topTab==='visual' ? 'Скриншоты' : '');
   setCrumbs([{label:'Проекты', hash:'#/projects'}, {label:project.name, hash:'#/project/'+project.id}, crumbLabel]);
-  const tabsHtml = PROJECT_TOP_TABS.filter(([key])=>isManager() || !MANAGER_PROJECT_TABS.includes(key)).map(([key,label])=>`<button class="tabbtn ${topTab===key?'active':''}" onclick="location.hash='#/project/${projectId}/${key}'">${label}</button>`).join('');
+  const tabsHtml = PROJECT_TOP_TABS.filter(([key])=>isManager() || !MANAGER_PROJECT_TABS.includes(key)).map(([key,label])=>`<button class="tabbtn ${tabKey===key?'active':''}" onclick="location.hash='#/project/${projectId}/${key}'">${label}</button>`).join('');
   let subTabsHtml = '';
   let body = '';
   if(topTab==='overview') body = renderProjectOverview(project);
   else if(topTab==='folders') body = renderProjectComponents(project);
   else if(topTab==='content'){
-    subTabsHtml = `<div class="subtabbar">${PROJECT_CONTENT_TABS.map(([key,label])=>`<button class="subtabbtn ${subTab===key?'active':''}" onclick="location.hash='#/project/${projectId}/content/${key}'">${label}</button>`).join('')}</div>`;
     if(subTab==='strings') body = `<div id="projTabStrings"></div>`;
     else if(subTab==='files') body = renderProjectFiles(project);
   }
@@ -8361,7 +8362,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-19.1';
+const APP_VERSION = '2026-10-19.2';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
