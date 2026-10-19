@@ -176,3 +176,30 @@ test('проверка только строк: «LQA Веб · Амхарски
   expect(issues.filter(i => (i.key === 'ok' || i.key === 'pre') && i.type === 'Терминология')).toEqual([]);
   expectNoErrors(errors);
 });
+
+test('отчёт по каждому файлу в Excel; CSV открывается в Excel (BOM и «;»)', async ({ page }) => {
+  const XLSX = require('xlsx');
+  const errors = await openApp(page);
+  await page.route(/xlsx.*\.js/, r => r.fulfill({ path: require.resolve('xlsx/dist/xlsx.full.min.js'), contentType: 'text/javascript' }));
+  await seedProject(page, { langs: ['kk'] });
+  await uploadPo(page, { lang: 'kk', name: 'home.po', text: po('kk', [['a', 'Корзина', 'Себет  бос'], ['b', 'Заказ', 'Тапсырыс']]) });
+  await uploadPo(page, { lang: 'kk', name: 'cart.po', text: po('kk', [['c', 'Цена 100 ₽', 'Бағасы 100 ₽']]) });
+  const ids = await page.evaluate(() => dbList('files').map(f => f.id));
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(ids => downloadFilesReport(ids, 'r.xlsx'), ids)]);
+  const wb = XLSX.read(require('fs').readFileSync(await dl.path()));
+  expect(wb.SheetNames).toEqual(['Итог', 'home kk', 'cart kk']);
+  const sum = XLSX.utils.sheet_to_json(wb.Sheets['Итог'], { header: 1 });
+  expect(sum.slice(1).map(r => [r[0], r[4]])).toEqual([['home.po', 2], ['cart.po', 1]]);
+  const home = XLSX.utils.sheet_to_json(wb.Sheets['home kk']);
+  expect(home.some(r => r['Ключ'] === 'a' && /пробел/i.test(r['Проблема']))).toBe(true);
+
+  // кнопка «Отчёт» в списке файлов папки
+  await page.evaluate(() => { location.hash = '#/project/p0/folder/c0/files'; });
+  await expect(page.locator('button:has-text("Отчёт")')).toHaveCount(2);
+
+  const [csv] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => exportIssuesToCsv(dbList('issues')))]);
+  const text = require('fs').readFileSync(await csv.path(), 'utf8');
+  expect(text.charCodeAt(0)).toBe(0xFEFF);
+  expect(text.split('\r\n')[0]).toContain('"Исходный текст";"Перевод"');
+  expectNoErrors(errors);
+});
