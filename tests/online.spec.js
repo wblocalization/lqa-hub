@@ -43,7 +43,7 @@ test('распознавание текста: связь со строками 
   const errors = await openApp(page);
   await seedProject(page, { langs: ['kk'] });
   await uploadPo(page, { lang: 'kk', text: po('kk', [['cart', 'Корзина пуста', 'Себет бос'], ['checkout', 'Оформить заказ', 'Тапсырысты рәсімдеу'], ['hello', 'Здравствуйте, {{name}}!', 'Сәлеметсіз бе, {{name}}!']]) });
-  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Корзина', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
+  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Корзина', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0/shots'; });
   await page.setInputFiles('#shotFileInput', { name: 'cart.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
   await page.click('button:has-text("Найти текст на скриншотах")');
@@ -74,7 +74,7 @@ test('распознавание текста: обрезанный текст �
     ['clipped', 'Изменить адрес доставки', 'Жеткізу мекенжайын өзгерту'],
     ['wrapped', 'Заказ принят, скоро свяжемся', 'Тапсырысыңыз қабылданды, жақын арада хабарласамыз'],
   ]) });
-  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Заказ', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
+  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Заказ', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0/shots'; });
   await page.setInputFiles('#shotFileInput', { name: 'order.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
   await page.click('button:has-text("Найти текст на скриншотах")');
