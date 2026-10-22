@@ -24,14 +24,12 @@ test('редактор видит только свои языки и не ви�
   await seed(page);
   await page.evaluate(() => { setIdentity(EDITORS[0], 'editor'); router(); });
 
-  // меню: проверки и глоссарии есть, отчёта за период нет; создавать проверки может только менеджер
+  // меню: нет подрядчиков, отчётов, аналитики, экспорта, расширения
   const nav = page.locator('#sideNav');
-  await expect(nav).toContainText('Проверки');
+  await expect(nav).toContainText('Проблемы');
   await expect(nav).toContainText('Глоссарии');
   for (const t of ['Аналитика', 'Подрядчики', 'Экспорт', 'Отчёт за период', 'Расширение']) await expect(nav).not.toContainText(t);
-  await expect(page.locator('.dash-hero a:has-text("Новая проверка")')).toBeHidden();
-  await page.evaluate(() => { location.hash = '#/round/new'; });
-  await expect(page.locator('#content')).toContainText('Этот раздел для менеджеров');
+  await expect(page.locator('.dash-hero button:has-text("Проект")')).toBeHidden();
 
   // проблемы — только армянские
   await page.evaluate(() => { location.hash = '#/issues'; });
@@ -64,9 +62,7 @@ test('менеджер видит всё и задаёт языки редакт
   await seed(page);
   await page.evaluate(() => { setIdentity(MANAGERS[0], 'manager'); location.hash = '#/issues'; });
   await expect(page.locator('#issuesRoot')).toContainText(/\b6 пробл/);
-  await expect(page.locator('#sideNav')).toContainText('Отчёт за период');
-  await page.evaluate(() => { location.hash = '#/'; });
-  await expect(page.locator('.dash-hero a:has-text("Новая проверка")')).toBeVisible();
+  await expect(page.locator('#sideNav')).toContainText('Подрядчики');
 
   await page.evaluate(() => { location.hash = '#/settings'; });
   const card = page.locator('.card', { has: page.locator('h3', { hasText: 'Команда и доступ' }) });
