@@ -7348,6 +7348,7 @@ function onGoogleCredential(resp){
   if(idRefreshWaiter && prev && prev.email===g.email){ const w = idRefreshWaiter; idRefreshWaiter = null; w(true); return; }
   if(idRefreshWaiter){ const w = idRefreshWaiter; idRefreshWaiter = null; w(true); }
   if(syncEnabled()) scheduleSync(300);
+  checkBackendAccess();
   closeDialogIfOpen();
   const known = (getSettings().googleAccounts||{})[g.email];
   if(known && known.name){
@@ -7396,6 +7397,26 @@ function noteBackendAuth(data){
   if(data.clientId && !googleEnabled()){ saveSettings({googleClientId:data.clientId}); initGoogleSignIn(); }
   applyAuthGate();
 }
+// Ask the backend right away whether this Google account may in: without it a person not on the list browses and
+// starts working, and the «нет в списке доступа» screen pops up only at the first save
+async function checkBackendAccess(){
+  const s = getSettings();
+  if(!s.aiEndpointUrl || !googleIdentity()) return;
+  try{ await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({mode:'ping', token:s.aiToken||''})}); }catch(e){}
+}
+// the manager adds a person once: the email also goes into the backend's access list (an admin's browser can write it)
+async function addToBackendAccess(email){
+  const s = getSettings(); if(!s.aiEndpointUrl) return false;
+  const call = async body=>{ try{ const res = await backendFetch(s.aiEndpointUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({token:s.aiToken||''}, body))}); return await res.json(); }catch(e){ return null; } };
+  const ping = await call({mode:'ping'});
+  if(!ping || ping.error || ping.auth!=='google' || !ping.admin) return false;
+  const cur = await call({mode:'access', action:'get'});
+  if(!cur || cur.error) return false;
+  const allowed = cur.allowed||[];
+  if(allowed.includes(email) || (cur.admins||[]).includes(email)) return true;
+  const res = await call({mode:'access', action:'set', allowed:allowed.concat([email])});
+  return !!(res && !res.error);
+}
 async function backendFetch(url, opts){
   const send = async ()=>{ const body = JSON.parse(opts.body||'{}'); const t = await currentIdToken(); if(t) body.idToken = t; return fetch(url, Object.assign({}, opts, {body:JSON.stringify(body)})); };
   let res = await send(), text = await res.text(), data = null;
@@ -7417,7 +7438,7 @@ function applyAuthGate(){
   gate.innerHTML = `<div class="auth-card">
     <div class="auth-logo">${icon('globe',26)}</div>
     <h2>LQA Hub</h2>
-    ${g ? `<p>Почты <b>${esc(g.email)}</b> нет в списке доступа команды. Попроси менеджера добавить её: Настройки → Доступ.</p>
+    ${g ? `<p>Почты <b>${esc(g.email)}</b> нет в списке доступа команды. Попроси менеджера добавить её: Настройки → «Доступ по Google-почтам». Всё, что уже сделано в этом браузере, не пропадёт.</p>
       <button class="btn secondary" onclick="googleSignOut();applyAuthGate()">Войти другой почтой</button>`
     : googleEnabled() ? `<p>Доступ только для команды — войди через Google почтой, которую добавил менеджер.</p><div class="gsi-btn" style="display:inline-block;"></div>`
     : `<p>Доступ только для команды по Google-почтам, но вход через Google в этом браузере ещё не настроен. Обнови страницу через минуту или попроси менеджера прислать Client ID.</p>`}
@@ -7454,7 +7475,11 @@ function addGoogleAccount(){
   const s = getSettings(), acc = Object.assign({}, s.googleAccounts||{}), removed = Object.assign({}, s.googleAccountsRemoved||{});
   acc[email] = {name, role, linkedAt:nowISO(), at:nowISO()}; delete removed[email];
   saveSettings({googleAccounts:acc, googleAccountsRemoved:removed});
-  toast(name+' ('+email+'): '+ROLE_LABELS[role]+'. Не забудь, что почта должна быть и в «Почтах команды».', {duration:7000}); router();
+  router();
+  addToBackendAccess(email).then(ok=>{
+    toast(name+' ('+email+'): '+ROLE_LABELS[role]+(ok ? ' — почта добавлена и в список доступа команды' : '. Добавь почту и в «Доступ по Google-почтам» — без этого человек не войдёт'), {duration:8000});
+    if(ok && document.getElementById('accessBody')) loadBackendAccess();
+  });
 }
 function googleCardHtml(){
   const s = getSettings(), acc = Object.entries(s.googleAccounts||{}).sort((a,b)=>a[1].name.localeCompare(b[1].name,'ru'));
@@ -7761,7 +7786,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
    A tab left open for days keeps running the old code. Every few minutes and when the tab comes back,
    the published page is fetched past every cache and its APP_VERSION compared with this one;
    a different one shows a bar with «Обновить». Bump APP_VERSION with every change. */
-const APP_VERSION = '2026-10-22.1';
+const APP_VERSION = '2026-10-22.2';
 let newVersionShown = false;
 async function checkNewVersion(){
   if(newVersionShown || !/^https?:$/.test(location.protocol)) return;
@@ -8443,6 +8468,7 @@ try{ if(/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById('kbd
   router();
   afterNav();
   bootstrapTeamBackend();
+  checkBackendAccess();
   if(syncEnabled()){ setSyncStatus('idle'); Promise.resolve(syncNow(false)).then(()=>{ if(!gsiReady) initGoogleSignIn(); }).catch(()=>{}); }   // Client ID may arrive with the team's settings
   // editors signed in on this browser start on their tasks
   if(getMe() && getRole()==='editor' && (!location.hash || location.hash==='#/')) location.hash = '#/my';

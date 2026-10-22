@@ -152,3 +152,25 @@ test('браузер со своими проектами не сливаетс�
   expect(await page.evaluate(() => [getSettings().aiEndpointUrl, syncEnabled()])).toEqual([URL, false]);
   expectNoErrors(errors);
 });
+
+test('почта не из списка — экран сразу после входа, а не после первой правки; менеджер добавляет человека один раз', async ({ page }) => {
+  const errors = await openApp(page);
+  const state = await fakeBackend(page);
+  await page.evaluate(u => saveSettings({ aiEndpointUrl: u, googleClientId: '123-abc.apps.googleusercontent.com' }), URL);
+  // вход чужой почтой: проверка доступа уходит сразу, ничего не создавая
+  await page.evaluate(c => onGoogleCredential({ credential: c }), cred('petrova@gmail.com'));
+  await expect(page.locator('#authGate')).toContainText('petrova@gmail.com');
+  await expect(page.locator('#authGate')).toContainText('не пропадёт');
+  expect(state.calls.some(c => c.mode === 'ping')).toBe(true);
+  expect(state.calls.some(c => c.mode === 'sync')).toBe(false);
+
+  // администратор добавляет почту в «Вход через Google» — она попадает и в список доступа
+  await page.evaluate(c => { googleSignOut(); onGoogleCredential({ credential: c }); setIdentity(MANAGERS[0], 'manager'); }, cred('boss@gmail.com'));
+  await page.evaluate(() => { closeDialogIfOpen(); location.hash = '#/settings'; });
+  await page.fill('#gaEmail', 'petrova@gmail.com');
+  await page.evaluate(() => { const sel = document.getElementById('gaName'); sel.value = sel.options[sel.options.length - 1].value; });
+  await page.evaluate(() => addGoogleAccount());
+  await expect.poll(() => state.allowed).toEqual(['ok@gmail.com', 'petrova@gmail.com']);
+  await expect(page.locator('.toast').last()).toContainText('добавлена и в список доступа');
+  expectNoErrors(errors);
+});
