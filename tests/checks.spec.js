@@ -121,3 +121,31 @@ test('юрлица WB в az и en: неверное написание заме�
   expect(issues.every(i => i.status === 'Принята после исправления')).toBe(true);
   expectNoErrors(errors);
 });
+
+test('переменные {name} проверяются; переменная, слипшаяся с текстом, — ошибка, но не там, где так требует язык', async ({ page }) => {
+  const errors = await openApp(page);
+  await seedProject(page, { langs: ['ru', 'az', 'kk', 'ka', 'am'] });
+  await uploadPo(page, { lang: 'ru', name: 'ru.po', text: po('ru', [
+    ['glue', '{time} she was here', '{time}она была здесь'], ['glue2', 'Wait %s more', 'Подождите ещё%s'],
+    ['lost', 'Hi, {name}!', 'Привет!'], ['renamed', 'Hi, {name}!', 'Привет, {имя}!'], ['ok', '{time} she was here', '{time} она была здесь'],
+    ['brace', 'Use {{count}} items', 'Используйте {{count}} шт.'],
+  ]) });
+  await uploadPo(page, { lang: 'az', name: 'az.po', text: po('az', [['suf', 'From %1$s', '%1$sdən'], ['suf2', 'In {city}', '{city}da']]) });
+  await uploadPo(page, { lang: 'kk', name: 'kk.po', text: po('kk', [['suf', 'In {city}', '{city}да']]) });
+  await uploadPo(page, { lang: 'ka', name: 'ka.po', text: po('ka', [['post', 'Choose in %s', 'აირჩიეთ %s-ში']]) });
+  await uploadPo(page, { lang: 'am', name: 'am.po', text: po('am', [['pre', 'Price of {item}', 'የ{item} ዋጋ']]) });
+  const all = await page.evaluate(() => dbList('issues').map(i => { const r = dbGet('rows', i.rowId); return { key: r.key, lang: r.languageCode, type: i.type, text: i.text }; }));
+  const vars = (lang, key) => all.filter(i => i.lang === lang && i.key === key && i.type === 'Переменные').map(i => i.text);
+  expect(vars('ru', 'glue').join()).toContain('слиплась');
+  expect(vars('ru', 'glue2').join()).toContain('слиплась');
+  expect(vars('ru', 'lost').join()).toContain('Потеряна переменная: {name}');
+  expect(vars('ru', 'renamed').join()).toContain('{name}');
+  expect(vars('ru', 'ok')).toEqual([]);
+  expect(vars('ru', 'brace')).toEqual([]);
+  expect(vars('az', 'suf')).toEqual([]);
+  expect(vars('az', 'suf2')).toEqual([]);
+  expect(vars('kk', 'suf')).toEqual([]);
+  expect(vars('ka', 'post').join()).toContain('послелог');
+  expect(vars('am', 'pre')).toEqual([]);
+  expectNoErrors(errors);
+});

@@ -1405,7 +1405,7 @@ function closeDetailPanel(){
    PLACEHOLDER / VARIABLE / TAG DETECTION
    ========================================================= */
 // a % after a number, or followed by a word, is a percent sign with a suffix, not printf: «7%-dək» (az), «7 %dan» (uz), «50 % de» (fr)
-const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|(?<!\d)%(\d+\$)?[-+0 #]*\d*(\.\d+)?[sdxXofc@](?![A-Za-zÀ-ʯЀ-ӿ])|\{\d+\}/g;
+const VAR_RE = /\{\{[^{}]*\}\}|\$\{[^{}]*\}|%%|(?<!\d)%(\d+\$)?[-+0 #]*\d*(\.\d+)?[sdxXofc@](?![A-Za-zÀ-ʯЀ-ӿ])|\{\d+\}|(?<!\{)\{[A-Za-z_][\w.]*\}(?!\})/g;
 // Distinguishes real translatable copy from strings that are legitimately identical
 // between source and target because there's nothing to translate: pure placeholder
 // strings ("%@ · %@ · %@"), locale codes ("RU"), brand/campaign names ("FUN&SUN").
@@ -1668,6 +1668,38 @@ function extractTagsNormalized(str){
 }
 const BREAK_RE = /\\n|\\r/g;
 function extractAll(str, re){ if(!str) return []; const r = new RegExp(re.source, re.flags); return str.match(r) || []; }
+// Variables of the source vs the translation. A printf variable with a suffix glued on is still the
+// variable when the source has it: «%@ın», «%1$sdən» (az), «%sни» (uz). VAR_RE alone can't tell
+// «%dan» (a percent sign + suffix) from «%d» + «an», so only the source's own variables are looked for.
+function diffVars(src, tgt){
+  const res = diffMultiset(extractAll(src,VAR_RE), extractAll(tgt,VAR_RE));
+  if(!res.missing.length) return res;
+  const glued = {};
+  res.missing.forEach(v=>{
+    if(!/^%/.test(v) || glued[v]!==undefined) return;
+    glued[v] = (String(tgt||'').match(new RegExp('(?<!\\d)'+escRe(v)+'(?=\\p{L})', 'gu'))||[]).length;
+  });
+  res.missing = res.missing.filter(v=>!(glued[v]>0 && glued[v]--));
+  return res;
+}
+function escRe(t){ return String(t).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+// Languages where an ending or a preposition is written together with a variable as a rule of grammar:
+// Turkic suffixes after it («{0}da», «%sdən»), Amharic prepositions before it («የ{0}»); no spaces at all in CJK and Thai
+const VAR_SUFFIX_LANGS = ['az','tr','kk','uz','ky','tk','tt','ba','ug','crh'];
+const VAR_PREFIX_LANGS = ['am'];
+const NO_SPACE_LANGS = ['zh','ja','ko','th'];
+// a variable that had a space or punctuation next to it in the source but runs into a word in the translation: «{time}she was»
+function gluedVars(src, tgt, lang){
+  if(NO_SPACE_LANGS.includes(lang)) return [];
+  const out = [];
+  new Set(extractAll(src, VAR_RE).filter(v=>v!=='%%')).forEach(v=>{
+    const count = (str, re)=>(String(str||'').match(re)||[]).length;
+    const after = new RegExp(escRe(v)+(lang==='ka' ? '-?' : '')+'(?=\\p{L})', 'gu'), before = new RegExp('(?<=\\p{L})'+escRe(v), 'gu');
+    if(!VAR_SUFFIX_LANGS.includes(lang) && count(tgt, after) > count(src, after)) out.push({v, side:'after', text:(String(tgt).match(new RegExp(escRe(v)+'-?\\p{L}+', 'u'))||[v])[0]});
+    else if(!VAR_PREFIX_LANGS.includes(lang) && count(tgt, before) > count(src, before)) out.push({v, side:'before', text:(String(tgt).match(new RegExp('\\p{L}+'+escRe(v), 'u'))||[v])[0]});
+  });
+  return out;
+}
 function diffMultiset(a, b){
   const ca={}, cb={};
   a.forEach(t=>ca[t]=(ca[t]||0)+1); b.forEach(t=>cb[t]=(cb[t]||0)+1);
@@ -1923,9 +1955,12 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
       // an empty translation is just not translated — its variables, tags and line breaks aren't "lost"
       if(!tgtTrim && !(r.targetForms||[]).slice(1).some(f=>String(f||'').trim())) return;
       if(s.checkVars){
-        const {missing, extra} = diffMultiset(extractAll(src,VAR_RE), extractAll(tgt,VAR_RE));
+        const {missing, extra} = diffVars(src, tgt);
         if(missing.length) push('Переменные','Критическая','Потеряна переменная: '+missing.join(', '), {highlightField:'source', highlightText:missing[0]});
         if(extra.length) push('Переменные','Критическая','Лишняя переменная: '+extra.join(', '), {highlightField:'target', highlightText:extra[0]});
+        gluedVars(src, tgt, baseLang(r.languageCode)).forEach(g=>push('Переменные', baseLang(r.languageCode)==='ka' ? 'Средняя' : 'Высокая',
+          baseLang(r.languageCode)==='ka' ? 'К переменной '+g.v+' присоединено окончание или послелог — перестрой фразу, например через двоеточие: «აირჩიეთ: '+g.v+'»'
+            : 'Переменная '+g.v+' слиплась с текстом: «'+g.text+'» — в исходнике рядом с ней пробел', {highlightField:'target', highlightText:g.text}));
         // no check of the order: languages put words in a different order, and «%2$s üçün %1$s» is correct Azerbaijani
       }
       if(s.checkTags){
@@ -1982,7 +2017,7 @@ async function runTechnicalCheckOnRows(rowIds, override, onProgress){
         r.targetForms.forEach((f,i)=>{
           if(i===0) return; // form 0 is the row's own target and goes through every check above
           if(!String(f||'').trim()){ push('Множественное число','Критическая','Не заполнена форма №'+(i+1)+' множественного числа'); return; }
-          const {missing, extra} = diffMultiset(extractAll(r.sourcePlural||src, VAR_RE), extractAll(f, VAR_RE));
+          const {missing, extra} = diffVars(r.sourcePlural||src, f);
           if(missing.length) push('Множественное число','Высокая','В форме №'+(i+1)+' потеряна переменная: '+missing.join(', '));
           if(extra.length) push('Множественное число','Высокая','В форме №'+(i+1)+' лишняя переменная: '+extra.join(', '));
           const tagDiff = diffMultiset(extractTagsNormalized(r.sourcePlural||src), extractTagsNormalized(f));
@@ -8127,7 +8162,7 @@ function renderSettingsPage(el){
     <div class="card"><h3>Правила LQA</h3>
       <div class="checklist">
         <label class="checkrow"><input type="checkbox" id="sUntranslated" ${s.checkUntranslated?'checked':''}> Перевод совпадает с исходным текстом (пустой перевод отмечается всегда)</label>
-        <label class="checkrow"><input type="checkbox" id="sVars" ${s.checkVars?'checked':''}> Переменные ({{name}}, %s, {0}, ${'${var}'})</label>
+        <label class="checkrow"><input type="checkbox" id="sVars" ${s.checkVars?'checked':''}> Переменные ({{name}}, {name}, %s, {0}, ${'${var}'}) и слипание с текстом</label>
         <label class="checkrow"><input type="checkbox" id="sTags" ${s.checkTags?'checked':''}> HTML/XML разметка</label>
         <label class="checkrow"><input type="checkbox" id="sBreaks" ${s.checkBreaks?'checked':''}> Переносы строк (\\n)</label>
         <label class="checkrow"><input type="checkbox" id="sSpaces" ${s.checkSpaces?'checked':''}> Пробелы</label>
