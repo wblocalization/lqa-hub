@@ -18,7 +18,7 @@ test('20 000 строк: загрузка и новая версия', async ({ 
   expect(await page.evaluate(() => dbList('rows').length)).toBe(20000);
   expect(second).toBeLessThan(20_000);
   t = Date.now();
-  await page.evaluate(() => { location.hash = '#/overview'; });
+  await page.evaluate(() => { location.hash = '#/'; });
   await page.waitForSelector('.kpi');
   expect(Date.now() - t).toBeLessThan(5_000);
   // «Показывать: все» — все 20 000 строк одной таблицей

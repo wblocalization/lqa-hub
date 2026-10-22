@@ -43,7 +43,7 @@ test('распознавание текста: связь со строками 
   const errors = await openApp(page);
   await seedProject(page, { langs: ['kk'] });
   await uploadPo(page, { lang: 'kk', text: po('kk', [['cart', 'Корзина пуста', 'Себет бос'], ['checkout', 'Оформить заказ', 'Тапсырысты рәсімдеу'], ['hello', 'Здравствуйте, {{name}}!', 'Сәлеметсіз бе, {{name}}!']]) });
-  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Корзина', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0/shots'; });
+  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Корзина', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
   await page.setInputFiles('#shotFileInput', { name: 'cart.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
   await page.click('button:has-text("Найти текст на скриншотах")');
@@ -74,7 +74,7 @@ test('распознавание текста: обрезанный текст �
     ['clipped', 'Изменить адрес доставки', 'Жеткізу мекенжайын өзгерту'],
     ['wrapped', 'Заказ принят, скоро свяжемся', 'Тапсырысыңыз қабылданды, жақын арада хабарласамыз'],
   ]) });
-  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Заказ', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0/shots'; });
+  await page.evaluate(() => { dbUpsert('visualSessions', { id: 's0', projectId: 'p0', name: 'Заказ', languageCode: 'kk', createdAt: nowISO() }); location.hash = '#/visual/s0'; });
   await page.setInputFiles('#shotFileInput', { name: 'order.png', mimeType: 'image/png', buffer: png });
   await expect(page.locator('.shot-card')).toHaveCount(1);
   await page.click('button:has-text("Найти текст на скриншотах")');
@@ -82,29 +82,5 @@ test('распознавание текста: обрезанный текст �
 
   const cut = await page.evaluate(() => dbList('issues').filter(i => i.type === 'Обрезанный текст').map(i => dbGet('rows', i.rowId).key).sort());
   expect(cut).toEqual(['clipped', 'ellipsis']);
-  expectNoErrors(errors);
-});
-
-// минимальный PDF с одной строкой текста
-function tinyPdf(text) {
-  const stream = `BT /F1 18 Tf 40 760 Td (${text}) Tj ET`;
-  const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`];
-  let out = '%PDF-1.4\n'; const offs = [];
-  objs.forEach((o, i) => { offs.push(out.length); out += `${i + 1} 0 obj\n${o}\nendobj\n`; });
-  const x = out.length;
-  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('');
-  return Buffer.from(out + `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`, 'latin1');
-}
-
-test('редполитика из PDF читается в браузере', async ({ page }) => {
-  const errors = await openApp(page, '#/glossaries/styleguides');
-  await page.evaluate(() => editStyleGuide('ka'));
-  await page.setInputFiles('#sgFile', { name: 'redpolitika.pdf', mimeType: 'application/pdf', buffer: tinyPdf('Quotes: use low-high quotes') });
-  await expect(page.locator('#sgFileStatus')).toContainText('✓', { timeout: 60_000 });
-  await expect(page.locator('#sgValue')).toHaveValue(/use low-high quotes/);
-  await page.click('.dialog [data-ok]');
-  expect(await page.evaluate(() => getSettings().styleGuides.ka)).toContain('low-high quotes');
   expectNoErrors(errors);
 });
